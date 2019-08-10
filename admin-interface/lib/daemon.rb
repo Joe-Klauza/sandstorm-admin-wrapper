@@ -168,7 +168,8 @@ class SandstormServerDaemon
       [executable, *arguments],
       buffer: @buffer,
       pty: false,
-      no_prefix: true
+      no_prefix: true,
+      formatter: Proc.new { |output, _| WINDOWS ? "#{datetime} | #{output.chomp}" : output.chomp } # Windows doesn't have the timestamp, so we'll add our own to make it look nice.
     ) do |pid|
       @game_pid = pid
       Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, delay: 10) }

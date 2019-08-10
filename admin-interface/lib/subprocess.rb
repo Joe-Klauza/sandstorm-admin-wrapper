@@ -18,7 +18,7 @@ class SubprocessRunner
     pid = Process.spawn(*command, opts)
   end
 
-  def self.run(command, buffer: nil, ignore_status: false, ignore_message: false, out: IO.pipe, err: IO.pipe, input: nil, shell: [], pty: PTY_AVAILABLE, no_prefix: false)
+  def self.run(command, buffer: nil, ignore_status: false, ignore_message: false, out: IO.pipe, err: IO.pipe, input: nil, shell: [], pty: PTY_AVAILABLE, no_prefix: false, formatter: nil)
     origin = File.basename command.first
     origin = "#{File.basename shell.first}(#{origin})" unless shell.empty?
     command = command.split(' ') unless command.is_a? Array
@@ -39,7 +39,11 @@ class SubprocessRunner
         loop do
           output = stream.gets
           break if output.nil?
-          formatted_output = no_prefix ? output.chomp : "#{datetime} | #{origin} | #{output.chomp}"
+          formatted_output = if formatter
+              formatter.call(output, origin)
+            else
+              no_prefix ? output.chomp : "#{datetime} | #{origin} | #{output.chomp}"
+            end
           unless buffer.nil?
             buffer[:filters].each { |filter| filter.call(formatted_output) }
             buffer[:mutex].synchronize do # Synchronize with the reading thread to avoid mismatched indices when truncating, etc.
