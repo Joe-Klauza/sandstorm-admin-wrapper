@@ -84,7 +84,7 @@ Sandstorm Admin Wrapper is a set of tools designed ease the burden of hosting a 
 These are the currently known issues. If you can fix any of these or know what to do, please send a pull request or [create a detailed GitHub issue](https://github.com/Joe-Klauza/sandstorm-admin-wrapper/issues/new). Thanks!
 
 - SteamCMD output on Windows takes forever!
-  - SteamCMD buffers progress output when it doesn't detect an interactive session (i.e. when it's being run by sandstorm-admin-wrapper). This output doesn't become available until the update/validation completes. There is a workaround we're using for Linux (PTY) to emulate an interactive session, but such a workaround does not appear to be feasible on Windows at this time.
+  - SteamCMD buffers progress output when it doesn't detect an interactive session (i.e. when it's being run by sandstorm-admin-wrapper). This output doesn't become available until the update/validation completes. There is a workaround we're using for Linux (PTY) to emulate an interactive session, but such a workaround does not appear to be feasible on Windows at this time. [(more info here)](https://github.com/ValveSoftware/Source-1-Games/issues/1684)
 - Sometimes RCON output only appears in the RCON-specific log (not the server log)!
   - The server process sometimes only writes the RCON-related log messages to `Insurgency.log` (while writing all its other logging to `Insurgency_[0-9].log`). When this happens, the RCON-related log messages aren't even sent to STDOUT, which is what we use to populate the server log. As such, we also tail `Insurgency.log` for any RCON messages to add to the RCON-specific log to ensure they're still visible when this server bug occurs.
 - HTTPS doesn't work on Windows!
