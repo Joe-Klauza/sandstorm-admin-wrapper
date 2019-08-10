@@ -2,7 +2,7 @@
 
 ### About
 
-Sandstorm Admin Wrapper is a set of tools designed ease the burden of hosting a server for the `New World Interactive` video game [Insurgency: Sandstorm](https://store.steampowered.com/app/581320/Insurgency_Sandstorm/). It is comprised of a Ruby webserver (Sinatra) and associated tools which provide an easy-to-use browser front-end for configuring and managing a server on either Linux or Windows.
+Sandstorm Admin Wrapper is a set of tools designed to ease the burden of hosting a server for the `New World Interactive` video game [Insurgency: Sandstorm](https://store.steampowered.com/app/581320/Insurgency_Sandstorm/). It is comprised of a Ruby webserver (Sinatra) and associated tools which provide an easy-to-use browser front-end for configuring and managing a server on either Linux or Windows.
 
 ### Demo
 
