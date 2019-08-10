@@ -1,0 +1,65 @@
+<div class="d-flex flex-column horizontal-expand mb-3">
+  <div class="container-fluid d-flex justify-content-center bg-primary m-1">
+    <h3 class="py-2">Server Control</h3>
+  </div>
+  <div class="d-flex flex-column horizontal-expand justify-content-between">
+
+    <!-- Server Status -->
+    <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
+      <div class="ml-4 p-2 col-2">Server Status</div>
+      <div class="ml-4 p-2 col-1"><span id="server-status" class="monospace-font horizontal-expand text-center badge badge-<%= @server_status == 'OFF' ? 'danger' : 'success' %>"><%= @server_status %></span></div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start');">Start</button>
+          <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart');">Restart</button>
+          <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop');">Stop</button>
+        </div>
+      </div>
+      <div id="threads" class="p-2 col"></div>
+    </div>
+
+    <!-- Server Log -->
+    <div id='server-log-container' class="d-flex flex-column justify-content-start horizontal-expand m-1 ml-2 bg-light">
+      <div class="d-flex justify-content-between horizontal-expand">
+        <div class="ml-4 p-2 col-2 horizontal-expand">Server Log</div>
+        <div class="p-2 col-4 justify-content-end">
+          <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary m-1" onclick="$('#server-log').html('');">Clear</button>
+            <button type="button" class="font-weight-bold btn btn-info m-1" onclick="resetLogScroll('#server-log', true);">Tail</button>
+          </div>
+        </div>
+      </div>
+      <pre id='server-log' class="log log-lg colorful"></pre>
+    </div>
+
+    <!-- Players -->
+    <% yield %>
+
+    <!-- RCON -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="ml-4 p-2 col-4">Server RCON</div>
+      <div class="ml-4 p-2 col horizontal-expand">
+        <input id="rcon_input" type="text" class="form-control horizontal-expand" placeholder="listplayers">
+      </div>
+      <div class="p-2 col-2 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="$('#rcon_input').val('');">Clear</button>
+          <button type="button" class="btn btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon`, 1000, {'command': $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RCON Log -->
+    <div class="d-flex flex-column justify-content-start horizontal-expand m-1 bg-light">
+      <div class="d-flex justify-content-between horizontal-expand">
+        <div class="ml-4 p-2 col-2 horizontal-expand">RCON Log</div>
+        <div class="p-2 col-4 justify-content-end">
+            <button type="button" class="btn btn-secondary m-1" onclick="$('#rcon-log').html('');">Clear</button>
+            <button type="button" class="font-weight-bold btn btn-info m-1" onclick="resetLogScroll('#rcon-log', true);">Tail</button>
+        </div>
+      </div>
+      <pre id='rcon-log' class="log log-lg"></pre>
+    </div>
+
+  </div>
+</div>

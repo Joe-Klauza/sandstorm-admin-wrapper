@@ -1,0 +1,136 @@
+<html>
+  <head>
+    <title>Sandstorm Admin Wrapper</title>
+
+    <!-- Stylesheets -->
+
+    <link href="/themes/darkly.bootstrap.min.css" rel="stylesheet"/>
+    <link href="/bootstrap/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/flags/css/flag-icon.min.css" rel="stylesheet"/>
+    <link href="/pushy/pushy.css" rel="stylesheet"/>
+    <link href="/touch-punch/jquery-ui.min.css" rel="stylesheet"/>
+    <link href="/custom/custom.css" rel="stylesheet"/>
+    <link href="/fonts/inconsolata.css" rel="stylesheet"/>
+    <link href="/fonts/oswald.css" rel="stylesheet"/>
+
+    <!-- Apple icon stuff -->
+    <!-- <link rel="apple-touch-icon-precomposed" sizes="57x57" href="apple-touch-icon-57x57.png" /> -->
+    <!-- <link rel="apple-touch-icon-precomposed" sizes="114x114" href="apple-touch-icon-114x114.png" /> -->
+    <!-- <link rel="apple-touch-icon-precomposed" sizes="72x72" href="apple-touch-icon-72x72.png" /> -->
+    <!-- <link rel="apple-touch-icon-precomposed" sizes="144x144" href="apple-touch-icon-144x144.png" /> -->
+    <!-- <link rel="apple-touch-icon-precomposed" sizes="60x60" href="apple-touch-icon-60x60.png" /> -->
+    <!-- <link rel="apple-touch-icon-precomposed" sizes="120x120" href="apple-touch-icon-120x120.png" /> -->
+    <!-- <link rel="apple-touch-icon-precomposed" sizes="76x76" href="apple-touch-icon-76x76.png" /> -->
+    <!-- <link rel="apple-touch-icon-precomposed" sizes="152x152" href="apple-touch-icon-152x152.png" /> -->
+
+    <!-- favicons -->
+    <!-- <link rel="icon" type="image/png" href="favicon-196x196.png" sizes="196x196" /> -->
+    <!-- <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" /> -->
+    <!-- <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" /> -->
+    <!-- <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" /> -->
+    <!-- <link rel="icon" type="image/png" href="favicon-128.png" sizes="128x128" /> -->
+
+    <!-- Microsoft tile stuff -->
+    <!-- <meta name="application-name" content=""/> -->
+    <!-- <meta name="msapplication-TileColor" content="#FFFFFF" /> -->
+    <!-- <meta name="msapplication-TileImage" content="mstile-144x144.png" /> -->
+    <!-- <meta name="msapplication-square70x70logo" content="mstile-70x70.png" /> -->
+    <!-- <meta name="msapplication-square150x150logo" content="mstile-150x150.png" /> -->
+    <!-- <meta name="msapplication-wide310x150logo" content="mstile-310x150.png" /> -->
+    <!-- <meta name="msapplication-square310x310logo" content="mstile-310x310.png" /> -->
+
+    <!-- Facebook open graph tags -->
+    <!-- <meta property="og:type" content="website"/> -->
+    <!-- <meta property="og:url" content=""/> -->
+    <!-- <meta property="og:title" content=""/> -->
+    <!-- <meta property="og:description" content=""/> -->
+    <!-- <meta property="og:image" content=""/> -->
+
+    <!-- Twitter card tags -->
+    <!-- <meta property="twitter:card" content="summary"/> -->
+    <!-- <meta property="twitter:domain" content=""/> -->
+    <!-- <meta property="twitter:url" content=""/> -->
+    <!-- <meta property="twitter:title" content=""/> -->
+    <!-- <meta property="twitter:description" content=""/> -->
+    <!-- <meta property="twitter:image" content="logo-sm.png"/> -->
+    <!-- <meta property="twitter:label1" content=""/> -->
+    <!-- <meta property="twitter:data1" content=""/> -->
+  </head>
+  <body class="normal-font">
+    <div id="toast-templates" style="display: none;">
+      <div id="toast-template-success" class="toast success_toast bg-light" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" style="display: flex;align-items: center;">
+        <div class="toast-header bg-dark">
+          <strong class="text-white">Success</strong>
+        </div>
+      </div>
+
+      <div id="toast-template-failure" class="toast failure_toast bg-light" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" style="display: flex;align-items: center;">
+        <div class="toast-header bg-danger">
+          <strong class="text-white">Failure</strong>
+        </div>
+      </div>
+    </div>
+    <!-- Flexbox container for aligning the toasts -->
+    <div aria-live="polite" aria-atomic="true" style="position: fixed; min-height: 0px; z-index: 999999999 !important;">
+      <div class="d-flex flex-column" id="toast-container" style="position: fixed; top: 20px; left: 40%;">
+      </div>
+    </div>
+
+    <!-- Pushy sidebar -->
+    <nav class="pushy pushy-left" data-focus="#server-setup-link">
+      <div class="pushy-content">
+        <ul>
+          <!-- Submenu -->
+          <li class="pushy-submenu pushy-submenu-open">
+            <button>Server</button>
+            <ul>
+              <li id="server-setup-link" class="pushy-link"><a href="/setup">Setup</a></li>
+              <li class="pushy-link"><a href="/config">Config</a></li>
+              <li class="pushy-link"><a href="/control">Control</a></li>
+            </ul>
+          </li>
+          <li class="pushy-submenu pushy-submenu-open">
+            <button>Tools</button>
+            <ul>
+              <li class="pushy-link"><a href="/tools/rcon">RCON</a></li>
+              <li class="pushy-link"><a href="/tools/steamcmd">SteamCMD</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Overlay for sidebar -->
+    <div class="site-overlay"></div>
+
+    <!-- Top row -->
+    <div id="container" class="d-flex flex-column horizontal-expand">
+      <div class="d-flex horizontal-expand justify-content-between">
+        <div class="p-2">
+          <div>
+            <!-- Menu button for sidebar -->
+            <button class="menu-btn btn-lg btn-light" style="position: fixed; z-index: 5; top: 10px; left: 10px;">&#9776;</button>
+          </div>
+        </div>
+        <div class="p-2">
+          <h5>Sandstorm Admin Wrapper</h5>
+        </div>
+      </div>
+      <%= yield %>
+    </div>
+
+  <!-- Scripts -->
+  <!-- Bootstrap -->
+  <script src="/bootstrap/jquery.min.js"></script>
+  <script src="/bootstrap/popper.min.js"></script>
+  <script src="/bootstrap/bootstrap.min.js"></script>
+  <!-- lodash (niceties) -->
+  <script src="/lodash/lodash.min.js"></script>
+  <!-- Pushy (sidebar) -->
+  <script src="/pushy/pushy.min.js"></script>
+  <!-- Touch punch (for jQuery touch controls) -->
+  <script src="/touch-punch/jquery-ui.min.js"></script>
+  <script src="/touch-punch/jquery.ui.touch-punch.min.js"></script>
+  <!-- Ours -->
+  <script src="/custom/custom.js"></script>
+</html>

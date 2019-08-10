@@ -1,0 +1,14 @@
+source 'https://rubygems.org'
+
+gem 'bindata'
+gem 'file-tail'
+gem 'inifile'
+gem 'oj'
+gem 'openssl'
+gem 'pry'
+gem 'sinatra'
+gem 'sys-proctable'
+gem 'sysrandom'
+gem 'toml-rb'
+gem 'unicode-display_width'
+

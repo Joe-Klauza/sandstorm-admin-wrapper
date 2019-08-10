@@ -1,0 +1,75 @@
+<div class="d-flex flex-column horizontal-expand mb-3">
+  <div class="container-fluid d-flex justify-content-center bg-primary my-1">
+    <h3 class="py-2">Server Setup</h3>
+  </div>
+  <div class="d-flex flex-column horizontal-expand justify-content-between">
+    <!-- SteamCMD Install -->
+    <div class="justify-content-start horizontal-expand my-1 py-2 bg-light">
+      <div class="col-2">SteamCMD Install</div>
+      <div class="col-1 monospace-font horizontal-expand text-center badge badge-<%= @steamcmd_path ? 'success' : 'danger' %>"><%= @steamcmd_path ? 'COMPLETE' : 'INCOMPLETE' %></div>
+      <div class="col-3 justify-content-center">
+        <% unless @steamcmd_path %>
+          <a target="_blank" href="https://developer.valvesoftware.com/wiki/SteamCMD#Downloading_SteamCMD"><button type="button" class="font-weight-bold btn btn-success btn-sm">Install</button></a>
+        <% end %>
+      </div>
+      <div class="col d-flex flex-column">
+        <% if @steamcmd_path %>
+          <div class="horizontal-expand">SteamCMD installation detected:</div>
+          <div class="monospace-font horizontal-expand font-weight-bold my-2" style="font-size:10px"><%= @steamcmd_path.sub(USER_HOME, '~') %></div>
+        <% else %>
+          <div class="horizontal-expand">SteamCMD must be installed manually. Depending on your operating system, installation steps can vary. Install to:</div>
+          <div class="monospace-font horizontal-expand font-weight-bold my-2">sandstorm-admin-wrapper/steamcmd/installation/</div>
+          <div class="horizontal-expand">or ensure <span class="monospace-font font-weight-bold mx-2">steamcmd</span> is on the <a class="ml-2 font-weight-bold monospace-font" target="_blank" href="https://en.wikipedia.org/wiki/PATH_(variable)">PATH</a>. Refresh this page once SteamCMD is installed to proceed.</div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Server Install -->
+    <div class="d-flex justify-content-start horizontal-expand my-1 py-2 bg-light">
+      <div class="col-2">Server Install</div>
+      <div class="col-1 monospace-font horizontal-expand text-center badge badge-<%= @game_server_path ? 'success' : 'danger' %>"><%= @game_server_path ? 'COMPLETE' : 'INCOMPLETE' %></div>
+      <div class="col-3 justify-content-center">
+        <% if @steamcmd_path && !@game_server_path %>
+          <button type="button" class="font-weight-bold btn btn-success btn-sm" onclick="tailProcess('#steamcmd-log', `/control/server/install?validate=${$('#validate-server-files-install')[0].checked}`);">Install</button>
+          <div class="custom-control custom-switch ml-5 p-2">
+            <input type="checkbox" class="custom-control-input" id="validate-server-files-install" checked>
+            <label class="custom-control-label" for="validate-server-files-install">Validate</label>
+          </div>
+        <% end %>
+      </div>
+      <div class="col">
+        <div class="d-flex flex-column">
+          <% if @game_server_path %>
+            <div class="horizontal-expand">Sandstorm server installation detected:</div>
+            <div class="monospace-font horizontal-expand font-weight-bold my-2" style="font-size:10px"><%= @game_server_path.sub(USER_HOME, '~') %></div>
+          <% else %>
+            <div class="horizontal-expand">
+              Server installation is dependent on valid SteamCMD installation. Follow the steps above, then refresh this page.
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <% if @steamcmd_path && @game_server_path %>
+    <!-- Server Update -->
+    <div id="server-update-info" class="d-flex justify-content-start horizontal-expand my-1 py-2 bg-light">
+    </div>
+    <% end %>
+
+    <!-- SteamCMD Log -->
+    <div class="d-flex flex-column justify-content-start horizontal-expand m-1 bg-light">
+      <div class="d-flex justify-content-between horizontal-expand">
+        <div class="ml-4 p-2 col-2 horizontal-expand">SteamCMD Log</div>
+        <div class="p-2 col-4 justify-content-end">
+          <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary m-1" onclick="$('#steamcmd-log').html('');">Clear</button>
+            <button type="button" class="font-weight-bold btn btn-info m-1" onclick="resetLogScroll('#steamcmd-log', true);">Tail</button>
+          </div>
+        </div>
+      </div>
+      <pre id='steamcmd-log' class="log log-lg"></pre>
+    </div>
+
+  </div>
+</div>

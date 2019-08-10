@@ -1,0 +1,132 @@
+div {
+  display: -webkit-flex; /* Safari */
+  -webkit-align-items: center; /* Safari 7.0+ */
+  display: flex;
+  align-items: center;
+}
+
+.center-just-left {
+  text-align: left;
+  margin: auto;
+}
+
+.monospace-font {
+  font-family: 'Inconsolata', monospace !important;
+}
+
+.normal-font {
+  font-family: 'Oswald', sans-serif;
+}
+
+.vertical-align {
+  align-items: center !important;
+}
+
+.horizontal-expand {
+  width: 100% !important;
+}
+
+.vertical-expand {
+  height: 100% !important;
+}
+
+.horizontal-auto {
+  width: auto !important;
+}
+
+.fit-content {
+  width: 1px !important;
+  flex: 1 1 auto !important;
+}
+
+.img-small {
+  width: 72px !important;
+  height: auto !important;
+}
+
+.modal-title {
+  margin: 0 auto;
+}
+
+.blur {
+  filter: blur(6px);
+  -moz-filter: blur(6px);
+  -webkit-filter: blur(6px);
+  -o-filter: blur(6px);
+}
+
+.row.no-pad {
+  margin-right:-15;
+  margin-left:-15;
+}
+.row.no-pad > [class*='col-'] {
+  padding-right:-15;
+  padding-left:-15;
+}
+
+.relative {
+  position: relative;
+}
+
+.sticky-t {
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  top: 0px;
+}
+
+.pad-t {
+  padding-top: 64px;
+}
+
+.pad-b {
+  padding-bottom: 64px;
+}
+
+.mar-b {
+  margin-bottom: 64px;
+}
+
+.color-monokai {
+  background: #272822;
+  color: #f8f8f2;
+}
+
+.config-file {
+  height: 400px;
+  width: 100%;
+  white-space: pre;
+}
+
+/* Log */
+.log {
+  background: lightgray;
+  width: 100%;
+  height: 300px;
+  overflow-y: scroll;
+  overflow-x: scroll;
+}
+
+.log-lg {
+  height: 600px;
+}
+
+.logspan {
+  font-family: 'Inconsolata', monospace !important;
+  font-size: 12px;
+  text-align: left;
+  width: 100%;
+  color: black;
+  white-space: pre;
+  overflow: visible;
+  -ms-word-wrap: normal;
+  word-wrap: normal;
+}
+
+/* CodeMirror/Mergely */
+.CodeMirror { height: 100%; }
+.mergely.current.start { border-top: 1px solid #fff !important; }
+.mergely.current.end { border-bottom: 1px solid #fff !important; }
+
+/* Pushy sidebar */
+.pushy-link { margin-left: 1px; }

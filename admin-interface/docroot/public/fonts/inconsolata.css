@@ -1,0 +1,12 @@
+@font-face {
+  font-family: "Inconsolata-Regular";
+  src: url("./fonts/Inconsolata/Inconsolata-Regular.eot"); /* IE9 Compat Modes */
+  src: url("./fonts/Inconsolata/Inconsolata-Regular.eot?#iefix") format("embedded-opentype"), /* IE6-IE8 */
+    url("./fonts/Inconsolata/Inconsolata-Regular.otf") format("opentype"), /* Open Type Font */
+    url("./fonts/Inconsolata/Inconsolata-Regular.svg") format("svg"), /* Legacy iOS */
+    url("./fonts/Inconsolata/Inconsolata-Regular.ttf") format("truetype"), /* Safari, Android, iOS */
+    url("./fonts/Inconsolata/Inconsolata-Regular.woff") format("woff"), /* Modern Browsers */
+    url("./fonts/Inconsolata/Inconsolata-Regular.woff2") format("woff2"); /* Modern Browsers */
+  font-weight: normal;
+  font-style: normal;
+}

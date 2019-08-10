@@ -1,0 +1,12 @@
+@font-face {
+  font-family: "Oswald-Regular";
+  src: url("./fonts/Oswald/Oswald-Regular.eot"); /* IE9 Compat Modes */
+  src: url("./fonts/Oswald/Oswald-Regular.eot?#iefix") format("embedded-opentype"), /* IE6-IE8 */
+    url("./fonts/Oswald/Oswald-Regular.otf") format("opentype"), /* Open Type Font */
+    url("./fonts/Oswald/Oswald-Regular.svg") format("svg"), /* Legacy iOS */
+    url("./fonts/Oswald/Oswald-Regular.ttf") format("truetype"), /* Safari, Android, iOS */
+    url("./fonts/Oswald/Oswald-Regular.woff") format("woff"), /* Modern Browsers */
+    url("./fonts/Oswald/Oswald-Regular.woff2") format("woff2"); /* Modern Browsers */
+  font-weight: normal;
+  font-style: normal;
+}

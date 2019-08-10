@@ -1,0 +1,35 @@
+<div class="d-flex flex-column horizontal-expand mb-3">
+  <div class="container-fluid d-flex justify-content-center bg-primary">
+    <h3 class="py-2">SteamCMD Tool</h3>
+  </div>
+  <div class="d-flex flex-column horizontal-expand justify-content-between">
+    <!-- Command -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2">Command</div>
+      <div class="p-2 horizontal-expand">
+<textarea id="steamcmd_input" class="form-control monospace-font" id="exampleTextarea" rows="8">
++login anonymous
++force_install_dir "<%= @server_root_dir %>"
++app_update 581330 validate
++exit
+</textarea>
+      </div>
+      <div class="p-2">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="$('#steamcmd_input').val('');">Clear</button>
+          <button type="button" class="btn btn-info m-1" onclick="
+          if ($('#steamcmd_input').val()) {
+            tailProcess('#steamcmd-log',`/tools/steamcmd`, 1000, {'command': $('#steamcmd_input').val()});}">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RCON Log -->
+    <div class="d-flex flex-column justify-content-start horizontal-expand my-1 py-2 bg-light">
+      <div class="ml-4 p-2 horizontal-expand">SteamCMD Log</div>
+      <div class="ml-4 p-2 horizontal-expand"><button type="button" class="font-weight-bold btn btn-info btn" onclick="resetLogScroll('#steamcmd-log', true);">Tail</button></div>
+      <pre id='steamcmd-log' class="log log-lg d-flex flex-column log-content">
+      </pre>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,19 @@
+<% players = @info.nil? ? [] : @info['rcon_players'] %>
+<div id="players" class="">
+  <div class="container-fluid my-2 mx-4" style="background-color:#43454f">
+    <div class="row my-1 py-1 align-items-center text-white" style="background-color:#232323">
+      <div class="col">Player</div>
+      <div class="col">Score</div>
+      <div class="col">Duration</div>
+    </div>
+    <% players.sort_by { |p| [p['score'].to_i, (p['duration'] || ''), p['name']] }.reverse.each_with_index do |player, i| %>
+    <div class="row my-1 align-items-center text-white" style="background-color:#<%= i.even? ? '393b44' : '535663'%>">
+      <div class="col">
+        <%= ('<span class="flag-icon flag-icon-' << player['country_code'] << '"></span> ') if player['country_code'] %><a target="<%= !@use_steam_urls ? '_blank' : '' %>" href="<%= !@use_steam_urls ? 'https://steamcommunity.com/profiles/' : 'steam://url/SteamIDPage/' %><%= player['steam_id'] %>"><img src="<%= player['steam_info']['avatar'] || 'missing.png' rescue 'missing.png' %>" onError="this.onerror=null;this.src='/missing.png';" width="32" height="32"> <%= CGI.escapeHTML (player['steam_info']['name'] || player['name'] rescue player['name']) %></a>
+      </div>
+      <div class="col"><%= player['score'] %></div>
+      <div class="col"><%= player['duration'].to_s.empty? ? (@info[:a2s_player].select{ |p| p['name'] == player['name'] || player['name'].start_with?(p['name']) }.empty? ? 'Connecting/Disconnected' : 'Changing Map') : player['duration'] %></div>
+    </div>
+    <% end %>
+  </div>
+</div>

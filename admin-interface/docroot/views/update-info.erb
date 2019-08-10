@@ -1,0 +1,20 @@
+<div class="col-2">Server Update</div>
+<div class="col-1 monospace-font horizontal-expand text-center badge badge-<%= @update_available ? 'danger' : 'success' %>"><%= @update_available ? 'OUT OF DATE' : 'UP TO DATE' %></div>
+<div class="col-3 justify-content-center">
+  <div><button type="button" class="font-weight-bold btn btn-success btn-sm" onclick="tailProcess('#steamcmd-log', `/control/server/update?validate=${$('#validate-server-files-update')[0].checked}`);">Update</button></div>
+  <div class="custom-control custom-switch ml-5 p-2">
+    <input type="checkbox" class="custom-control-input" id="validate-server-files-update" checked>
+    <label class="custom-control-label" for="validate-server-files-update">Validate</label>
+  </div>
+</div>
+<div class="col">
+  <div class="row horizontal-expand justify-content-between">
+    <% if @update_available %>
+    <div class="col-4">Update is available!</div>
+    <div class="col-4">Current: <%= @old_build %></div>
+    <div class="col-4">New: <%= @new_build %></div>
+    <% else %>
+    <div class="col">Server is up to date!</div>
+    <% end %>
+  </div>
+</div>
