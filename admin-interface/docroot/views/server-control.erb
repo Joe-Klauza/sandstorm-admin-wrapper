@@ -18,6 +18,9 @@
       <div id="threads" class="p-2 col"></div>
     </div>
 
+    <!-- Players -->
+    <%= yield %>
+
     <!-- Server Log -->
     <div id='server-log-container' class="d-flex flex-column justify-content-start horizontal-expand m-1 ml-2 bg-light">
       <div class="d-flex justify-content-between horizontal-expand">
@@ -31,9 +34,6 @@
       </div>
       <pre id='server-log' class="log log-lg colorful"></pre>
     </div>
-
-    <!-- Players -->
-    <% yield %>
 
     <!-- RCON -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">

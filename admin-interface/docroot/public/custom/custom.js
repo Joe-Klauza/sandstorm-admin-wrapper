@@ -118,7 +118,9 @@ function updateServerStatusBadge() {
       remove = 'badge-danger'
       if (!server_log_active) {
         setTimeout(startServerLogTail('#server-log', server_log_tail_interval), 0);
-        updatePlayersInterval = setInterval(updatePlayers, 15000);
+        setTimeout(updatePlayers, 0);
+        setTimeout(updateThreads, 0);
+        updatePlayersInterval = setInterval(updatePlayers, 5000);
         updateThreadsInterval = setInterval(updateThreads, 5000)
       }
       if (!server_rcon_log_active) {

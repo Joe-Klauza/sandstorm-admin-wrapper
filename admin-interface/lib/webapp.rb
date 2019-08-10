@@ -93,11 +93,11 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   def create_buffer(uuid=nil)
     @@buffer_mutex.synchronize do
-      return unless @@buffers[uuid].nil?
+      return [uuid, @@buffers[uuid]] unless @@buffers[uuid].nil?
       uuid = Sysrandom.uuid if uuid.nil?
       buffer = Buffer.new
       @@buffers[uuid] = buffer
-      [uuid, @@buffers[uuid]]
+      [uuid, buffer]
     end
   end
 
@@ -140,7 +140,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/players' do
-    @info = @monitor.info unless @monitor.nil?
+    @info = @@daemon.monitor.info unless @@daemon.monitor.nil?
     erb :'players'
   end
 
@@ -176,6 +176,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
   get '/control' do
     @server_status = get_server_status
     erb(:'server-control', layout: :'layout-main') do
+      @info = @monitor.info unless @monitor.nil?
       erb :players
     end
   end
