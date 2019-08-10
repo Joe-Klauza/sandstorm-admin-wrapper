@@ -136,7 +136,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
     return '' if @@daemon.game_pid.nil?
     process = Sys::ProcTable.ps(pid: @@daemon.game_pid)
     threads = WINDOWS ? process.thread_count : process.nlwp
-    threads.nil? ? '' : "Threads: #{threads}"
+    output = threads.nil? ? '' : "Threads: #{threads}"
+    @info = @@daemon.monitor.info unless @@daemon.monitor.nil?
+    return output if @info.nil?
+    "#{output} | Players: #{@info[:rcon_players].size} | Bots: #{@info[:rcon_bots].size}"
   end
 
   get '/players' do

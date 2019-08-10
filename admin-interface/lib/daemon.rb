@@ -172,7 +172,7 @@ class SandstormServerDaemon
       formatter: Proc.new { |output, _| WINDOWS ? "#{datetime} | #{output.chomp}" : output.chomp } # Windows doesn't have the timestamp, so we'll add our own to make it look nice.
     ) do |pid|
       @game_pid = pid
-      Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, delay: 10) }
+      Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, interval: 5, delay: 10) }
       @rcon_tail_thread = Thread.new do
         begin
           File.open(RCON_LOG_FILE) do |log|
