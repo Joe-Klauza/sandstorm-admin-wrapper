@@ -52,7 +52,7 @@ Sandstorm Admin Wrapper is a set of tools designed to ease the burden of hosting
 
 - Windows (10 tested) or Linux (Debian 9 tested)
 - A Ruby `2.6.3` installation with the Bundler gem (`gem install bundler`). I recommend [rbenv](https://github.com/rbenv/rbenv) to manage Ruby installations on Linux and [RubyInstaller for Windows](https://rubyinstaller.org/downloads/) to install Ruby on Windows.
-- [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Cross-Platform_Installation) (extract/intall to `sandstorm-admin-wrapper/steamcmd/installation`)
+- [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Cross-Platform_Installation) (extract/install to `sandstorm-admin-wrapper/steamcmd/installation`)
 
 ### Installation
 
