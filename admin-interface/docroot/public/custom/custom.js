@@ -113,6 +113,8 @@ function updateServerStatusBadge() {
       }
       clearInterval(updatePlayersInterval);
       clearInterval(updateThreadsInterval);
+      $('#threads').html('');
+      setTimeout(updatePlayers, 50);
     } else {
       add = 'badge-success'
       remove = 'badge-danger'
