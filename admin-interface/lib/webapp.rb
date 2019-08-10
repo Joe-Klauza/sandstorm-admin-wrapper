@@ -12,6 +12,7 @@ require 'webrick'
 require 'webrick/https'
 require_relative 'logger'
 require_relative 'buffer'
+require_relative 'certificate-generator'
 require_relative 'daemon'
 require_relative 'config-handler'
 
@@ -445,6 +446,13 @@ def get_webrick_options(config = load_webapp_config)
       webrick_options.merge!({
         SSLCertificate: OpenSSL::X509::Certificate.new(File.read config['admin_interface_ssl_cert']),
         SSLPrivateKey:  OpenSSL::PKey::RSA.new(File.read config['admin_interface_ssl_key'])
+      })
+    else
+      # Make temporary cert/key, since WEBrick's defaults won't work with modern browsers
+      cert, key = CertificateGenerator.generate # WEBrick::Utils.create_self_signed_cert 2048, [["CN", "localhost"]], ""
+      webrick_options.merge!({
+        SSLCertificate: cert,
+        SSLPrivateKey: key,
       })
     end
   end
