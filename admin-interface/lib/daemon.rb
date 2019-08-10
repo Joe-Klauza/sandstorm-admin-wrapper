@@ -179,13 +179,14 @@ class SandstormServerDaemon
             log.extend(File::Tail)
             log.interval = 1
             log.backward(0)
+            last_line_was_rcon = false
             log.tail do |line|
               next if line.nil?
               if line.include? 'LogRcon'
-                @last_line_was_rcon = true
+                last_line_was_rcon = true
               elsif @last_line_was_rcon
                 if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/
-                  @last_line_was_rcon = false
+                  last_line_was_rcon = false
                   next
                 end
               else
@@ -200,7 +201,6 @@ class SandstormServerDaemon
         end
       end
     end
-    waitpid @game_pid
     log 'Game process exited', level: :info
   ensure
     begin

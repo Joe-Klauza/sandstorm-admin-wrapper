@@ -55,6 +55,7 @@ class ServerMonitor
     })
   rescue => e
     log "#{@host} RCON query failed", e
+    log "#{@host} Time since last RCON success: #{(Time.now.to_i - @info[:rcon_last_success]).to_s << 's' rescue 'Never'}", level: :warn
   end
 
   def do_server_query
@@ -72,10 +73,11 @@ class ServerMonitor
     })
   rescue => e
     log "#{@host} Server query failed", e
+    log "#{@host} Time since last server query success: #{(Time.now.to_i - @info[:a2s_last_success]).to_s << 's' rescue 'Never'}", level: :warn
   end
 
   def stop
-    @thread.kill
+    @thread.kill if @thread.respond_to?('kill')
   end
 
   def monitor

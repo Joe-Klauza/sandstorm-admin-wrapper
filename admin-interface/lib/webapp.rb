@@ -166,6 +166,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
     redirect '/control'
   end
 
+  get '/about' do
+    erb(:about, layout: :'layout-main')
+  end
+
   get '/setup' do
     @steamcmd_path, @game_server_path = check_prereqs
     erb(:'server-setup', layout: :'layout-main')
