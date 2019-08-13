@@ -117,12 +117,12 @@ class SandstormAdminWrapperSite < Sinatra::Base
           unless has_role?(role)
             log "User unauthorized: #{session[:user_name]} requesting #{role}-privileged content", level: :warn
             status 403
-            redirect "/login"
+            redirect "/login#{CGI.escape(request.path_info) unless request.path_info.casecmp('/').zero?}"
           end
         rescue => e
           log "Error checking auth status for role: #{role}", e
           status 500
-          redirect "/login"
+          redirect "/login/#{CGI.escape(request.path_info) unless request.path_info.casecmp('/').zero?}"
         end
       end
     end
@@ -154,8 +154,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   before do
     @user = $config_handler.users[session[:user_name]] if session[:user_name]
-    log "Redirecting unauthenticated user to login"
-    redirect '/login' if @user.nil? && !(request.path_info == '/login')
+    # log "Redirecting unauthenticated user to login"
+    # redirect "/login/#{CGI.escape request.path_info}" if @user.nil? && !(request.path_info.start_with? '/login')
     env["rack.errors"] = LOGGER
     check_prereqs unless @@daemon
     request.body.rewind
@@ -169,7 +169,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
   #  log "Responding: #{response.body}"
   # end
 
-  get '/login' do
+  get '/login(/:destination)?' do
+    @destination = "/#{params['destination']}".sub('/login', '')
     erb :login
   end
 
@@ -178,19 +179,25 @@ class SandstormAdminWrapperSite < Sinatra::Base
     request.body.rewind
     user = data['user']
     password = data['pass']
+    destination = "#{data['destination']}"
     if user && password
       known_user = $config_handler.users[user]
       if known_user && known_user.password == password # BCrypt::Password == string comparison
         log "#{request.ip} | Logged in as #{known_user.name}", level: :info
         session[:user_name] = known_user.name
-        return known_user.first_login? ? '/change-password' : '/'
+        return known_user.first_login? ? "/change-password#{destination}" : destination
       end
     end
     status 401
     "Failed to log in."
   end
 
-  get '/change-password', auth: :user do
+  get '/logout' do
+    session[:user_name] = nil
+  end
+
+  get '/change-password(/:destination)?', auth: :user do
+    @destination = "/#{params['destination']}".sub('/change-password', '')
     erb :'change-password'
   end
 
@@ -198,11 +205,21 @@ class SandstormAdminWrapperSite < Sinatra::Base
     data = Oj.load(request.body.read)
     request.body.rewind
     password = data['pass']
+    destination = "#{data['destination']}"
     if password.strip.empty? || @user.password_matches?(password)
       status 400
       return "Invalid password. The password must be new and not blank!"
     end
     @user.password = password
+    destination
+  end
+
+  get '/wrapper-config', auth: :host do
+    erb :'wrapper-config', layout: :'layout-main'
+  end
+
+  get '/wrapper-users', auth: :host do
+    erb :'wrapper-users', layout: :'layout-main'
   end
 
   get '/pry', auth: :host do

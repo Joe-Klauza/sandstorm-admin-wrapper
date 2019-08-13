@@ -43,17 +43,17 @@ $(document).ready(function() {
   // }
 });
 
-function logIn() {
+function logIn(destination) {
   var user = $('#user_name_input').val();
   var pass = $('#user_password_input').val();
   $.ajax({
     url: '/login',
     type: 'POST',
     contentType: "application/json",
-    data: JSON.stringify({user: user, pass: pass}),
+    data: JSON.stringify({user: user, pass: pass, destination: destination}),
     success: function(endpoint) {
       successToast("Logged in successfully!");
-      setTimeout(function() { window.location.href = endpoint; }, 1000);
+      setTimeout(function() { window.location.href = endpoint; }, 600);
     },
     error: function(request,msg,error) {
       failureToast(request.responseText);
@@ -61,7 +61,7 @@ function logIn() {
   });
 }
 
-function changePassword() {
+function changePassword(destination) {
   var pass1 = $('#user_password_input').val();
   var pass2 = $('#user_password_second_input').val();
   if (pass1 !== pass2) {
@@ -71,10 +71,10 @@ function changePassword() {
       url: '/change-password',
       type: 'POST',
       contentType: "application/json",
-      data: JSON.stringify({pass: pass1}),
-      success: function(data) {
+      data: JSON.stringify({pass: pass1, destination: destination}),
+      success: function(endpoint) {
         successToast("Password changed successfully!");
-        setTimeout(function() { window.location.href = "/"; }, 1000);
+        setTimeout(function() { window.location.href = endpoint; }, 600);
       },
       error: function(request,msg,error) {
         failureToast(request.responseText);
