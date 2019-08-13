@@ -3,7 +3,6 @@ require 'sysrandom'
 
 class User
   attr_reader :name
-  attr_reader :password # Actually the BCrypt::Password object
   attr_reader :role
 
   ROLES = {
@@ -18,7 +17,7 @@ class User
     @initial_password = initial_password
     if password
       # User info is being read from file
-      @password = BCrypt::Password.new(password)
+      @password = BCrypt::Password.new(password).to_s
     else
       generate_initial_password
     end
@@ -26,19 +25,25 @@ class User
 
   def first_login?
     return false if @initial_password.nil?
-    # Be careful of order here. LHS is a BCrypt::Password, which has its own == implementation.
-    # RHS is a String, which would never == the BCrypt::Password in the reverse order.
-    @password == @initial_password
+    password_matches?(@initial_password)
   end
 
   def generate_initial_password
     @initial_password = Sysrandom.base64(32 + Sysrandom.random_number(32))
-    @password = BCrypt::Password.create(@initial_password)
+    @password = BCrypt::Password.create(@initial_password).to_s
+  end
+
+  def password # So we can user.password == 'password'
+    BCrypt::Password.new(@password)
   end
 
   def password=(new_password)
     @initial_password = nil
-    @password = BCrypt::Password.create(new_password)
+    @password = BCrypt::Password.create(new_password).to_s
+  end
+
+  def password_matches?(password)
+    BCrypt::Password.new(@password) == password
   end
 
   def role=(new_role)

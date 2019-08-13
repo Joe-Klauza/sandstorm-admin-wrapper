@@ -7,7 +7,7 @@ require 'socket'
 require 'sysrandom'
 require_relative 'logger'
 
-CONFIG_PATH = File.join File.dirname(__FILE__), '..', 'config'
+CONFIG_PATH = File.expand_path File.join File.dirname(__FILE__), '..', 'config'
 CONFIG_FILE = File.join CONFIG_PATH, 'config.json'
 USERS_CONFIG_FILE = File.join CONFIG_PATH, 'users.json'
 
@@ -238,29 +238,34 @@ class ConfigHandler
   end
 
   def load_user_config
-    users = Oj.load File.read(USERS_CONFIG_FILE)
-    users.each do |name, data|
-      users[name] = User.new(name, data['role'], data[])
-    end
-  rescue
-    log "Failed to load user config from #{USERS_CONFIG_FILE}. Using default user config. This is expected on first start.", level: :warn
+    users = Oj.load(File.read(USERS_CONFIG_FILE))
+    users = {} if users.to_s.empty?
+    users
+  rescue Errno::ENOENT
     {
       # Set an initial password that will need to be changed on first login
       'admin' => User.new('admin', :host, password: BCrypt::Password.create('password').to_s, initial_password: 'password')
     }
+  rescue => e
+    log "Failed to load user config from #{USERS_CONFIG_FILE}. Using default user config.", e
+    raise
   end
 
   def load_server_config(file_path=CONFIG_FILE)
     @config = Oj.load File.read(file_path)
     @config.merge! get_default_config.reject { |k, _| @config.keys.include? k }
     @config
-  rescue
-    log "Failed to load config from #{file_path}. Using default config. This is expected on first start.", level: :warn
+  rescue Errno::ENOENT
     get_default_config
+  rescue => e
+    log "Failed to load config from #{file_path}. Using default config.", e
+    raise
   end
 
   def write_config(config=@config, file_path=CONFIG_FILE)
-    log "Writing config"
+    log "Writing user config"
+    File.write(USERS_CONFIG_FILE, Oj.dump(@users))
+    log "Writing server config"
     File.write(file_path + '.tmp', Oj.dump(config))
     FileUtils.mv(file_path, file_path + '.bak') if File.exist? file_path
     FileUtils.mv(file_path + '.tmp', file_path)

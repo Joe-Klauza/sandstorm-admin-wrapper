@@ -198,9 +198,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
     data = Oj.load(request.body.read)
     request.body.rewind
     password = data['pass']
-    if password.strip.empty?
+    if password.strip.empty? || @user.password_matches?(password)
       status 400
-      return "Invalid password. The password not be blank!"
+      return "Invalid password. The password must be new and not blank!"
     end
     @user.password = password
   end
