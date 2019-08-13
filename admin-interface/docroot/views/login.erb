@@ -1,0 +1,70 @@
+<html>
+  <head>
+    <title>Login</title>
+    <!-- Stylesheets -->
+    <link href="/themes/darkly.bootstrap.min.css" rel="stylesheet"/>
+    <link href="/custom/custom.css" rel="stylesheet"/>
+  </head>
+  <body>
+    <div id="toast-templates" style="display: none;">
+      <div id="toast-template-success" class="toast success_toast bg-light" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" style="display: flex;align-items: center;">
+        <div class="toast-header bg-dark">
+          <strong class="text-white">Success</strong>
+        </div>
+      </div>
+
+      <div id="toast-template-failure" class="toast failure_toast bg-light" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" style="display: flex;align-items: center;">
+        <div class="toast-header bg-danger">
+          <strong class="text-white">Failure</strong>
+        </div>
+      </div>
+    </div>
+
+    <div aria-live="polite" aria-atomic="true" style="position: fixed; min-height: 0px; z-index: 999999999 !important;">
+      <div class="d-flex flex-column" id="toast-container" style="position: fixed; top: 20px; left: 40%;">
+      </div>
+    </div>
+    <div id="login-form" class="d-flex flex-column horizontal-expand mb-3">
+      <div class="container-fluid d-flex justify-content-center bg-primary">
+        <h3 class="py-2">Login</h3>
+      </div>
+      <div class="d-flex flex-column horizontal-expand justify-content-between">
+
+      <!-- User -->
+      <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
+        <div class="p-2 col-1">User</div>
+        <div class="p-2 col-3">
+          <input id="user_name_input" type="text" class="form-control" placeholder="Your username" autocomplete="username">
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
+        <div class="p-2 col-1">Password</div>
+        <div class="p-2 col-3">
+          <input id="user_password_input" type="password" class="form-control" placeholder="Your password" autocomplete="current-password">
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
+        <div class="p-2 col-3">
+          <button id="login_submit_input" class="btn btn-info horizontal-expand mr-4" onclick="logIn();">Log In</button>
+        </div>
+      </div>
+    </div>
+  </body>
+  <!-- Bootstrap -->
+  <script src="/bootstrap/jquery.min.js"></script>
+  <script src="/bootstrap/popper.min.js"></script>
+  <script src="/bootstrap/bootstrap.min.js"></script>
+  <!-- Ours -->
+  <script src="/custom/custom.js"></script>
+  <!-- Login-specific -->
+  <script>
+    $("#login-form").keyup(function(event) {
+      if (event.keyCode === 13) {
+        $("#login_submit_input").click();
+      }
+    });
+  </script>
+<html>

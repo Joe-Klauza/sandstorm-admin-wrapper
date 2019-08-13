@@ -1,3 +1,4 @@
+require 'bcrypt'
 require 'erb'
 require 'fileutils'
 require 'inifile'
@@ -8,8 +9,10 @@ require_relative 'logger'
 
 CONFIG_PATH = File.join File.dirname(__FILE__), '..', 'config'
 CONFIG_FILE = File.join CONFIG_PATH, 'config.json'
+USERS_CONFIG_FILE = File.join CONFIG_PATH, 'users.json'
 
 WRAPPER_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..', '..')).freeze
+WEBAPP_ROOT = File.join WRAPPER_ROOT, 'admin-interface'
 SERVER_ROOT = File.join WRAPPER_ROOT, 'sandstorm-server'
 STEAMCMD_ROOT = File.join WRAPPER_ROOT, 'steamcmd'
 USER_HOME = ENV['HOME']
@@ -221,9 +224,11 @@ CONFIG_VARIABLES = {
 
 class ConfigHandler
   attr_reader :config
+  attr_reader :users
 
   def initialize
-    @config = load_config
+    @config = load_server_config
+    @users = load_user_config
   end
 
   def get_default_config
@@ -232,12 +237,25 @@ class ConfigHandler
     defaults
   end
 
-  def load_config(file_path=CONFIG_FILE)
+  def load_user_config
+    users = Oj.load File.read(USERS_CONFIG_FILE)
+    users.each do |name, data|
+      users[name] = User.new(name, data['role'], data[])
+    end
+  rescue
+    log "Failed to load user config from #{USERS_CONFIG_FILE}. Using default user config. This is expected on first start.", level: :warn
+    {
+      # Set an initial password that will need to be changed on first login
+      'admin' => User.new('admin', :host, password: BCrypt::Password.create('password').to_s, initial_password: 'password')
+    }
+  end
+
+  def load_server_config(file_path=CONFIG_FILE)
     @config = Oj.load File.read(file_path)
     @config.merge! get_default_config.reject { |k, _| @config.keys.include? k }
     @config
-  rescue => e
-    log "Failed to load config from #{file_path}. Using default config.", level: :warn
+  rescue
+    log "Failed to load config from #{file_path}. Using default config. This is expected on first start.", level: :warn
     get_default_config
   end
 

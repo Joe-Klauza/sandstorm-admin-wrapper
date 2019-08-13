@@ -15,6 +15,7 @@ require_relative 'buffer'
 require_relative 'certificate-generator'
 require_relative 'daemon'
 require_relative 'config-handler'
+require_relative 'user'
 
 Encoding.default_external = "UTF-8"
 
@@ -24,10 +25,6 @@ $config_handler = ConfigHandler.new
 class SandstormAdminWrapperSite < Sinatra::Base
   def self.set_up
     log "Initializing webserver"
-    working_directory = File.join File.dirname(__FILE__), '..', 'docroot'
-    log "Setting webserver root dir to: #{working_directory.sub(USER_HOME, '~')}", level: :info
-    set :root, working_directory
-    enable :sessions
     @@daemon = nil
     @@buffers = {}
     @@buffer_mutex = Mutex.new
@@ -71,8 +68,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   def check_prereqs
     steamcmd_path = steamcmd_installed?
-    game_server_path = game_server_installed?
     init_daemon(steamcmd_path) if steamcmd_path && @@daemon.nil?
+    game_server_path = game_server_installed?
     return [steamcmd_path, game_server_path]
   end
 
@@ -104,13 +101,67 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   set_up
 
+  configure do
+    working_directory = File.join File.dirname(__FILE__), '..', 'docroot'
+    log "Setting webserver root dir to: #{working_directory.sub(USER_HOME, '~')}", level: :info
+    set :root, working_directory
+    enable :sessions #, :logging, :dump_errors, :raise_errors, :show_exceptions
+    # use Rack::CommonLogger, LOGGER
+  end
+
+  # Add a condition that we can use for various routes
+  register do
+    def auth(role)
+      condition do
+        begin
+          unless has_role?(role)
+            log "User unauthorized: #{session[:user_name]} requesting #{role}-privileged content", level: :warn
+            status 403
+            redirect "/login"
+          end
+        rescue => e
+          log "Error checking auth status for role: #{role}", e
+          status 500
+          redirect "/login"
+        end
+      end
+    end
+  end
+
+  # Add helper functions for user authentication, etc.
+  helpers do
+    def logged_in?
+      !@user.nil?
+    end
+
+    def has_role?(role)
+      raise "Invalid role: #{role}" unless User::ROLES.keys.include?(role)
+      logged_in? && User::ROLES[@user.role] >= User::ROLES[role]
+    end
+
+    def is_host?
+      has_role(:host)
+    end
+
+    def is_admin?
+      has_role(:admin)
+    end
+
+    def is_user?
+      has_role(:user)
+    end
+  end
+
   before do
+    @user = $config_handler.users[session[:user_name]] if session[:user_name]
+    log "Redirecting unauthenticated user to login"
+    redirect '/login' if @user.nil? && !(request.path_info == '/login')
     env["rack.errors"] = LOGGER
     check_prereqs unless @@daemon
     request.body.rewind
     body = request.body.read
     request.body.rewind # Be kind
-    # message = "Request: #{request.request_method}#{' ' << request.script_name unless request.script_name.strip.empty? } #{request.path_info}#{'?' << request.query_string unless request.query_string.strip.empty?} from #{request.ip}" # Body may contain sensitive info ##{(' | Body: ' << body) unless body.strip.empty?}"
+    # message = "Request: #{request.request_method}#{' ' << request.script_name unless request.script_name.strip.empty? } #{request.path_info}#{'?' << request.query_string unless request.query_string.strip.empty?} from #{request.ip}#{(' | Body: ' << body) unless body.strip.empty?}"
     # log message
   end
 
@@ -118,7 +169,36 @@ class SandstormAdminWrapperSite < Sinatra::Base
   #  log "Responding: #{response.body}"
   # end
 
-  get '/pry' do
+  get '/login' do
+    erb :login
+  end
+
+  post '/login' do
+    data = Oj.load(request.body.read)
+    request.body.rewind
+    user = data['user']
+    password = data['pass']
+    if user && password
+      known_user = $config_handler.users[user]
+      if known_user && known_user.password == password # BCrypt::Password == string comparison
+        log "#{request.ip} | Logged in as #{known_user.name}", level: :info
+        session[:user_name] = known_user.name
+        halt 200
+      end
+    end
+    status 401
+    "Failed to log in."
+  end
+
+  get '/change-password', auth: :user do
+    "TODO"
+  end
+
+  post '/change-password', auth: :user do
+    "TODO"
+  end
+
+  get '/pry', auth: :host do
     Thread.new do
       LOGGER.threshold :fatal # Turn down STDOUT logging
       `stty echo` unless WINDOWS # Ensure we have echoing enabled; something from logging turns them off...
@@ -133,7 +213,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
   rescue Interrupt
   end
 
-  get '/threads' do
+  get '/threads', auth: :user do
     return '' if @@daemon.game_pid.nil?
     process = Sys::ProcTable.ps(pid: @@daemon.game_pid)
     threads = WINDOWS ? process.thread_count : process.nlwp
@@ -143,45 +223,45 @@ class SandstormAdminWrapperSite < Sinatra::Base
     "#{output} | Players: #{@info[:rcon_players].size} | Bots: #{@info[:rcon_bots].size}"
   end
 
-  get '/players' do
+  get '/players', auth: :user do
     @info = @@daemon.monitor.info unless @@daemon.monitor.nil?
     erb :'players'
   end
 
-  get '/update-info' do
+  get '/update-info', auth: :user do
     @update_available, @old_build, @new_build = get_update_info
     erb(:'update-info')
   end
 
-  get '/test' do
+  get '/test', auth: :user do
     # Stuff
   end
 
-  get '/restart' do
+  get '/restart', auth: :host do
     exec 'bundle', 'exec', 'ruby', $PROGRAM_NAME, *ARGV
   end
 
-  get '/' do
+  get '/', auth: :user do
     @steamcmd_path, @game_server_path = check_prereqs
     redirect '/setup' unless @steamcmd_path && @game_server_path
     redirect '/control'
   end
 
-  get '/about' do
+  get '/about', auth: :user do
     erb(:about, layout: :'layout-main')
   end
 
-  get '/setup' do
+  get '/setup', auth: :admin do
     @steamcmd_path, @game_server_path = check_prereqs
     erb(:'server-setup', layout: :'layout-main')
   end
 
-  get '/config' do
+  get '/config', auth: :admin do
     @config = $config_handler.config.dup
     erb(:'server-config', layout: :'layout-main')
   end
 
-  get '/control' do
+  get '/control', auth: :admin do
     @server_status = get_server_status
     erb(:'server-control', layout: :'layout-main') do
       @info = @monitor.info unless @monitor.nil?
@@ -189,7 +269,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  get '/tools/:resource' do
+  get '/tools/:resource', auth: :admin do
     @config = $config_handler.config.dup
     resource = params['resource']
     case resource
@@ -204,7 +284,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  post '/tools/:resource' do
+  post '/tools/:resource', auth: :admin do
     resource = params['resource']
     body = request.body.read
     options = Oj.load body, symbol_keys: true
@@ -227,7 +307,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  get '/script/:resource' do
+  get '/script/:resource', auth: :user do
     resource = params['resource']
     case resource
     when 'server-status'
@@ -238,7 +318,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  get '/buffer/:uuid(/:bookmark)?' do
+  get '/buffer/:uuid(/:bookmark)?', auth: :admin do # Sensitive information could be contained in these buffers (passwords, paths); admins only.
     uuid = params['uuid']
     unless @@buffers.keys.include? uuid
       status 400
@@ -301,7 +381,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  post '/control/:thread/:action' do
+  post '/control/:thread/:action', auth: :admin do
     if @@daemon.nil?
       status 400
       return 'Server daemon not configured; ensure setup is complete.'
@@ -370,7 +450,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  get '/config/file/:file' do
+  get '/config/file/:file', auth: :admin do
     file = File.join CONFIG_FILES_DIR, params['file'].gsub('..', '')
     if File.exist? file
       File.read(file)
@@ -380,7 +460,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  post '/config/file/:file' do
+  post '/config/file/:file', auth: :admin do
     file = params['file']
     content = params['content']
     content << "\n" unless content.end_with? "\n"
@@ -388,7 +468,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     "Wrote #{file}."
   end
 
-  put '/config/:action' do
+  put '/config/:action', auth: :admin do
     if params['action'] == 'set'
       begin
         status, msg, current, old = $config_handler.set params['variable'], params['value']

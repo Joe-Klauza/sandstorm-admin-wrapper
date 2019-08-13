@@ -43,6 +43,24 @@ $(document).ready(function() {
   // }
 });
 
+function logIn() {
+  var user = $('#user_name_input').val();
+  var pass = $('#user_password_input').val();
+  $.ajax({
+    url: '/login',
+    type: 'POST',
+    contentType: "application/json",
+    data: JSON.stringify({user: user, pass: pass}),
+    success: function(data) {
+      successToast("Logged in successfully!");
+      window.location.href = "/";
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+    }
+  });
+}
+
 function updateServerUpdateInfo() {
   $.ajax({
     url: '/update-info',
