@@ -183,7 +183,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
       if known_user && known_user.password == password # BCrypt::Password == string comparison
         log "#{request.ip} | Logged in as #{known_user.name}", level: :info
         session[:user_name] = known_user.name
-        halt 200
+        return known_user.first_login? ? '/change-password' : '/'
       end
     end
     status 401
@@ -191,11 +191,18 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/change-password', auth: :user do
-    "TODO"
+    erb :'change-password'
   end
 
   post '/change-password', auth: :user do
-    "TODO"
+    data = Oj.load(request.body.read)
+    request.body.rewind
+    password = data['pass']
+    if password.strip.empty?
+      status 400
+      return "Invalid password. The password not be blank!"
+    end
+    @user.password = password
   end
 
   get '/pry', auth: :host do

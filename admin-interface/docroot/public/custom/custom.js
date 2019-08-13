@@ -51,14 +51,36 @@ function logIn() {
     type: 'POST',
     contentType: "application/json",
     data: JSON.stringify({user: user, pass: pass}),
-    success: function(data) {
+    success: function(endpoint) {
       successToast("Logged in successfully!");
-      window.location.href = "/";
+      setTimeout(function() { window.location.href = endpoint; }, 1000);
     },
     error: function(request,msg,error) {
       failureToast(request.responseText);
     }
   });
+}
+
+function changePassword() {
+  var pass1 = $('#user_password_input').val();
+  var pass2 = $('#user_password_second_input').val();
+  if (pass1 !== pass2) {
+    failureToast("Given passwords do not match.");
+  } else {
+    $.ajax({
+      url: '/change-password',
+      type: 'POST',
+      contentType: "application/json",
+      data: JSON.stringify({pass: pass1}),
+      success: function(data) {
+        successToast("Password changed successfully!");
+        setTimeout(function() { window.location.href = "/"; }, 1000);
+      },
+      error: function(request,msg,error) {
+        failureToast(request.responseText);
+      }
+    });
+  }
 }
 
 function updateServerUpdateInfo() {
