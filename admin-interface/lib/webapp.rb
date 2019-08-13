@@ -194,6 +194,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/logout' do
     session[:user_name] = nil
+    redirect '/login'
   end
 
   get '/change-password(/:destination)?', auth: :user do
