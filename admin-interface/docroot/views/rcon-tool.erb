@@ -42,7 +42,7 @@
           <button type="button" class="btn btn-info m-1" onclick="
           if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) {
             tailProcess('#rcon-log',
-              `/tools/rcon`, 1000,
+              '/rcon', 1000,
                 {'command': $('#rcon_input').val() || $('#rcon_input').attr('placeholder'),
                  'host': $('#target_host_input').val() || $('#target_host_input').attr('placeholder'),
                  'port': $('#server_rcon_port_input').val() || $('#server_rcon_port_input').attr('placeholder'),

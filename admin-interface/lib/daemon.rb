@@ -21,13 +21,13 @@ class SandstormServerDaemon
   attr_reader :threads
   attr_reader :monitor
 
-  def initialize(executable, server_root_dir, steamcmd_path, steam_appinfovdf_path, server_buffer, rcon_buffer)
+  def initialize(executable, server_root_dir, steamcmd_path, steam_appinfovdf_path, rcon_client, server_buffer, rcon_buffer)
     @executable = executable
     @server_root_dir = server_root_dir
     @rcon_ip = '127.0.0.1'
     @buffer = server_buffer
     @rcon_buffer = rcon_buffer
-    @rcon_client = RconClient.new
+    @rcon_client = rcon_client
     @server_updater = ServerUpdater.new(server_root_dir, steamcmd_path, steam_appinfovdf_path)
     @game_pid = nil
     @monitor = nil

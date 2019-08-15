@@ -16,6 +16,7 @@ require_relative 'certificate-generator'
 require_relative 'daemon'
 require_relative 'config-handler'
 require_relative 'user'
+require_relative 'rcon-client'
 
 Encoding.default_external = "UTF-8"
 
@@ -29,6 +30,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @@monitors = {}
     @@buffers = {}
     @@buffer_mutex = Mutex.new
+    @@rcon_client = RconClient.new
     $config_handler.init_server_config_files
   end
 
@@ -85,6 +87,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
       File.join(WRAPPER_ROOT, 'sandstorm-server'),
       steamcmd_path,
       $config_handler.config['steam_appinfovdf_path'],
+      @@rcon_client,
       create_buffer('0').last,
       create_buffer('1').last
     )
@@ -432,8 +435,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
   get '/control', auth: :admin do
     @server_status = get_server_status
     erb(:'server-control', layout: :'layout-main') do
-      @monitor = @@daemon.monitor
-      @info = @monitor.info unless @monitor.nil?
+      redirect '/setup' if @@daemon.nil?
+      @monitor = @@daemon.monitor rescue nil
+      @info = @monitor.info rescue nil
       erb :players
     end
   end
@@ -445,7 +449,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
     when 'rcon'
       erb(:'rcon-tool', layout: :'layout-main')
     when 'steamcmd'
-      @server_root_dir = @@daemon.server_root_dir
+      @server_root_dir = @@daemon.server_root_dir rescue nil
+      redirect '/setup' if @server_root_dir.nil?
       erb(:'steamcmd-tool', layout: :'layout-main')
     when 'monitor'
       erb(:'monitor-tool', layout: :'layout-main')
@@ -461,13 +466,6 @@ class SandstormAdminWrapperSite < Sinatra::Base
     options = Oj.load body, symbol_keys: true
     request.body.rewind
     case resource
-    when 'rcon'
-      options = Oj.load body, symbol_keys: true
-      options.select { |_, v| v.nil? }.each { |k, _| options.delete k }
-      uuid, buffer = create_buffer
-      options[:buffer] = buffer
-      Thread.new { @@daemon.do_send_rcon(options.delete(:command), options) }
-      uuid
     when 'steamcmd'
       uuid, buffer = create_buffer
       Thread.new { @@daemon.do_run_steamcmd(options[:command].split("\n"), buffer: buffer) }
@@ -560,8 +558,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
     thread = params['thread']
     action = params['action']
     body = request.body.read
-    options = Oj.load body, symbol_keys: true
     request.body.rewind
+    options = Oj.load body, symbol_keys: true
     validate = params['validate'] == "true"
     case thread
     when 'server'
@@ -771,16 +769,26 @@ class SandstormAdminWrapperSite < Sinatra::Base
     case params[:action]
     when 'ban'
       uuid, buffer = create_buffer
-      Thread.new { @@daemon.do_send_rcon("permban #{steam_id}", host: data['ip'], port: data['port'], pass: data['pass'], buffer: buffer) }
+      Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "permban #{steam_id}", buffer: buffer) }
       uuid
     when 'kick'
       uuid, buffer = create_buffer
-      Thread.new { @@daemon.do_send_rcon("kick #{steam_id}", host: data['ip'], port: data['port'], pass: data['pass'], buffer: buffer) }
+      Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "kick #{steam_id}", buffer: buffer) }
       uuid
     else
       status 400
       'Unknown action'
     end
+  end
+
+  post '/rcon', auth: :admin do
+    body = request.body.read
+    request.body.rewind
+    options = Oj.load body, symbol_keys: true
+    log "Calling RCON client for command: [#{options[:host]}:#{options[:port]}] (TX >>) #{options[:command]}"
+    uuid, buffer = create_buffer
+    Thread.new { @@rcon_client.send(options[:host], options[:port], options[:pass], options[:command], buffer: buffer) }
+    uuid
   end
 end
 

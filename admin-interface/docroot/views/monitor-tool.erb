@@ -94,7 +94,7 @@
       <div class="col-2 justify-content-end">
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="$('#rcon_input').val('');">Clear</button>
-          <button type="button" class="btn btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon?ip=&port=&pass=`, 1000, {'command': $('#rcon_input').val() || $('#rcon_input').attr('placeholder'),
+          <button type="button" class="btn btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  '/rcon', 1000, {'command': $('#rcon_input').val() || $('#rcon_input').attr('placeholder'),
                  'host': $('#ip').val() || $('#ip').attr('placeholder'),
                  'port': $('#rcon_port').val() || $('#rcon_port').attr('placeholder'),
                  'pass': $('#rcon_password').val() || $('#rcon_password').attr('placeholder')});}">Send</button>
