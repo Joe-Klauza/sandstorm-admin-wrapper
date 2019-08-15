@@ -1,0 +1,10 @@
+<% @configs.sort_by { |name, _| name }.each do |name, config| %>
+<div class="horizontal-expand d-flex justify-content-between">
+  <a href="#" class="col-9 dropdown-item horizontal-expand" onclick="loadMonitorConfig('<%= name %>');">
+    <div style="font-size: small; padding: 0;"><%= name %></div>
+  </a>
+  <a href="#" class="col-3 dropdown-item" onclick="deleteMonitorConfig('<%= name %>');">
+    <span aria-hidden="true">&times;</span>
+  </a>
+</div>
+<% end %>

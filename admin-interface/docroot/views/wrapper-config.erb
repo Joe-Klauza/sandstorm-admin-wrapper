@@ -1,0 +1,120 @@
+<div class="d-flex flex-column horizontal-expand mb-3">
+  <div class="container-fluid d-flex justify-content-center bg-info m-1">
+    <h3 class="py-2">Wrapper Config</h3>
+  </div>
+  <div class="d-flex flex-column horizontal-expand justify-content-between">
+    <!-- Server Hostname -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2">Bind IP</div>
+      <div class="p-2 col">
+        <input id="admin_interface_bind_ip" type="text" class="form-control" placeholder="<%= @config['admin_interface_bind_ip'] %>">
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoWrapperConfig('admin_interface_bind_ip');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setWrapperConfig('admin_interface_bind_ip', $('#admin_interface_bind_ip').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bind Port -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2">Bind Port</div>
+      <div class="p-2 col">
+        <input id="admin_interface_bind_port" type="text" class="form-control" placeholder="<%= @config['admin_interface_bind_port'] %>">
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoWrapperConfig('admin_interface_bind_port');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setWrapperConfig('admin_interface_bind_port', $('#admin_interface_bind_port').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Use SSL -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2">Use SSL (HTTPS)</div>
+      <div class="p-2 col justify-content-end">
+          <div class="custom-control custom-switch p-2 ml-5">
+            <input type="checkbox" class="custom-control-input" id="admin_interface_use_ssl" <%= 'checked' if @config['admin_interface_use_ssl'] %>>
+            <label class="custom-control-label" for="admin_interface_use_ssl">Use SSL</label>
+          </div>
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="setWrapperConfig('admin_interface_use_ssl', !$('#admin_interface_use_ssl')[0].checked); toggleChecked('#admin_interface_use_ssl');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setWrapperConfig('admin_interface_use_ssl', $('#admin_interface_use_ssl')[0].checked);">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verify SSL -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2">Verify SSL (strict)</div>
+      <div class="p-2 col justify-content-end">
+          <div class="custom-control custom-switch p-2 ml-5">
+            <input type="checkbox" class="custom-control-input" id="admin_interface_verify_ssl" <%= 'checked' if @config['admin_interface_verify_ssl'] %>>
+            <label class="custom-control-label" for="admin_interface_verify_ssl">Verify SSL</label>
+          </div>
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="setWrapperConfig('admin_interface_verify_ssl', !$('#admin_interface_verify_ssl')[0].checked); toggleChecked('#admin_interface_verify_ssl');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setWrapperConfig('admin_interface_verify_ssl', $('#admin_interface_verify_ssl')[0].checked);">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SSL Cert Path -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2">SSL Cert Path</div>
+      <div class="p-2 col">
+        <input id="admin_interface_ssl_cert" type="text" class="form-control" placeholder="<%= @config['admin_interface_ssl_cert'] %>">
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoWrapperConfig('admin_interface_ssl_cert');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setWrapperConfig('admin_interface_ssl_cert', $('#admin_interface_ssl_cert').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SSL Key Path -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2">SSL Key Path</div>
+      <div class="p-2 col">
+        <input id="admin_interface_ssl_key" type="text" class="form-control" placeholder="<%= @config['admin_interface_ssl_key'] %>">
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoWrapperConfig('admin_interface_ssl_key');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setWrapperConfig('admin_interface_ssl_key', $('#admin_interface_ssl_key').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Secret -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2">Session Secret</div>
+      <div class="p-2 col-4">
+        <input id="admin_interface_session_secret" type="text" class="form-control blur" placeholder="<%= @config['admin_interface_session_secret'] %>">
+      </div>
+      <div class="p-2 col-2">
+        <button id="admin_interface_session_secret_revealer" type="button" class="btn btn-success horizontal-expand mr-4" onclick="revealHide('#admin_interface_session_secret', '#admin_interface_session_secret_revealer');">Reveal</button>
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoWrapperConfig('admin_interface_session_secret');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setWrapperConfig('admin_interface_session_secret', $('#admin_interface_session_secret').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Restart Wrapper -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2"><button type="button" class="btn btn-danger m-1" onclick="restartWrapper();">Restart Wrapper</button></div>
+      <div class="p-2 col text-dark">This also stops anything the wrapper was doing (Sandstorm server, SteamCMD, etc.).</div>
+    </div>
+
+  </div>
+</div>

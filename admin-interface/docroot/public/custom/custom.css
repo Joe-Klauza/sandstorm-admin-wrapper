@@ -98,6 +98,38 @@ div {
   white-space: pre;
 }
 
+/* Pushy */
+.pushy {
+  overflow-x: hidden;
+  width: 250px; /* Keep horizontal scrollbar from appearing */
+}
+
+/* Change width to 250px */
+.pushy-left{
+    transform: translate3d(-250px,0,0); /* Updated the values */
+    /* Don't forget the vendor prefixes */
+}
+
+.pushy-open-left #container,
+.pushy-open-left .push {
+    transform: translate3d(250px, 0, 0); /* Updated the values */
+}
+
+.pushy-right {
+    transform: translate3d(250px, 0, 0); /* Updated the values */
+    /* Don't forget the vendor prefixes */
+}
+
+.pushy-open-right #container,
+.pushy-open-right .push {
+    transform: translate3d(-250px, 0, 0); /* Updated the values */
+    /* Don't forget the vendor prefixes */
+}
+
+.pushy-submenu > ul {
+  padding-inline-start: 22px; /* Ensure bullets stay visible when zooming out */
+}
+
 /* Log */
 .log {
   background: lightgray;

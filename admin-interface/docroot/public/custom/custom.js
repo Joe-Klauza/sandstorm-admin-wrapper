@@ -14,7 +14,7 @@ var server_log_tail_interval = 250;
 
 var updatePlayersInterval = null;
 var updateThreadsInterval = null;
-
+var updateMonitoringDetailsInterval = null;
 
 $(document).ready(function() {
 //   $("body").tooltip({ selector: '[data-toggle=tooltip]', trigger : tooltipTrigger });
@@ -29,6 +29,14 @@ $(document).ready(function() {
   //   });
   // }
 
+  if ($('#server-monitor-configs').length) {
+    setTimeout(loadMonitorConfigs('#server-monitor-configs'), 0);
+  }
+
+  if ($('#active-server-monitors').length) {
+    setTimeout(loadActiveMonitors('#active-server-monitors'), 0);
+  }
+
   if ($('#server-status').length) {
     setInterval(updateServerStatusBadge, 500);
   }
@@ -38,10 +46,204 @@ $(document).ready(function() {
     setInterval(updateServerUpdateInfo, 30000);
   }
 
-  // if ($('#server-log-container').length) {
-  //   $( "#server-log-container" ).resizable({ handles: "n, e, s, w, se, sw, nw, ne" });
-  // }
+  $('#confirm_modal').on('show.bs.modal', function() {
+    var modalParent = $("#region_modal");
+    $(modalParent).css('opacity', 0);
+  }).on('hidden.bs.modal', function (){
+    var modalParent = $("#region_modal");
+    $(modalParent).css('opacity', 1);
+  });
+
 });
+
+function deleteMonitorConfig(name) {
+  $.ajax({
+    url: `/monitor-config/${encodeURIComponent(name)}`,
+    type: 'DELETE',
+    success: function(message) {
+      successToast(message);
+      loadMonitorConfigs('#server-monitor-configs');
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+    }
+  });
+}
+
+function loadMonitorConfig(name) {
+  $.get(`/monitor-config?name=${encodeURIComponent(name)}`, function(data) {
+    data = JSON.parse(data);
+    $('#name').val(name);
+    $('#ip').val(data['ip']);
+    $('#query_port').val(data['query_port']);
+    $('#rcon_port').val(data['rcon_port']);
+    $('#rcon_password').val(data['rcon_password']);
+    monitorButtonStart();
+  });
+}
+
+function monitorButtonStart() {
+  $('#start-stop-monitor').html('Start Monitor');
+  $('#start-stop-monitor').addClass('btn-success');
+  $('#start-stop-monitor').removeClass('btn-warning');
+}
+
+function monitorButtonStop() {
+  $('#start-stop-monitor').html('Stop Monitor');
+  $('#start-stop-monitor').removeClass('btn-success');
+  $('#start-stop-monitor').addClass('btn-warning');
+}
+
+function startMonitoringDetailsInterval(ip, rcon_port, element) {
+  clearInterval(updateMonitoringDetailsInterval);
+  setTimeout(function() { updateMonitoringDetails(ip, rcon_port, element); }, 750);
+  updateMonitoringDetailsInterval = setInterval(function() { updateMonitoringDetails(ip, rcon_port, element); }, 2000);
+}
+
+function loadActiveMonitors(element) {
+  if (typeof element === 'undefined') {
+    element = "#active-server-monitors"
+  }
+  $.get('/monitors', function(data) { $(element).html(data); });
+}
+
+function loadMonitorConfigs(element) {
+  $.get('/monitor-configs', function(data) { $(element).html(data); });
+}
+
+function toggleMonitor(name, ip, query_port, rcon_port, rcon_password) {
+  if ($('#start-stop-monitor').html() === 'Start Monitor') {
+    startMonitor(name, ip, query_port, rcon_port, rcon_password);
+  } else {
+    stopMonitor(ip, rcon_port);
+  }
+}
+
+function updateMonitoringDetails(ip, rcon_port, element) {
+  if (typeof element === 'undefined') {
+    element = '#monitoring-details'
+  }
+  $.get(`/monitoring-details/${ip}/${rcon_port}`, function(data){ $(element).html(data); });
+}
+
+function startMonitor(name, ip, query_port, rcon_port, rcon_password) {
+  $.ajax({
+    url: '/monitor/start',
+    type: 'POST',
+    contentType: "application/json",
+    data: JSON.stringify({config: {name: name, ip: ip, query_port: query_port, rcon_port: rcon_port, rcon_password: rcon_password}}),
+    success: function(message) {
+      successToast(message);
+      monitorButtonStop();
+      startMonitoringDetailsInterval(ip, rcon_port);
+      loadActiveMonitors();
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+      monitorButtonStop();
+      startMonitoringDetailsInterval(ip, rcon_port);
+      loadActiveMonitors();
+    }
+  });
+}
+
+function stopMonitor(ip, rcon_port) {
+  $.ajax({
+    url: '/monitor/stop',
+    type: 'POST',
+    contentType: "application/json",
+    data: JSON.stringify({config: {ip: ip, rcon_port: rcon_port}}),
+    success: function(message) {
+      successToast(message);
+      monitorButtonStart();
+      clearInterval(updateMonitoringDetailsInterval);
+      loadActiveMonitors();
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+      monitorButtonStart();
+      clearInterval(updateMonitoringDetailsInterval);
+      loadActiveMonitors();
+    }
+  });
+}
+
+function saveMonitorConfig(name, ip, query_port, rcon_port, rcon_password) {
+  $.ajax({
+    url: `/monitor-config/${name}`,
+    type: 'POST',
+    contentType: "application/json",
+    data: JSON.stringify({config: {ip: ip, query_port: query_port, rcon_port: rcon_port, rcon_password: rcon_password}}),
+    success: function(message) {
+      successToast(message);
+      loadMonitorConfigs('#server-monitor-configs');
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+    }
+  });
+}
+
+function createUser(name, role) {
+  $.ajax({
+    url: '/wrapper-users/create',
+    type: 'POST',
+    contentType: "application/json",
+    data: JSON.stringify({name: name, role: role}),
+    success: function(message) {
+      successToast(message);
+      $.get('/wrapper-users-list', function(data) { $('#users').html(data); });
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+    }
+  });
+}
+
+function deleteUser(id) {
+  $.ajax({
+    url: '/wrapper-users/delete',
+    type: 'POST',
+    contentType: "application/json",
+    data: JSON.stringify({id: id}),
+    success: function(message) {
+      successToast(message);
+      $.get('/wrapper-users-list', function(data) { $('#users').html(data); });
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+    }
+  });
+}
+
+function saveUser(id, name, role) {
+  $.ajax({
+    url: '/wrapper-users/save',
+    type: 'POST',
+    contentType: "application/json",
+    data: JSON.stringify({id: id, name: name, role: role}),
+    success: function(message) {
+      successToast(message);
+      $.get('/wrapper-users-list', function(data) { $('#users').html(data); });
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+    }
+  });
+}
+
+function restartWrapper() {
+  $.ajax({
+    url: '/restart-wrapper',
+    type: 'POST',
+    success: function(endpoint) {
+      successToast("Wrapper is restarting.");
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+    }
+  });
+}
 
 function logIn(destination) {
   var user = $('#user_name_input').val();
@@ -53,7 +255,7 @@ function logIn(destination) {
     data: JSON.stringify({user: user, pass: pass, destination: destination}),
     success: function(endpoint) {
       successToast("Logged in successfully!");
-      setTimeout(function() { window.location.href = endpoint; }, 600);
+      setTimeout(function() { window.location.href = (endpoint || '/'); }, 600);
     },
     error: function(request,msg,error) {
       failureToast(request.responseText);
@@ -119,7 +321,7 @@ function updatePlayers() {
     url: '/players',
     type: 'GET',
     success: function(data) {
-      $('#players').replaceWith(data);
+      $('#players').html(data);
     },
     error: function(request,msg,error) {
       console.log("Failed to request players.");
@@ -248,12 +450,16 @@ function failureToast(string) {
   });
 }
 
-function copyToClipboard(element) {
+function copyToClipboard(element, sensitive) {
   var $temp = $("<input>");
   $("body").append($temp);
   $temp.val($(element).text().trim()).select();
   document.execCommand("copy");
-  successToast(`Successfully copied '${$temp.val()}' to clipboard!`);
+  if (typeof sensitive === 'undefined' || !sensitive) {
+    successToast(`Successfully copied '${$temp.val()}' to clipboard!`);
+  } else {
+    successToast(`Successfully copied text to clipboard!`);
+  }
   $temp.remove();
 }
 
@@ -328,6 +534,31 @@ function setServerConfig(variable, value) {
           setTimeout(getConfigFileContent('#game-ini'), 0);
           setTimeout(getConfigFileContent('#engine-ini'), 0);
         }
+        successToast(response);
+      },
+      error: function(request,msg,error) {
+        failureToast(request.responseText);
+      }
+  });
+}
+
+function undoWrapperConfig(variable) {
+  var previous = $(`#${variable}`).attr('previous');
+  if (previous) {
+    setWrapperConfig(variable, previous);
+  } else {
+    failureToast("No previous value to reinstate.");
+  }
+}
+
+function setWrapperConfig(variable, value) {
+  $.ajax({
+      url: `/wrapper-config/set?variable=${encodeURIComponent(variable)}&value=${encodeURIComponent(value)}`,
+      type: 'PUT',
+      success: function(response) {
+        $(`#${variable}`).attr('previous', $(`#${variable}`).attr('placeholder'));
+        if ($(`#${variable}`).is('[placeholder]')) { $(`#${variable}`).attr('placeholder', value); }
+        $(`#${variable}`).val("");
         successToast(response);
       },
       error: function(request,msg,error) {
@@ -415,7 +646,7 @@ function tailBuffer(logElement, interval, uuid, bookmark) {
     type: 'GET',
     success: function(data) {
       var response = $.parseJSON(data);
-      console.log("Got response for URL: " + url);
+      // console.log("Got response for URL: " + url);
       // console.log("Data: " + JSON.stringify(response));
       if (typeof response.status !== 'undefined') {
         // Command is finished (status and message received)
@@ -454,6 +685,42 @@ function tailBuffer(logElement, interval, uuid, bookmark) {
         server_rcon_log_active = false;
       }
       console.log(request.responseText);
+    }
+  });
+}
+
+function playerBan(ip, port, pass, steam_id, reason, log_element) {
+  if (typeof log_element === 'undefined') {
+    log_element = '#rcon-log'
+  }
+  $.ajax({
+    url: `/admin/ban/${steam_id}`,
+    data: JSON.stringify({reason: reason, ip: ip, port: port, pass: pass}),
+    type: 'POST',
+    success: function(response) {
+      successToast(`Banning ${steam_id}`);
+      tailBuffer(log_element, 200, response);
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
+    }
+  });
+}
+
+function playerKick(ip, port, pass, steam_id, reason, log_element) {
+  if (typeof log_element === 'undefined') {
+    log_element = '#rcon-log'
+  }
+  $.ajax({
+    url: `/admin/kick/${steam_id}`,
+    data: JSON.stringify({reason: reason, ip: ip, port: port, pass: pass}),
+    type: 'POST',
+    success: function(response) {
+      successToast(`Kicking ${steam_id}`);
+      tailBuffer(log_element, 200, response);
+    },
+    error: function(request,msg,error) {
+      failureToast(request.responseText);
     }
   });
 }

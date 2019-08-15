@@ -147,7 +147,7 @@ class SandstormServerDaemon
   end
 
   def kill_server_process(signal: nil)
-    signal = 'KILL' if signal.nil?
+    signal = 'KILL' if signal.nil? # TERM can hang shutting down EAC. KILL doesn't, but might not disconnect players (instead they time out).
     return "Unable to send #{signal} (#{Signal.list[signal]}) signal to server; no known PID!" unless @game_pid
     message = "Sent #{signal} (#{Signal.list[signal]}) signal to PID #{@game_pid}."
     Process.kill(signal, @game_pid)
@@ -184,7 +184,7 @@ class SandstormServerDaemon
               next if line.nil?
               if line.include? 'LogRcon'
                 last_line_was_rcon = true
-              elsif @last_line_was_rcon
+              elsif last_line_was_rcon
                 if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/
                   last_line_was_rcon = false
                   next
@@ -199,6 +199,9 @@ class SandstormServerDaemon
           log "Error in RCON tail thread (retrying)", e
           retry
         end
+      ensure
+        @rcon_buffer[:message] = "RCON log tailing complete."
+        @rcon_buffer[:status] = true
       end
     end
     log 'Game process exited', level: :info
@@ -213,6 +216,7 @@ class SandstormServerDaemon
     @rcon_tail_thread = nil
     socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
     @rcon_client.delete_socket(socket) unless socket.nil?
+    Thread.new { $config_handler.apply_server_bans }
   end
 
   def get_game_server_thread

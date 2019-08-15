@@ -1,0 +1,11 @@
+<% @monitors.sort_by {|_, monitor| monitor.name }.each do |key, monitor| %>
+<div class="horizontal-expand d-flex justify-content-between">
+  <a href="#" class="col-10 dropdown-item horizontal-expand d-flex justify-content-between" onclick="monitorButtonStop();startMonitoringDetailsInterval('<%= key.split(':').first %>', '<%= key.split(':').last%>');">
+    <div class="col-6 horizontal-expand" style="font-size: small; padding: 0;"><%= monitor.name %></div>
+    <div class="col-6 horizontal-expand" style="font-size: small; padding: 0;"><%= "[#{key}]" %></div>
+  </a>
+  <a href="#" class="col-2 dropdown-item text-right" onclick="stopMonitor('<%= key.split(':').first %>', '<%= key.split(':').last%>');">
+    <span aria-hidden="true">&times;</span>
+  </a>
+</div>
+<% end %>

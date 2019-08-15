@@ -1,0 +1,26 @@
+<% server_down = @info[:server_down].nil? ? true : @info[:server_down] %>
+<% rcon_down = @info[:rcon_connection_problem].nil? ? true : @info[:rcon_connection_problem] %>
+<% query_down = @info[:a2s_connection_problem].nil? ? true : @info[:a2s_connection_problem] %>
+<div class="d-flex flex-column horizontal-expand">
+  <!-- Server Status -->
+  <div id='remote-server-status' class='horizontal-expand'>
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="ml-4 p-2 col-3">
+        <div class="ml-4 p-2">Server Status</div>
+        <div class="ml-4 p-2 col-3"><span id="remote-server-status" class="monospace-font horizontal-expand text-center badge badge-<%= server_down ? 'danger' : 'success' %>"><%= server_down ? 'Down' : 'Up' %></span></div>
+      </div>
+      <div class="ml-4 p-2 col-3">
+        <div class="ml-4 p-2">RCON Status</div>
+        <div class="ml-4 p-2 col-3"><span id="remote-server-status" class="monospace-font horizontal-expand text-center badge badge-<%= rcon_down ? 'danger' : 'success' %>"><%= rcon_down ? 'Down' : 'Up' %></span></div>
+      </div>
+      <div class="ml-4 p-2 col-3">
+        <div class="ml-4 p-2">Query Status</div>
+        <div class="ml-4 p-2 col-3"><span id="remote-server-status" class="monospace-font horizontal-expand text-center badge badge-<%= query_down ? 'danger' : 'success' %>"><%= query_down ? 'Down' : 'Up' %></span></div>
+      </div>
+    </div>
+  </div>
+  <!-- Players -->
+  <div id='players' class="horizontal-expand">
+    <%= erb :players %>
+  </div>
+</div>

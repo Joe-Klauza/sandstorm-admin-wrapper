@@ -5,32 +5,54 @@ require_relative 'server-query'
 
 class ServerMonitor
   attr_reader :info
+  attr_reader :name
+  attr_reader :ip
+  attr_reader :query_port
+  attr_reader :rcon_port
+  attr_reader :rcon_pass
 
-  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0)
+  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0, rcon_fail_limit: 120, query_fail_limit: 60, name: '')
+    @stop = false
     @ip = ip
     @query_port = query_port
     @rcon_port = rcon_port
     @rcon_pass = rcon_pass
     @interval = interval
+    @rcon_fail_limit = rcon_fail_limit
+    @query_fail_limit = query_fail_limit
+    @name = name
 
     @rcon_client = RconClient.new
     @info = {
+      a2s_connection_problem: true,
+      rcon_connection_problem: true,
+      server_down: true,
       rcon_players: nil,
       rcon_bots: nil,
-      rcon_last_success: nil,
+      rcon_last_success: Time.now.to_i,
       a2s_info: nil,
       a2s_player: nil,
       a2s_rules: nil,
-      a2s_last_success: nil
+      a2s_last_success: Time.now.to_i
     }
+    @player_log = []
     @host = "#{ip}:[#{query_port},#{rcon_port}]"
-
-    if delay > 0
-      log "#{@host} Waiting #{delay} seconds to monitor"
-      sleep delay
+    @thread = Thread.new do
+      if delay > 0
+        log "Waiting #{delay} seconds to monitor"
+        sleep delay
+      end
+      @thread = monitor unless @stop
     end
-    @thread = monitor
-    log "#{@host} Initialized monitor"
+    log "Initialized monitor"
+  end
+
+  def [](thing)
+    @info[thing]
+  end
+
+  def log(message, exception=nil, level: :debug)
+    super("#{@host} Monitor | #{message}", exception, level: level) # Call the log function created by logger
   end
 
   def get_uptime(original_start, now=Time.now.to_i)
@@ -45,68 +67,92 @@ class ServerMonitor
     uptime
   end
 
+  def process_rcon_players(rcon_players, prev_rcon_players)
+    "TODO"
+  end
+
   def do_rcon_query
     rcon_players, rcon_bots = @rcon_client.get_players_and_bots(@ip, @rcon_port, @rcon_pass)
-    log "#{@host} Got RCON players: #{rcon_players}"
+    process_rcon_players(rcon_players, @info[:rcon_players])
+    log "Got RCON players: #{rcon_players}"
     @info.merge!({
+      rcon_connection_problem: false,
+      server_down: false,
       rcon_players: rcon_players,
       rcon_bots: rcon_bots,
       rcon_last_success: Time.now.to_i
     })
   rescue => e
-    log "#{@host} RCON query failed", e
-    log "#{@host} Time since last RCON success: #{(Time.now.to_i - @info[:rcon_last_success]).to_s << 's' rescue 'Never'}", level: :warn
+    log "RCON query failed", e
+    @info[:rcon_connection_problem] = true
+    rcon_fail_time = Time.now.to_i - @info[:rcon_last_success]
+    log "Time since last RCON success: #{rcon_fail_time.to_s << 's'}", level: rcon_fail_time > @rcon_fail_limit ? :error : :warn
+    @info.merge[:server_down] = true if rcon_fail_time > @rcon_fail_limit
   end
 
   def do_server_query
     a2s_info = ServerQuery::a2s_info(@ip, @query_port)
-    log "#{@host} Got A2S_INFO: #{a2s_info}"
+    log "Got A2S_INFO: #{a2s_info}"
     a2s_player = ServerQuery::a2s_player(@ip, @query_port)
-    log "#{@host} Got A2S_PLAYER: #{a2s_player}"
+    log "Got A2S_PLAYER: #{a2s_player}"
     a2s_rules = ServerQuery::a2s_rules(@ip, @query_port)
-    log "#{@host} Got A2S_RULES: #{a2s_rules}"
+    log "Got A2S_RULES: #{a2s_rules}"
+    # Sometimes the server can be in a zombie state where server query succeeds
+    # but nothing else works (including RCON); i.e. we shouldn't set server_down: false
+    # based on a successful server query response (but failure is more often
+    # indicative of an issue than RCON, which is more buggy)
     @info.merge!({
+      a2s_connection_problem: false,
       a2s_info: a2s_info,
       a2s_player: a2s_player,
       a2s_rules: a2s_rules,
       a2s_last_success: Time.now.to_i
     })
   rescue => e
-    log "#{@host} Server query failed", e
-    log "#{@host} Time since last server query success: #{(Time.now.to_i - @info[:a2s_last_success]).to_s << 's' rescue 'Never'}", level: :warn
+    log "Server query failed", e
+    @info[:a2s_connection_problem] = true
+    query_fail_time = Time.now.to_i - @info[:a2s_last_success]
+    log "Time since last server query success: #{query_fail_time.to_s << 's'}", level: query_fail_time > @query_fail_limit ? :error : :warn
+    @info.merge[:server_down] = true if query_fail_time > @query_fail_limit
   end
 
   def stop
+    @stop = true
     @thread.kill if @thread.respond_to?('kill')
   end
 
   def monitor
+    return nil if @stop
     Thread.new do
       original_start = Time.now.to_i
       loop do
         lapsed = Benchmark.realtime do
           begin
             start = Time.now.to_i
-            log "#{@host} Retrieving RCON players"
+            log "Retrieving RCON players"
             time_taken = Benchmark.realtime { do_rcon_query }
-            log "#{@host} Took #{"%.3f" % time_taken}s (Retrieving RCON players)"
-            log "#{@host} Retrieving Server Query info, players, and rules"
+            log "Took #{"%.3f" % time_taken}s (Retrieving RCON players)"
+            log "Retrieving Server Query info, players, and rules"
             time_taken = Benchmark.realtime { do_server_query }
-            log "#{@host} Took #{"%.3f" % time_taken}s (Retrieving Server Query info, players, and rules)"
+            log "Took #{"%.3f" % time_taken}s (Retrieving Server Query info, players, and rules)"
           rescue => e
-            log "#{@host} error during monitoring!", e
-            exit 1
+            log "error during monitoring!", e
+            break
           end
         end
         log "Uptime: #{get_uptime(original_start)}"
         sleep_seconds = [@interval - lapsed, 0.0].max # Ensure we don't try to sleep with a negative value
-        log "#{@host} Server monitoring took #{"%.1f" % lapsed}s. Sleeping #{"%.1f" % sleep_seconds}s."
+        log "Server monitoring took #{"%.1f" % lapsed}s. Sleeping #{"%.1f" % sleep_seconds}s."
         sleep sleep_seconds
+        if @stop
+          log "Stopping monitor"
+          next
+        end
       end
     rescue => e
-      log "#{@host} Error while monitoring", e
+      log "Error while monitoring", e
     ensure
-      log "#{@host} Monitoring stopped."
+      log "Monitoring stopped."
     end
   end
 end

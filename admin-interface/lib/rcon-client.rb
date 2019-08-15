@@ -318,7 +318,7 @@ class RconClient
         buffer[:message] = e.message
       end
     end
-    e.message
+    raise e
   end
 
   def get_players_and_bots(server_ip, port, password, timeout: 2, retries: 1)

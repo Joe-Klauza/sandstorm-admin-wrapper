@@ -4,69 +4,98 @@
 
 Sandstorm Admin Wrapper is a set of tools designed to ease the burden of hosting a server for the `New World Interactive` video game [Insurgency: Sandstorm](https://store.steampowered.com/app/581320/Insurgency_Sandstorm/). It is comprised of a Ruby webserver (Sinatra) and associated tools which provide an easy-to-use browser front-end for configuring and managing a server on either Linux or Windows.
 
+It can also be used to remotely monitor and administer servers via RCON.
+
 ### Demo
 
 <img src="https://user-images.githubusercontent.com/13367199/62821937-a7e09c80-bb4a-11e9-95f7-b181fa1129c4.gif" width="800">
 
 ### Features
 
-- An easy-to-use webserver with configurable parameters via TOML file:
+- An easy-to-use webserver with configurable parameters via TOML file (and web interface):
   - Bind IP/Port
   - SSL Enabled
   - Verify SSL Enabled
   - Cert/Key Paths
   - Session secret
 - Pop-out sidebar navigation
-- Server Setup page
-  - Guides you through installing SteamCMD manually
-  - Detects SteamCMD installation and server installation
-  - Shows available server update
-  - Provides a simple interface to install and manually update/verify the server files
-  - SteamCMD log (see known issue below for Windows)
-- Server Config page
-  - Easy-to-use configuration options for your server
-  - Blurring/redaction of sensitive information
-  - Dropdowns for enumerated settings
-  - Editable config files (Paste your current settings here! Matching settings above will override what was entered.)
-    - `Game.ini`
-    - `Engine.ini`
-    - `Admins.txt`
-    - `MapCycle.txt`
-    - `Bans.json`
-    - Local copies of these files are stored in `sandstorm-admin-wrapper/server-config`. Before launching the server, the manual config is applied to the `server-config` files, then those files are copied into the appropriate places in order for the server to use them. This prevents the server from overwriting our changes.
-- Server Control page
-  - Server status
-  - Start/Restart/Stop buttons
-  - Detailed PID and process exit toasts
-  - Thread, player, and bot count
-  - Player list
-  - Server log
-  - RCON console
-  - RCON log
-- RCON Tool
-  - This tool currently allows remote RCON commands (with the given IP, port, and password). In the future this will probably be more like a remote administration tool (with remote server monitoring, player list, etc.).
-- SteamCMD Tool
-  - This tool allows passthrough to the SteamCMD installation. This could be useful for installing/updating other games, etc.
+- Local server interface
+  - **Server Setup page**
+    - Guides you through installing SteamCMD manually
+    - Detects SteamCMD installation and server installation
+    - Shows available server update
+    - Provides a simple interface to install and manually update/verify the server files
+    - SteamCMD log (see known issue below for Windows)
+  - **Server Config page**
+    - Easy-to-use configuration options for your server
+    - Blurring/redaction of sensitive information
+    - Dropdowns for enumerated settings
+    - Editable config files (Paste your current settings here! Matching settings above will override what was entered.)
+      - `Game.ini`
+      - `Engine.ini`
+      - `Admins.txt`
+      - `MapCycle.txt`
+      - `Bans.json`
+      - Local copies of these files are stored in `sandstorm-admin-wrapper/server-config`. Before launching the server, the manual config is applied to the `server-config` files, then those files are copied into the appropriate places in order for the server to use them. This prevents the server from overwriting our changes. After the server closes, any new bans are added to the local copy.
+  - **Server Control page**
+    - Server status
+    - Start/Restart/Stop buttons
+    - Detailed PID and process exit toasts
+    - Thread, player, and bot count
+    - Player list (with kick/ban buttons)
+    - Server log
+    - RCON console
+    - RCON log
+- Extra tools
+  - **Remote Monitor Tool**
+    - Allows monitoring and administration of servers when provided with valid IP, Query Port, RCON Port, and RCON Password
+    - Shows server, query, and RCON status, player list with admin functionality, and RCON console.
+    - Can spawn multiple server monitors and switch between them at will
+    - Can save configurations for easy monitoring later
+    - If a third party hosts your server(s) for you, this is probably what you're looking for
+  - **RCON Tool**
+    - Allows remote RCON commands (with the given IP, port, and password).
+  - **SteamCMD Tool**
+    - This tool allows passthrough to the SteamCMD installation. This could be useful for installing/updating other games, etc.
+- Wrapper Webserver
+  - **Config page**
+    - Easy configuration for all webserver parameters
+    - Button to restart the webserver (to apply changes)
+  - **Users page**
+    - Easy addition/modification of users to allow access to server admin features.
+    - Protections to prevent removing the last Host (and therefore losing access to webserver self-configuration and user configuration)
+    - User roles:
+      - `Host`: Server host; can configure webserver, users, and everything else
+      - `Admin`: Server admin; can do everything except configure the webserver and users
+      - `User`: Currently unused; this will eventually be a read-only role that can access a server status page with player list
+    - New users have a random password automatically generated; this (along with the user name) is given to the user by the host. Upon first login, users are asked to change their password. This helps keep passwords private.
+- User features
+  - **Change password**
+  - **Log out**
 
 ### Prerequisites
 
 - Windows (10 tested) or Linux (Debian 9 tested)
-- A Ruby `2.6.3` installation with the Bundler gem (`gem install bundler`). I recommend [rbenv](https://github.com/rbenv/rbenv) to manage Ruby installations on Linux and [RubyInstaller for Windows](https://rubyinstaller.org/downloads/) to install Ruby on Windows.
-- [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Cross-Platform_Installation) (extract/install to `sandstorm-admin-wrapper/steamcmd/installation`)
+- A Ruby `2.6.3`+ (check with `ruby -v`) installation with the Bundler gem (`gem install bundler`). I recommend [rbenv](https://github.com/rbenv/rbenv) to manage Ruby installations on Linux and [RubyInstaller for Windows](https://rubyinstaller.org/downloads/) to install Ruby on Windows.
+- If using this tool to run a server, grab a portable version of [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Cross-Platform_Installation) (we'll extract it to `sandstorm-admin-wrapper/steamcmd/installation`)
 
 ### Installation
 
 - Download and extract (or clone) the repository
-- [Install SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Cross-Platform_Installation) manually to `sandstorm-admin-wrapper/steamcmd/installation`. `steamcmd.exe`/`steamcmd.sh` should be in the `installation` directory.
+- If you plan to install/run a server, [install SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Cross-Platform_Installation) manually to `sandstorm-admin-wrapper/steamcmd/installation`. `steamcmd.exe`/`steamcmd.sh` should be in the `installation` directory.
   - During runtime, we change the wrapper's `HOME` environment variable to `sandstorm-admin-wrapper/steamcmd` in order to contain SteamCMD's home directory pollution (on Linux) within the wrapper. You may see shell or Steam-related files in this directory as a result.
 
 ### Starting the Admin Wrapper
 
 - Run the start script for your OS (`windows_start.bat` for Windows, `linux_start.sh` for Linux (BASH))
 - Navigate to the web interface in your browser (e.g. https://localhost:51422/)
-- Follow the instructions to install (or locate) the Sandstorm server you'd like to administrate
-- Configure the server via the `Server -> Config` page
-- Run the server via the `Server -> Control` page
+- Log in with the default admin credentials (`admin`/`password`). You will be prompted to set a new password for the `admin` account. If you ever forget this password, just delete `admin-interface/config/users.json` and restart the webserver to regenerate the default `admin`/`password` account.
+- If running a server
+  - Follow the instructions to install (or locate) the Sandstorm server you'd like to run
+  - Configure the server via the `Server -> Config` page
+  - Run the server via the `Server -> Control` page
+- If administrating remote server(s)
+  - Use the `Tools -> Monitor` page
 
 ### Useful information
 

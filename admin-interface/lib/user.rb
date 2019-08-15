@@ -2,8 +2,10 @@ require 'bcrypt'
 require 'sysrandom'
 
 class User
-  attr_reader :name
+  attr_accessor :name
   attr_reader :role
+  attr_reader :id
+  attr_reader :initial_password
 
   ROLES = {
     host: 3,
@@ -11,10 +13,11 @@ class User
     user: 1
   }
 
-  def initialize(name, role, password: nil, initial_password: nil)
+  def initialize(name, role, password: nil, initial_password: nil, id: nil)
     @name = name # Name will also be our GUID, since having duplicate user names is confusing without emails
     @role = role
     @initial_password = initial_password
+    @id = id || Sysrandom.uuid
     if password
       # User info is being read from file
       @password = BCrypt::Password.new(password).to_s
@@ -53,18 +56,5 @@ class User
     else
       raise "Failed to assign role: #{new_role} is not a valid role!"
     end
-  end
-
-  def to_h
-    to_hash
-  end
-
-  def to_hash # For Oj serialization
-    {
-      user: @name,
-      role: @role,
-      initial_password: @initial_password,
-      password: @password.to_s # The hashed, salted password
-    }
   end
 end
