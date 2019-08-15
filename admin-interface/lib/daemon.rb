@@ -92,7 +92,11 @@ class SandstormServerDaemon
     @server_updater.run_steamcmd(command, buffer: buffer)
   end
 
-  def do_send_rcon(command, host: @rcon_ip, port: @active_rcon_port || @config['server_rcon_port'], pass: (@active_rcon_pass || @config['server_rcon_password']), buffer: nil)
+  def do_send_rcon(command, host: nil, port: nil, pass: nil, buffer: nil)
+    host ||= @rcon_ip
+    port ||= @active_rcon_port || @config['server_rcon_port']
+    port ||= @active_rcon_pass
+    pass ||= @active_rcon_pass || @config['server_rcon_password']
     log "Calling RCON client for command: #{command}"
     @rcon_client.send(host, port, pass, command, buffer: buffer)
   end
