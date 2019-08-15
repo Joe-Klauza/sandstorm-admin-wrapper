@@ -26,8 +26,11 @@ class MultiTargetLogger
   Logger::Severity.constants.each do |severity|
     severity = severity.downcase
     define_method(severity) do |*args|
-      binding.pry if args.join(' ').include? 'undefined method'
       @loggers.each { |_, logger| logger.send(severity, *args) if Logger.const_get(severity.to_s.upcase) >= logger.level }
+      if args.first.is_a? Exception
+        @loggers.each { |_, logger| logger.send(severity, "Backtrace:#{args.first.backtrace.join("\n  ").prepend("\n  ")}") if Logger.const_get(severity.to_s.upcase) >= logger.level }
+      end
+
       nil
     end
     define_method("#{severity}?") do |*args|

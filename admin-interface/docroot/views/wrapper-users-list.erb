@@ -1,0 +1,29 @@
+<% @users.each do |id, user| %>
+<!-- <%= user.name %> -->
+<div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+  <div class="p-2 col-1">User</div>
+  <div class="p-2 col-2"><input id="user-name-<%= user.id %>" type="text" class="form-control" placeholder="<%= CGI.escapeHTML(user.name) %>" autocomplete="off"></div>
+  <div class="p-2 col-1">Role</div>
+  <div class="p-2 col-2"><input id="user-role-<%= user.id %>" type="text" class="form-control" placeholder="<%= user.role.to_s.capitalize %>" autocomplete="off"></div>
+  <ul class="nav nav-pills col-1">
+    <li class="nav-item dropdown">
+      <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Roles</a>
+      <div class="dropdown-menu" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
+        <% User::ROLES.keys.each do |role| %>
+        <a class="dropdown-item" onclick="$('#user-role-<%= user.id %>').val('<%= role.to_s.capitalize %>')"><%= role.to_s.capitalize %></a>
+        <% end %>
+      </div>
+    </li>
+  </ul>
+  <div class="p-2 col">
+    <div class="d-flex horizontal-expand justify-content-end">
+      <% if user.initial_password %>
+      <div id="user-initial-<%= user.id %>" style="display: none"><%= user.initial_password %></div>
+      <button type="button" class="btn btn-sm btn-dark m-1 mr-2" onclick="copyToClipboard('#user-initial-<%= user.id %>', true);">Copy Temp Password</button>
+      <% end %>
+      <button type="button" class="btn btn-danger m-1 mr-2" onclick="deleteUser('<%= user.id %>');">Delete</button>
+      <button type="button" class="btn btn-info m-1" onclick="saveUser('<%= user.id %>', $('#user-name-<%= user.id %>').val() || $('#user-name-<%= user.id %>').attr('placeholder'), $('#user-role-<%= user.id %>').val() || $('#user-role-<%= user.id %>').attr('placeholder'));">Save</button>
+    </div>
+  </div>
+</div>
+<% end %>

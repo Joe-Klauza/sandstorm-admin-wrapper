@@ -1,23 +1,27 @@
-<% players = @info.nil? ? [] : @info[:rcon_players] %>
+<% players = @info.nil? ? [] : @info[:rcon_players] || [] %>
 <% players.each do |player| %>
-<%   matches = @info[:a2s_player].select{ |p| p['name'] == player['name'] } %>
+<%   matches = @info[:a2s_player].select{ |p| p['name'] == player['name'] || player['name'].start_with?(p['name']) } %>
 <%   player['duration'] = matches.first['duration'] if matches.size == 1 %>
+<%   player['name'] = CGI.escapeHTML((player['steam_info']['name'] || player['name'] rescue player['name'])) %>
 <% end %>
-<div id="players" class="horizontal-expand">
-  <div class="d-flex flex-column horizontal-expand my-2 mx-4" style="background-color:#43454f">
-    <div class="row horizontal-expand m-1 p-1 align-items-center" style="background-color:#232323">
-      <div class="col-3">Player</div>
-      <div class="col-3">Score</div>
-      <div class="col-3">Duration</div>
-    </div>
-    <% players.sort_by { |p| [p['score'].to_i, (p['duration'] || ''), p['name']] }.reverse.each_with_index do |player, i| %>
-    <div class="row horizontal-expand m-1 p-1 align-items-center text-white" style="background-color:#<%= i.even? ? '393b44' : '535663'%>">
-      <div class="col-3">
-        <%= ('<span class="flag-icon flag-icon-' << player['country_code'] << '"></span> ') if player['country_code'] %><a target="<%= !@use_steam_urls ? '_blank' : '' %>" href="<%= !@use_steam_urls ? 'https://steamcommunity.com/profiles/' : 'steam://url/SteamIDPage/' %><%= player['steam_id'] %>"><img src="<%= player['steam_info']['avatar'] || '/custom/missing.png' rescue '/custom/missing.png' %>" width="32" height="32"> <%= CGI.escapeHTML (player['steam_info']['name'] || player['name'] rescue player['name']) %></a>
-      </div>
-      <div class="col-3"><%= player['score'] %></div>
-      <div class="col-3"><%= player['duration'] %></div>
-    </div>
-    <% end %>
+<div class="d-flex flex-column horizontal-expand my-2 mx-4" style="background-color:#43454f">
+  <div class="row horizontal-expand m-1 p-1 align-items-center" style="background-color:#232323">
+    <div class="col-3">Player</div>
+    <div class="col-2">Score</div>
+    <div class="col-2">Duration</div>
+    <div class="col-5">Admin</div>
   </div>
+  <% players.sort_by { |p| [p['score'].to_i, (p['duration'] || ''), p['name']] }.reverse.each_with_index do |player, i| %>
+  <div class="row horizontal-expand m-1 p-1 align-items-center text-white" style="background-color:#<%= i.even? ? '393b44' : '535663'%>">
+    <div class="col-3">
+      <%= ('<span class="flag-icon flag-icon-' << player['country_code'] << '"></span> ') if player['country_code'] %><a target="<%= !@use_steam_urls ? '_blank' : '' %>" href="<%= !@use_steam_urls ? 'https://steamcommunity.com/profiles/' : 'steam://url/SteamIDPage/' %><%= player['steam_id'] %>"><img src="<%= player['steam_info']['avatar'] || '/custom/missing.png' rescue '/custom/missing.png' %>" width="32" height="32"> <%= player['name'] %></a>
+    </div>
+    <div class="col-2"><%= player['score'] %></div>
+    <div class="col-2"><%= player['duration'] %></div>
+    <div class="col-5">
+      <button class="btn btn-warning m-1" data-toggle="modal" data-target="#confirm_modal" onclick="confirmModal('Kick <%= "#{player['name']} (#{player['steam_id']})" %>', 'Are you sure you want to kick <%= "#{player['name']} (#{player['steam_id']})" %>?', 'playerKick(\'<%= @monitor.ip %>\', \'<%= @monitor.rcon_port %>\', \'<%= CGI.escape @monitor.rcon_pass %>\', \'<%= player['steam_id'] %>\')', 'failureToast(\'Failed to kick player.\'');">Kick</button>
+      <button class="btn btn-danger m-1" data-toggle="modal" data-target="#confirm_modal" onclick="confirmModal('Ban <%= "#{player['name']} (#{player['steam_id']})" %>', 'Are you sure you want to ban <%= "#{player['name']} (#{player['steam_id']})" %>?', 'playerBan(\'<%= @monitor.ip %>\', \'<%= @monitor.rcon_port %>\', \'<%= CGI.escape @monitor.rcon_pass %>\', \'<%= player['steam_id'] %>\')', 'failureToast(\'Failed to ban player.\'');">Ban</button>
+    </div>
+  </div>
+  <% end %>
 </div>

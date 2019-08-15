@@ -1,0 +1,35 @@
+<div class="d-flex flex-column horizontal-expand mb-3">
+  <div class="container-fluid d-flex justify-content-center bg-info m-1">
+    <h3 class="py-2">Wrapper Users</h3>
+  </div>
+  <div class="d-flex flex-column horizontal-expand justify-content-between">
+    <!-- Add user -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-1 col-1">New User</div>
+      <div class="p-2 col-2">
+        <input id="new-user-name" type="text" class="form-control" placeholder="User Name" autocomplete="off">
+      </div>
+      <div class="p-2 col-1">Role</div>
+      <div class="p-2 col-2"><input id="new-user-role" type="text" class="form-control" placeholder="Admin" autocomplete="off"></div>
+      <ul class="nav nav-pills col-1">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Roles</a>
+          <div class="dropdown-menu" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
+            <% User::ROLES.keys.each do |role| %>
+            <a class="dropdown-item" onclick="$('#new-user-role').val('<%= role.to_s.capitalize %>')"><%= role.to_s.capitalize %></a>
+            <% end %>
+          </div>
+        </li>
+      </ul>
+
+      <div class="p-2 col justify-content-end">
+        <button type="button" class="btn btn-success m-1" onclick="createUser($('#new-user-name').val() || $('#new-user-name').attr('placeholder'), $('#new-user-role').val() || 'Admin');">Create</button>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div id="users" class="horizontal-expand d-flex flex-column">
+      <%= yield %>
+    </div>
+  </div>
+</div>

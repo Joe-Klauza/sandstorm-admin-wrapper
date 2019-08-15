@@ -15,6 +15,7 @@ require_relative 'buffer'
 require_relative 'certificate-generator'
 require_relative 'daemon'
 require_relative 'config-handler'
+require_relative 'user'
 
 Encoding.default_external = "UTF-8"
 
@@ -24,11 +25,8 @@ $config_handler = ConfigHandler.new
 class SandstormAdminWrapperSite < Sinatra::Base
   def self.set_up
     log "Initializing webserver"
-    working_directory = File.join File.dirname(__FILE__), '..', 'docroot'
-    log "Setting webserver root dir to: #{working_directory.sub(USER_HOME, '~')}", level: :info
-    set :root, working_directory
-    enable :sessions
     @@daemon = nil
+    @@monitors = {}
     @@buffers = {}
     @@buffer_mutex = Mutex.new
     $config_handler.init_server_config_files
@@ -71,8 +69,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   def check_prereqs
     steamcmd_path = steamcmd_installed?
-    game_server_path = game_server_installed?
     init_daemon(steamcmd_path) if steamcmd_path && @@daemon.nil?
+    game_server_path = game_server_installed?
     return [steamcmd_path, game_server_path]
   end
 
@@ -104,13 +102,74 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   set_up
 
+  configure do
+    working_directory = File.join File.dirname(__FILE__), '..', 'docroot'
+    log "Setting webserver root dir to: #{working_directory.sub(USER_HOME, '~')}", level: :info
+    set :root, working_directory
+    enable :sessions, :logging, :dump_errors, :raise_errors, :show_exceptions
+    # use Rack::CommonLogger, LOGGER
+  end
+
+  # Add a condition that we can use for various routes
+  register do
+    def auth(role)
+      condition do
+        begin
+          unless has_role?(role)
+            log "#{request.ip} | User unauthorized: '#{session[:user_id]}' requesting #{role}-privileged content", level: :warn
+            status 403
+            redirect "/login#{CGI.escape(request.path_info) unless request.path_info.casecmp('/').zero?}" if request.request_method == 'GET'
+            error = "403 Unauthorized - You don't have permission to do this."
+            redirect "/error?status=403&message=#{CGI.escape error}"
+            false
+          end
+        rescue => e
+          log "#{request.ip} | Error checking auth status for role: #{role}", e
+          status 500
+          redirect "/login/#{CGI.escape(request.path_info) unless request.path_info.casecmp('/').zero?}" if request.request_method == 'GET'
+          error = "500 Error - Unknown role: #{role}"
+          redirect "/error?status=500&message=#{CGI.escape error}"
+          false
+        end
+      end
+    end
+  end
+
+  # Add helper functions for user authentication, etc.
+  helpers do
+    def logged_in?
+      !@user.nil?
+    end
+
+    def has_role?(role)
+      raise "Invalid role: #{role}" unless User::ROLES.keys.include?(role)
+      logged_in? && User::ROLES[@user.role] >= User::ROLES[role]
+    end
+
+    def is_host?
+      has_role(:host)
+    end
+
+    def is_admin?
+      has_role(:admin)
+    end
+
+    def is_user?
+      has_role(:user)
+    end
+  end
+
   before do
+    env['rack.logger'] = LOGGER
     env["rack.errors"] = LOGGER
+    @user = $config_handler.users[session[:user_id]] if session[:user_id]
+    # log "Redirecting unauthenticated user to login"
+    # redirect "/login/#{CGI.escape request.path_info}" if @user.nil? && !(request.path_info.start_with? '/login')
     check_prereqs unless @@daemon
     request.body.rewind
     body = request.body.read
     request.body.rewind # Be kind
-    # message = "Request: #{request.request_method}#{' ' << request.script_name unless request.script_name.strip.empty? } #{request.path_info}#{'?' << request.query_string unless request.query_string.strip.empty?} from #{request.ip}" # Body may contain sensitive info ##{(' | Body: ' << body) unless body.strip.empty?}"
+    # message = "Request: #{request.request_method}#{' ' << request.script_name unless request.script_name.strip.empty? } #{request.path_info}#{'?' << request.query_string unless request.query_string.strip.empty?} from #{request.ip}#{(' | Body: ' << body) unless body.strip.empty?}"
     # log message
   end
 
@@ -118,7 +177,193 @@ class SandstormAdminWrapperSite < Sinatra::Base
   #  log "Responding: #{response.body}"
   # end
 
-  get '/pry' do
+  %i(get post put).each do |method|
+    send method, '/error' do
+      status params['status']
+      params['message']
+    end
+  end
+
+  get '/confirm' do
+    @yes = params[:yes]
+    @no = params[:no]
+    @title = params[:title]
+    @body = params[:body]
+    erb :confirm
+  end
+
+  get %r{/login(/)?(.*)} do
+    @destination = '/' + params['captures'].last.sub('login', '')
+    @destination = nil if @destination == '/'
+    erb :login
+  end
+
+  post '/login' do
+    data = Oj.load(request.body.read)
+    request.body.rewind
+    user = data['user']
+    password = data['pass']
+    destination = data['destination']
+    if user && password
+      known_user = $config_handler.users.values.select { |u| u.name == user }.first
+      if known_user && known_user.password == password # BCrypt::Password == string comparison
+        log "#{request.ip} | Logged in as #{known_user.name}", level: :info
+        session[:user_id] = known_user.id
+        return known_user.first_login? ? "/change-password#{destination}" : destination
+      end
+    end
+    status 401
+    "Failed to log in."
+  end
+
+  get '/logout' do
+    session[:user_id] = nil
+    redirect '/login'
+  end
+
+  get '/change-password(/:destination)?', auth: :user do
+    @destination = "/#{params['destination']}".sub('/change-password', '')
+    @first_login = !@user.initial_password.nil?
+    erb :'change-password'
+  end
+
+  post '/change-password', auth: :user do
+    data = Oj.load(request.body.read)
+    request.body.rewind
+    password = data['pass']
+    destination = "#{data['destination']}"
+    if password.strip.empty? || @user.password_matches?(password)
+      status 400
+      return "Invalid password. The password must be new and not blank!"
+    end
+    @user.password = password
+    destination
+  end
+
+  get '/wrapper-config', auth: :host do
+    @config = load_webapp_config
+    erb :'wrapper-config', layout: :'layout-main'
+  end
+
+  put '/wrapper-config/:action', auth: :host do
+    wrapper_config = load_webapp_config
+    variable = params['variable']
+    value = params['value']
+    value = value == 'true' if ['true', 'false'].include?(value)
+    if params['action'] == 'set'
+      begin
+        if wrapper_config.keys.include?(variable)
+          old = variable == 'admin_interface_session_secret' ? '[REDACTED]' : wrapper_config[variable]
+          wrapper_config[variable] = value
+          value = variable == 'admin_interface_session_secret' ? '[REDACTED]' : wrapper_config[variable]
+          log "Saving new wrapper config: #{wrapper_config}", level: :info
+          save_webapp_config(wrapper_config)
+          "Changed #{variable}: #{old} => #{value}"
+        else
+          status 400
+          msg
+        end
+      rescue => e
+        msg = "Failed to set #{variable + ' -> ' + variable == 'admin_interface_session_secret' ? '[REDACTED]' : value}"
+        log msg, e
+        status 400
+        "#{msg} | #{e.class}: #{e.message}"
+      end
+    elsif params['action'] == 'get'
+      value = wrapper_config[variable]
+      if value.nil?
+        status 404
+        "Could not find value for #{variable}"
+      else
+        value.to_s
+      end
+    else
+      status 400
+      'Unknown action'
+    end
+  end
+
+  get '/wrapper-users-list', auth: :host do
+    @users = $config_handler.users
+    erb :'wrapper-users-list'
+  end
+
+  get '/wrapper-users', auth: :host do
+    @users = $config_handler.users
+    erb :'wrapper-users', layout: :'layout-main' do
+      erb :'wrapper-users-list'
+    end
+  end
+
+  post '/wrapper-users/:action', auth: :host do
+    action = params['action']
+    data = Oj.load(request.body.read)
+    request.body.rewind
+    id = data['id']
+    name = data['name']
+    role = data['role'].to_s.downcase.to_sym
+
+    case action
+    when 'create'
+      if name.to_s.empty? || role.to_s.empty?
+        status 400
+        'Missing name/role'
+      elsif $config_handler.users.values.select { |u| u.name == name }.size > 0
+        status 400
+        'A user with that name already exists'
+      else
+        user = User.new(name, role)
+        $config_handler.users[user.id] = user
+        $config_handler.write_user_config
+        'User created'
+      end
+    when 'delete'
+      if id.to_s.empty?
+        status 400
+        'Missing ID'
+      elsif $config_handler.users[id].nil?
+        status 400
+        'No such user'
+      elsif $config_handler.users[id].role == :host && $config_handler.users.values.select { |u| u.role == :host }.size == 1
+        status 400
+        'Cannot delete last Host'
+      else
+        $config_handler.users.delete id
+        $config_handler.write_user_config
+        'User deleted'
+      end
+    when 'save'
+      if name.to_s.empty? || role.to_s.empty?
+        status 400
+        'Missing name/role'
+      elsif $config_handler.users[id].nil?
+        status 400
+        'No such user'
+      elsif !User::ROLES.keys.include?(role)
+        status 400
+        'No such role'
+      elsif role != :host && $config_handler.users[id].role == :host && $config_handler.users.values.select { |u| u.role == :host }.size == 1
+        status 400
+        'Cannot change role of last Host'
+      else
+        user = $config_handler.users[id]
+        if user.name == name && user.role == role
+          status 400
+          'Nothing was changed'
+        else
+          user.name = name
+          user.role = role
+          $config_handler.write_user_config
+          'User saved'
+        end
+      end
+    else
+      status 400
+      'Unknown action'
+    end
+  end
+
+  get '/pry', auth: :host do
     Thread.new do
       LOGGER.threshold :fatal # Turn down STDOUT logging
       `stty echo` unless WINDOWS # Ensure we have echoing enabled; something from logging turns them off...
@@ -133,63 +378,67 @@ class SandstormAdminWrapperSite < Sinatra::Base
   rescue Interrupt
   end
 
-  get '/threads' do
+  get '/threads', auth: :user do
     return '' if @@daemon.game_pid.nil?
     process = Sys::ProcTable.ps(pid: @@daemon.game_pid)
     threads = WINDOWS ? process.thread_count : process.nlwp
     output = threads.nil? ? '' : "Threads: #{threads}"
-    @info = @@daemon.monitor.info unless @@daemon.monitor.nil?
+    @monitor = @@daemon.monitor
+    @info = @monitor.info unless @monitor.nil?
     return output if @info.nil?
-    "#{output} | Players: #{@info[:rcon_players].size} | Bots: #{@info[:rcon_bots].size}"
+    "#{output} | Players: #{@info[:rcon_players].size rescue ''} | Bots: #{@info[:rcon_bots].size rescue ''}"
   end
 
-  get '/players' do
-    @info = @@daemon.monitor.info unless @@daemon.monitor.nil?
+  get '/players', auth: :user do
+    @monitor = @@daemon.monitor
+    @info = @monitor.info unless @monitor.nil?
     erb :'players'
   end
 
-  get '/update-info' do
+  get '/update-info', auth: :user do
     @update_available, @old_build, @new_build = get_update_info
     erb(:'update-info')
   end
 
-  get '/test' do
+  get '/test', auth: :user do
     # Stuff
   end
 
-  get '/restart' do
-    exec 'bundle', 'exec', 'ruby', $PROGRAM_NAME, *ARGV
+  post '/restart-wrapper', auth: :host do
+    Thread.new { sleep 0.2; exec 'bundle', 'exec', 'ruby', $PROGRAM_NAME, *ARGV }
+    nil
   end
 
-  get '/' do
+  get '/', auth: :user do
     @steamcmd_path, @game_server_path = check_prereqs
     redirect '/setup' unless @steamcmd_path && @game_server_path
     redirect '/control'
   end
 
-  get '/about' do
+  get '/about', auth: :user do
     erb(:about, layout: :'layout-main')
   end
 
-  get '/setup' do
+  get '/setup', auth: :admin do
     @steamcmd_path, @game_server_path = check_prereqs
     erb(:'server-setup', layout: :'layout-main')
   end
 
-  get '/config' do
+  get '/config', auth: :admin do
     @config = $config_handler.config.dup
     erb(:'server-config', layout: :'layout-main')
   end
 
-  get '/control' do
+  get '/control', auth: :admin do
     @server_status = get_server_status
     erb(:'server-control', layout: :'layout-main') do
+      @monitor = @@daemon.monitor
       @info = @monitor.info unless @monitor.nil?
       erb :players
     end
   end
 
-  get '/tools/:resource' do
+  get '/tools/:resource', auth: :admin do
     @config = $config_handler.config.dup
     resource = params['resource']
     case resource
@@ -198,13 +447,15 @@ class SandstormAdminWrapperSite < Sinatra::Base
     when 'steamcmd'
       @server_root_dir = @@daemon.server_root_dir
       erb(:'steamcmd-tool', layout: :'layout-main')
+    when 'monitor'
+      erb(:'monitor-tool', layout: :'layout-main')
     else
       status 500
       "Unknown resource: #{resource}"
     end
   end
 
-  post '/tools/:resource' do
+  post '/tools/:resource', auth: :admin do
     resource = params['resource']
     body = request.body.read
     options = Oj.load body, symbol_keys: true
@@ -227,7 +478,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  get '/script/:resource' do
+  get '/script/:resource', auth: :user do
     resource = params['resource']
     case resource
     when 'server-status'
@@ -238,7 +489,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  get '/buffer/:uuid(/:bookmark)?' do
+  get '/buffer/:uuid(/:bookmark)?', auth: :admin do # Sensitive information could be contained in these buffers (passwords, paths); admins only.
     uuid = params['uuid']
     unless @@buffers.keys.include? uuid
       status 400
@@ -301,7 +552,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  post '/control/:thread/:action' do
+  post '/control/:thread/:action', auth: :admin do
     if @@daemon.nil?
       status 400
       return 'Server daemon not configured; ensure setup is complete.'
@@ -340,7 +591,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
       when 'rcon'
         begin
           uuid, buffer = create_buffer
-          Thread.new { @@daemon.do_send_rcon(options[:command], buffer: buffer) }
+          Thread.new { @@daemon.do_send_rcon(options[:command], host: options[:host], port: options[:port], pass: options[:pass], buffer: buffer) }
           uuid
         rescue => e
           log "Error while sending RCON", e
@@ -370,7 +621,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  get '/config/file/:file' do
+  get '/config/file/:file', auth: :admin do
     file = File.join CONFIG_FILES_DIR, params['file'].gsub('..', '')
     if File.exist? file
       File.read(file)
@@ -380,7 +631,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  post '/config/file/:file' do
+  post '/config/file/:file', auth: :admin do
     file = params['file']
     content = params['content']
     content << "\n" unless content.end_with? "\n"
@@ -388,7 +639,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     "Wrote #{file}."
   end
 
-  put '/config/:action' do
+  put '/config/:action', auth: :admin do
     if params['action'] == 'set'
       begin
         status, msg, current, old = $config_handler.set params['variable'], params['value']
@@ -417,13 +668,131 @@ class SandstormAdminWrapperSite < Sinatra::Base
       'Unknown action'
     end
   end
+
+  get '/monitors', auth: :admin do
+    @monitors = @@monitors
+    erb :monitors
+  end
+
+  get '/monitor-config', auth: :admin do
+    name = params['name']
+    Oj.dump $config_handler.monitor_configs[name]
+  end
+
+  post '/monitor-config/:name', auth: :admin do
+    name = params['name']
+    data = Oj.load(request.body.read)
+    request.body.rewind
+    config = data['config']
+    if config['ip'] && config['query_port'] && config['rcon_port'] && config['rcon_password']
+      $config_handler.monitor_configs[name] = {
+        'ip' => config['ip'], 'query_port' => config['query_port'], 'rcon_port' => config['rcon_port'], 'rcon_password' => config['rcon_password'],
+      }
+      $config_handler.write_monitor_configs
+      'Monitor config saved'
+    else
+      status 400
+      'Missing parameter(s)'
+    end
+  end
+
+  delete '/monitor-config/:name', auth: :admin do
+    name = params['name']
+    if $config_handler.monitor_configs[name]
+      $config_handler.monitor_configs.delete name
+      "Monitor config deleted"
+    else
+      code 400
+      "Unknown monitor config"
+    end
+  end
+
+  get '/monitor-configs', auth: :admin do
+    @configs = $config_handler.monitor_configs
+    erb :'monitor-configs'
+  end
+
+  post '/monitor/:action', auth: :admin do
+    data = Oj.load(request.body.read)
+    request.body.rewind
+    config = data['config']
+    action = params['action']
+    case action
+    when 'start'
+      if config['name'] && config['ip'] && config['query_port'] && config['rcon_port'] && config['rcon_password']
+        key = "#{config['ip']}:#{config['rcon_port']}"
+        if @@monitors[key]
+          status 409
+          "Monitor with key #{key} already exists"
+        else
+          @@monitors[key] = ServerMonitor.new(config['ip'], config['query_port'], config['rcon_port'], config['rcon_password'], interval: 10, delay: 0, name: config['name'])
+          "Started monitor with key #{key}"
+        end
+      else
+        status 400
+        'Missing parameter(s)'
+      end
+    when 'stop'
+      if config['ip'] && config['rcon_port']
+        key = "#{config['ip']}:#{config['rcon_port']}"
+        if @@monitors[key]
+          @@monitors[key].stop
+          @@monitors.delete key
+          "Monitor stopped"
+        else
+          status 400
+          "Monitor with key #{key} doesn't exist"
+        end
+      else
+        status 400
+        'Missing parameter(s)'
+      end
+    else
+      status 400
+      'Unknown action'
+    end
+  end
+
+  get '/monitoring-details/:ip/:rcon_port', auth: :admin do
+    @info = {}
+    ip = params[:ip]
+    rcon_port = params[:rcon_port]
+    key = "#{ip}:#{rcon_port}"
+    @monitor = @@monitors[key] if @@monitors[key]
+    @info = @monitor.info unless @monitor.nil?
+    erb :'monitoring-details'
+  end
+
+  post '/admin/:action/:steam_id', auth: :admin do
+    data = Oj.load(request.body.read)
+    request.body.rewind
+    reason = data['reason']
+    steam_id = params[:steam_id]
+    case params[:action]
+    when 'ban'
+      uuid, buffer = create_buffer
+      Thread.new { @@daemon.do_send_rcon("permban #{steam_id}", host: data['ip'], port: data['port'], pass: data['pass'], buffer: buffer) }
+      uuid
+    when 'kick'
+      uuid, buffer = create_buffer
+      Thread.new { @@daemon.do_send_rcon("kick #{steam_id}", host: data['ip'], port: data['port'], pass: data['pass'], buffer: buffer) }
+      uuid
+    else
+      status 400
+      'Unknown action'
+    end
+  end
 end
 
-def load_webapp_config(config_file = "#{File.dirname __FILE__}/../../config/config.toml")
+def load_webapp_config(config_file = WEBAPP_CONFIG)
   TomlRB.load_file config_file
 rescue => e
   log "Couldn't load config from #{config_file}", e
   raise
+end
+
+def save_webapp_config(config, config_file = WEBAPP_CONFIG)
+  File.write(config_file, TomlRB.dump(config))
 end
 
 def get_webrick_options(config = load_webapp_config)
@@ -449,7 +818,7 @@ def get_webrick_options(config = load_webapp_config)
       })
     else
       # Make temporary cert/key, since WEBrick's defaults won't work with modern browsers
-      cert, key = CertificateGenerator.generate # WEBrick::Utils.create_self_signed_cert 2048, [["CN", "localhost"]], ""
+      cert, key = CertificateGenerator.generate
       webrick_options.merge!({
         SSLCertificate: cert,
         SSLPrivateKey: key,
@@ -466,7 +835,8 @@ begin
   config = load_webapp_config
   unless config['admin_interface_session_secret'].to_s.empty?
     class SandstormAdminWrapperSite
-      set :session_secret, config.admin_interface_session_secret
+      config = load_webapp_config # Yay scope!
+      set :session_secret, config['admin_interface_session_secret']
     end
   end
   options = get_webrick_options(config)

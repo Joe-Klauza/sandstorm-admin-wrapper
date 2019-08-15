@@ -92,11 +92,21 @@
           <li class="pushy-submenu pushy-submenu-open">
             <button>Tools</button>
             <ul>
+              <li class="pushy-link"><a href="/tools/monitor">Monitor</a></li>
               <li class="pushy-link"><a href="/tools/rcon">RCON</a></li>
               <li class="pushy-link"><a href="/tools/steamcmd">SteamCMD</a></li>
             </ul>
           </li>
+          <li class="pushy-submenu pushy-submenu-open">
+            <button>Wrapper</button>
+            <ul>
+              <li class="pushy-link"><a href="/wrapper-config">Config</a></li>
+              <li class="pushy-link"><a href="/wrapper-users">Users</a></li>
+            </ul>
+          </li>
           <li class="pushy-link"><a href="/about">About</a></li>
+          <li class="pushy-link"><a href="/change-password">Change Password</a></li>
+          <li class="pushy-link"><a href="/logout">Log Out</a></li>
         </ul>
       </div>
     </nav>
@@ -119,6 +129,14 @@
       </div>
       <%= yield %>
     </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirm_modal" class="confirm_modal modal fade normal-font" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content" id="confirm_modal_content">
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <!-- Bootstrap -->

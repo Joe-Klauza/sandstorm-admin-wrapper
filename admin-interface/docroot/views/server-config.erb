@@ -146,7 +146,7 @@
       <div class="p-2 col-3">Cheats (disabled if GSLT set)</div>
       <div class="p-2 col-4 justify-content-end">
           <div class="custom-control custom-switch p-2 ml-5">
-            <input type="checkbox" class="custom-control-input" id="server_cheats_input" checked>
+            <input type="checkbox" class="custom-control-input" id="server_cheats_input" <%= 'checked' if @config['server_cheats'].to_s.casecmp('true').zero? %>>
             <label class="custom-control-label" for="server_cheats_input">Enable Cheats</label>
           </div>
       </div>

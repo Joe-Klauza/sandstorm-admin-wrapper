@@ -1,3 +1,4 @@
+require 'bcrypt'
 require 'erb'
 require 'fileutils'
 require 'inifile'
@@ -6,10 +7,14 @@ require 'socket'
 require 'sysrandom'
 require_relative 'logger'
 
-CONFIG_PATH = File.join File.dirname(__FILE__), '..', 'config'
+CONFIG_PATH = File.expand_path File.join File.dirname(__FILE__), '..', 'config'
 CONFIG_FILE = File.join CONFIG_PATH, 'config.json'
+USERS_CONFIG_FILE = File.join CONFIG_PATH, 'users.json'
+MONITOR_CONFIGS_FILE = File.join CONFIG_PATH, 'monitor-configs.json'
 
 WRAPPER_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..', '..')).freeze
+WEBAPP_ROOT = File.join WRAPPER_ROOT, 'admin-interface'
+WEBAPP_CONFIG = File.join(WRAPPER_ROOT, 'config', 'config.toml')
 SERVER_ROOT = File.join WRAPPER_ROOT, 'sandstorm-server'
 STEAMCMD_ROOT = File.join WRAPPER_ROOT, 'steamcmd'
 USER_HOME = ENV['HOME']
@@ -221,9 +226,13 @@ CONFIG_VARIABLES = {
 
 class ConfigHandler
   attr_reader :config
+  attr_reader :monitor_configs
+  attr_reader :users
 
   def initialize
-    @config = load_config
+    @config = load_server_config
+    @users = load_user_config
+    @monitor_configs = load_monitor_configs
   end
 
   def get_default_config
@@ -232,17 +241,57 @@ class ConfigHandler
     defaults
   end
 
-  def load_config(file_path=CONFIG_FILE)
+  def load_user_config
+    @users = Oj.load(File.read(USERS_CONFIG_FILE))
+    @users = {} if @users.to_s.empty?
+    @users
+  rescue Errno::ENOENT
+    default_admin_user = User.new('admin', :host, password: BCrypt::Password.create('password').to_s, initial_password: 'password')
+    {
+      default_admin_user.id => default_admin_user
+    }
+  rescue => e
+    log "Failed to load user config from #{USERS_CONFIG_FILE}. Using default user config.", e
+    raise
+  end
+
+  def load_monitor_configs
+    @monitor_configs = Oj.load(File.read(MONITOR_CONFIGS_FILE))
+    @monitor_configs = {} if @monitor_configs.to_s.empty?
+    @monitor_configs
+  rescue Errno::ENOENT
+    {}
+  rescue => e
+    log "Failed to load monitor configs from #{MONITOR_CONFIGS_FILE}. Using empty config.", e
+    raise
+  end
+
+  def load_server_config(file_path=CONFIG_FILE)
     @config = Oj.load File.read(file_path)
     @config.merge! get_default_config.reject { |k, _| @config.keys.include? k }
     @config
-  rescue => e
-    log "Failed to load config from #{file_path}. Using default config.", level: :warn
+  rescue Errno::ENOENT
     get_default_config
+  rescue => e
+    log "Failed to load config from #{file_path}. Using default config.", e
+    raise
   end
 
+  def write_user_config
+    log "Writing user config"
+    File.write(USERS_CONFIG_FILE, Oj.dump(@users))
+  end
+
+  def write_monitor_configs
+    log "Writing monitor configs"
+    File.write(MONITOR_CONFIGS_FILE, Oj.dump(@monitor_configs))
+  end
+
+
   def write_config(config=@config, file_path=CONFIG_FILE)
-    log "Writing config"
+    write_user_config
+    write_monitor_configs
+    log "Writing server config"
     File.write(file_path + '.tmp', Oj.dump(config))
     FileUtils.mv(file_path, file_path + '.bak') if File.exist? file_path
     FileUtils.mv(file_path + '.tmp', file_path)
@@ -283,6 +332,15 @@ class ConfigHandler
       FileUtils.cp it[:actual], it[:actual] + '.bak'
       FileUtils.cp it[:local], it[:actual]
     end
+  end
+
+  def apply_server_bans
+    server_bans = Oj.load(File.read CONFIG_FILES[:bans_json][:actual]) || []
+    previous_bans = Oj.load(File.read CONFIG_FILES[:bans_json][:local]) || []
+    return if server_bans == previous_bans
+    log "Applying new player bans"
+    server_bans.concat(previous_bans).uniq! { |ban| ban['playerId'] }
+    File.write(CONFIG_FILES[:bans_json][:local], Oj.dump(server_bans))
   end
 
   def set(variable, value)
