@@ -1,0 +1,11 @@
+[Unit]
+Description=Sandstorm Admin Wrapper
+
+[Service]
+User=wrapper-user
+Type=simple
+WorkingDirectory=/home/wrapper-user/sandstorm-admin-wrapper/admin-interface
+ExecStartPre=/home/wrapper-user/.rbenv/bin/rbenv exec bundle install
+ExecStart=/home/wrapper-user/.rbenv/bin/rbenv exec bundle exec ruby lib/webapp.rb
+Restart=always
+
