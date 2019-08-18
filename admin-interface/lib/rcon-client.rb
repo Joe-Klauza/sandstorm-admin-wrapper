@@ -192,20 +192,21 @@ class RconClient
 
   def reopen_socket(socket)
     ip, port, pass = socket.info
+    log "#{socket.remote_host.ljust(21)} Reopening socket", level: :warn unless socket.nil?
     delete_socket socket unless socket.nil?
     socket = get_socket_for_host ip, port, pass
     socket
   end
 
   def send_receive_wrapper(socket, packet, timeout=2, retries=1, sensitive: false)
-    log "Attempting to gain mutex lock for #{socket.remote_host}"
+    log "#{socket.remote_host.ljust(21)} Attempting to gain mutex lock"
     synchronize(socket.mutex) do
-      log "Sucessfully gained mutex lock for #{socket.remote_host}"
+      log "#{socket.remote_host.ljust(21)} Sucessfully gained mutex lock"
       log "#{socket.remote_host.ljust(21)} Sending packet: #{sensitive ? 'REDACTED' : packet.inspect.utf8}"
       response = send_receive(socket, packet, timeout, retries, sensitive: sensitive)
       response.gsub!("\x00", '') if response.is_a? String # Int for auth
       log "#{socket.remote_host.ljust(21)} Got response: #{response.inspect.utf8}"
-      log "Ending mutex lock for #{socket.remote_host}"
+      log "#{socket.remote_host.ljust(21)} Ending mutex lock"
       response
     end
   end
@@ -222,6 +223,7 @@ class RconClient
     header, _ = if IO.select([socket], nil, nil, timeout)
       socket.recv 12
     end
+    raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if header.nil?
     log "#{socket.remote_host.ljust(21)} Header: #{header.inspect}"
     size, id, type = header.unpack('l<l<l<')
     if type == 2 # Authentication
@@ -229,10 +231,34 @@ class RconClient
       return id # Return auth code
     end
     log "#{socket.remote_host.ljust(21)} Unpacked header: Size - #{size} | ID - #{id} | Type - #{type}"
-    raise "Unexpected header response: #{header.inspect}" if size.nil?
+    if size.nil? || size.zero?
+      log "#{socket.remote_host.ljust(21)} Unexpected header response: #{header.inspect}", level: :error
+      log "#{socket.remote_host.ljust(21)} Trying again with a new socket", level: :warn
+      socket = reopen_socket socket
+      socket.write packet
+      log "#{socket.remote_host.ljust(21)} Receiving response"
+      header, _ = if IO.select([socket], nil, nil, timeout)
+        socket.recv 12
+      end
+      raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if header.nil?
+      log "#{socket.remote_host.ljust(21)} Header: #{header.inspect}"
+      size, id, type = header.unpack('l<l<l<')
+      raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if size.nil? || size.zero?
+    end
     log "#{socket.remote_host.ljust(21)} Reading #{size} (+2) bytes"
     response, _ = if IO.select([socket], nil, nil, timeout)
       socket.recv(size + 2)[0..-3] # Discard last two null bytes
+    end
+    # Handle retries
+    if response.nil?
+      if retries > 0
+        log "#{socket.remote_host.ljust(21)} No response; retrying"
+        return send_receive(socket, packet, timeout, retries - 1)
+      else
+        log "#{socket.remote_host.ljust(21)} No response; no retries remain"
+        # Reopen socket? Could harm server if this happens often.
+        raise NoTCPResponseError.new socket.remote_host
+      end
     end
 
     log "#{socket.remote_host.ljust(21)} Read initial response: #{response.inspect}"
@@ -248,7 +274,7 @@ class RconClient
       log "#{socket.remote_host.ljust(21)} Additional header: #{additional_header.inspect}"
       break if additional_header.nil?
       size, id, type = additional_header.unpack('l<l<l<')
-      raise "Unexpected additional  header response: #{additional_header.inspect}" if size.nil?
+      raise "#{socket.remote_host.ljust(21)} Unexpected additional header response: #{additional_header.inspect}" if size.nil?
       # break if size.nil?
       if size == 10 # Empty packet
         socket.recv(2) # Discard remainder
@@ -267,17 +293,6 @@ class RconClient
       response << additional_response
     end
 
-    # Handle retries
-    if response.nil?
-      if retries > 0
-        log "#{socket.remote_host.ljust(21)} No response; retrying"
-        return send_receive(socket, packet, timeout, retries - 1)
-      else
-        log "#{socket.remote_host.ljust(21)} No response; no retries remain"
-        # Reopen socket? Could harm server if this happens often.
-        raise NoTCPResponseError.new socket.remote_host
-      end
-    end
     log "#{socket.remote_host.ljust(21)} #{additional_responses ? 'Combined r' : 'R'}esponse: #{response.inspect}"
     return response
   rescue Errno::ENOTCONN, Errno::ECONNRESET => e
@@ -286,7 +301,6 @@ class RconClient
     delete_socket socket
     raise e
   end
-
 
   # User interface
   def send(server_ip, port, password, command, buffer: nil, timeout: 2, retries: 1)

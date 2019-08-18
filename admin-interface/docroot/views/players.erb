@@ -1,6 +1,7 @@
 <% players = @info.nil? ? [] : @info[:rcon_players] || [] %>
 <% players.each do |player| %>
-<%   matches = @info[:a2s_player].select{ |p| p['name'] == player['name'] || player['name'].start_with?(p['name']) } %>
+<%   matches = (@info[:a2s_player] || []).select{ |p| p['name'] == player['name'] || player['name'].start_with?(p['name']) } %>
+<%   next if matches.empty? %>
 <%   player['duration'] = matches.first['duration'] if matches.size == 1 %>
 <%   player['name'] = CGI.escapeHTML((player['steam_info']['name'] || player['name'] rescue player['name'])) %>
 <% end %>

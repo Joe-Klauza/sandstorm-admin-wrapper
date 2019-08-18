@@ -11,7 +11,7 @@ class ServerMonitor
   attr_reader :rcon_port
   attr_reader :rcon_pass
 
-  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0, rcon_fail_limit: 120, query_fail_limit: 60, name: '')
+  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0, rcon_fail_limit: 60, query_fail_limit: 30, name: '')
     @stop = false
     @ip = ip
     @query_port = query_port
@@ -87,7 +87,7 @@ class ServerMonitor
     @info[:rcon_connection_problem] = true
     rcon_fail_time = Time.now.to_i - @info[:rcon_last_success]
     log "Time since last RCON success: #{rcon_fail_time.to_s << 's'}", level: rcon_fail_time > @rcon_fail_limit ? :error : :warn
-    @info.merge[:server_down] = true if rcon_fail_time > @rcon_fail_limit
+    @info[:server_down] = true if rcon_fail_time > @rcon_fail_limit || @info[:a2s_connection_problem]
   end
 
   def do_server_query
@@ -99,8 +99,8 @@ class ServerMonitor
     log "Got A2S_RULES: #{a2s_rules}"
     # Sometimes the server can be in a zombie state where server query succeeds
     # but nothing else works (including RCON); i.e. we shouldn't set server_down: false
-    # based on a successful server query response (but failure is more often
-    # indicative of an issue than RCON, which is more buggy)
+    # based on a successful server query response if RCON is reporting as working (but
+    # failure is more often indicative of an issue than RCON, which is more buggy)
     @info.merge!({
       a2s_connection_problem: false,
       a2s_info: a2s_info,
@@ -108,12 +108,13 @@ class ServerMonitor
       a2s_rules: a2s_rules,
       a2s_last_success: Time.now.to_i
     })
+    @info[:server_down] = @info[:rcon_connection_problem]
   rescue => e
     log "Server query failed", e
     @info[:a2s_connection_problem] = true
     query_fail_time = Time.now.to_i - @info[:a2s_last_success]
     log "Time since last server query success: #{query_fail_time.to_s << 's'}", level: query_fail_time > @query_fail_limit ? :error : :warn
-    @info.merge[:server_down] = true if query_fail_time > @query_fail_limit
+    @info[:server_down] = true if query_fail_time > @query_fail_limit || @info[:rcon_connection_problem]
   end
 
   def stop
