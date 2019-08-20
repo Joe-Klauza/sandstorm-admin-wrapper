@@ -1,8 +1,9 @@
 require_relative 'logger'
 
 class Buffer < Hash
-  def initialize
+  def initialize(uuid)
     self.merge!({
+      uuid: uuid,
       data: [],
       bookmarks: {},
       status: nil,
@@ -32,8 +33,8 @@ class Buffer < Hash
 
   def reset
     unless self[:persistent]
-      self[:data] = []
-      self[:bookmarks] = {}
+      self[:data].clear
+      self[:bookmarks].clear
     end
     self[:status] = nil
     self[:message] = nil

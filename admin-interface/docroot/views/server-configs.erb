@@ -1,0 +1,10 @@
+<% @configs.sort_by {|key, _| key }.each do |key, config| %>
+<div class="horizontal-expand d-flex justify-content-between">
+  <a href="#" class="col-10 dropdown-item horizontal-expand d-flex justify-content-between" onclick="loadServerConfig('<%= key %>');">
+    <div class="col-6 horizontal-expand" style="font-size: small; padding: 0;"><%= key %></div>
+  </a>
+  <a href="#" class="col-2 dropdown-item text-right" onclick="deleteServerConfig('<%= key %>');">
+    <span aria-hidden="true">&times;</span>
+  </a>
+</div>
+<% end %>

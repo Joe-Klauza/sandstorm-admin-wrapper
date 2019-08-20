@@ -10,36 +10,43 @@ class SandstormServerDaemon
   attr_accessor :executable
   attr_accessor :server_root_dir
   attr_accessor :arguments
+  attr_accessor :active_rcon_port
   attr_accessor :rcon_ip
   attr_accessor :rcon_port
   attr_accessor :rcon_pass
   attr_reader :buffer
+  attr_reader :config
   attr_reader :rcon_buffer
   attr_reader :rcon_client
-  attr_reader :server_updater
   attr_reader :game_pid
   attr_reader :threads
   attr_reader :monitor
+  attr_reader :log_file
 
-  def initialize(executable, server_root_dir, steamcmd_path, steam_appinfovdf_path, rcon_client, server_buffer, rcon_buffer)
-    @executable = executable
-    @server_root_dir = server_root_dir
+  def initialize(config, daemons, mutex, rcon_client, server_buffer, rcon_buffer)
+    @config = config.dup
+    @name = @config['server-config-name']
+    @daemons = daemons
+    @daemons_mutex = mutex
     @rcon_ip = '127.0.0.1'
     @buffer = server_buffer
     @rcon_buffer = rcon_buffer
     @rcon_client = rcon_client
-    @server_updater = ServerUpdater.new(server_root_dir, steamcmd_path, steam_appinfovdf_path)
     @game_pid = nil
     @monitor = nil
     @threads = {}
-    @config = $config_handler.config
     @buffer[:persistent] = true
     @rcon_buffer[:persistent] = true
     @buffer[:filters] = [
       Proc.new { |line| line.gsub!(/\x1b\[[0-9;]*m/, '') } # Remove color codes
     ]
+    @log_file = nil
     start_daemon
     log "Daemon initialized"
+  end
+
+  def log(message, exception=nil, level: :debug)
+    super("Server [PID #{@game_pid} Game Port #{@config['server_game_port']}] #{@buffer[:uuid]} | #{message}", exception, level: level) # Call the log function created by logger
   end
 
   def server_running?
@@ -50,26 +57,6 @@ class SandstormServerDaemon
     true
   rescue Errno::ESRCH
     false
-  end
-
-  def server_installed?
-    File.exist? @executable
-  end
-
-  def updates_running?
-    @threads[:game_update] && @threads[:game_update].alive?
-  end
-
-  def do_update_server(buffer=nil, validate: nil)
-    was_running = server_running?
-    if WINDOWS && was_running
-      do_pre_update_warning
-      do_stop_server
-    end
-    success, message = @server_updater.update_server(buffer, validate: validate)
-    @update_pending = false if success
-    WINDOWS ? do_start_server : (do_pre_update_warning; do_restart_server) if was_running
-    message
   end
 
   def do_pre_update_warning(sleep_length: 5)
@@ -88,49 +75,26 @@ class SandstormServerDaemon
     end
   end
 
-  def do_run_steamcmd(command, buffer: nil)
-    @server_updater.run_steamcmd(command, buffer: buffer)
-  end
-
   def do_send_rcon(command, host: nil, port: nil, pass: nil, buffer: nil)
     host ||= @rcon_ip
     port ||= @active_rcon_port || @config['server_rcon_port']
     port ||= @active_rcon_pass
     pass ||= @active_rcon_pass || @config['server_rcon_password']
+    buffer ||= @rcon_buffer
     log "Calling RCON client for command: #{command}"
     @rcon_client.send(host, port, pass, command, buffer: buffer)
   end
 
-  def do_start_updates
-    if updates_running?
-      "Server is already running. PID: #{@game_pid}"
-    else
-      log "Starting server", level: :info
-      @threads[:game_update] = get_game_server_thread
-      sleep 0.1 until @game_pid
-      "Server is starting. PID: #{@game_pid}"
-    end
-  end
-
-  def do_stop_updates
-    log "Stopping updates", level: :info
-    @threads.delete(:game_update).kill
-    "Automated updates stopped."
-  end
-
-  def do_install_server(buffer=nil, validate: nil)
-    log "Installing server..."
-    @server_updater.update_server(buffer, validate: validate)
-  end
-
   def do_start_server
-    if server_running? || (@threads[:game_server] && @threads[:game_server].alive?)
-      "Server is already running. PID: #{@game_pid}"
-    else
-      log "Starting server", level: :info
-      @threads[:game_server] = get_game_server_thread
-      sleep 0.1 until @game_pid
-      "Server is starting. PID: #{@game_pid}"
+    @daemons_mutex.synchronize do
+      if server_running? || (@threads[:game_server] && @threads[:game_server].alive?)
+        "Server is already running. PID: #{@game_pid}"
+      else
+        log "Starting server", level: :info
+        @threads[:game_server] = get_game_server_thread
+        sleep 0.1 until @game_pid && @log_file
+        "Server is starting. PID: #{@game_pid}"
+      end
     end
   end
 
@@ -160,9 +124,11 @@ class SandstormServerDaemon
     message
   end
 
-  def run_game_server(executable=@executable, arguments=$config_handler.get_server_arguments)
+  def run_game_server(executable=@config['server_executable'], arguments=$config_handler.get_server_arguments(@config))
+    @buffer.reset
+    @rcon_buffer.reset
     log "Applying config"
-    $config_handler.apply_server_config_files
+    $config_handler.apply_server_config_files @config, @config['server-config-name']
     @active_game_port = @config['server_game_port']
     @active_query_port = @config['server_query_port']
     @active_rcon_port = @config['server_rcon_port']
@@ -176,10 +142,24 @@ class SandstormServerDaemon
       formatter: Proc.new { |output, _| WINDOWS ? "#{datetime} | #{output.chomp}" : output.chomp } # Windows doesn't have the timestamp, so we'll add our own to make it look nice.
     ) do |pid|
       @game_pid = pid
-      Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, interval: 5, delay: 10) }
+      Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5, delay: 10) }
       @rcon_tail_thread = Thread.new do
+        last_modified_log_time = File.mtime(Dir[File.join(SERVER_LOG_DIR, '*.log')].sort_by{|f| File.mtime(f) }.last).to_i
+        other_used_logs = @daemons.map { |_, daemon| daemon.log_file }
+        @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@config['server_game_port']}] Waiting to detect log file in use"
+        log "Waiting to detect log file in use"
+        loop do
+          updated_log = Dir[File.join(SERVER_LOG_DIR, '*.log')].reject { |f| f.include?('backup') || other_used_logs.include?(f) }.sort_by{ |f| File.mtime(f) }.last
+          if File.mtime(updated_log).to_i > last_modified_log_time
+            log "Found log file in use: #{updated_log.sub(USER_HOME, '~')}"
+            @log_file = updated_log
+            break
+          end
+          sleep 0.2
+        end
+        @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@config['server_game_port']}] RCON log file detected: #{log_file.sub(USER_HOME, '~')}"
         begin
-          File.open(RCON_LOG_FILE) do |log|
+          File.open(@log_file) do |log|
             log.extend(File::Tail)
             log.interval = 1
             log.backward(0)
@@ -218,9 +198,10 @@ class SandstormServerDaemon
     @monitor = nil
     @rcon_tail_thread.kill unless @rcon_tail_thread.nil?
     @rcon_tail_thread = nil
+    @log_file = nil
     socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
     @rcon_client.delete_socket(socket) unless socket.nil?
-    Thread.new { $config_handler.apply_server_bans }
+    Thread.new { $config_handler.apply_server_bans @config['server-config-name'] }
   end
 
   def get_game_server_thread
@@ -229,19 +210,6 @@ class SandstormServerDaemon
       run_game_server
     rescue => e
       log "Game server failed", e
-    end
-  end
-
-  def get_game_update_thread
-    Thread.new do
-      begin
-        @server_updater.monitor_update do
-          @update_pending = true
-          do_update_server if $config['server_automatic_updates_enabled'].to_s.casecmp('true').zero?
-        end
-      rescue => e
-        log "Game update thread failed", e
-      end
     end
   end
 

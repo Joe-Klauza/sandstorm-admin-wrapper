@@ -55,6 +55,23 @@
     <!-- Server Update -->
     <div id="server-update-info" class="d-flex justify-content-start horizontal-expand my-1 py-2 bg-light">
     </div>
+
+    <!-- Automatic Updates -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1 py-2">
+      <div class="col-3">Automatic Updates</div>
+      <div class="col-4 justify-content-end">
+        <div class="custom-control custom-switch p-2 ml-5">
+          <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_automatic_updates_enabled"<%=' checked' if @automatic_updates %>>
+          <label class="custom-control-label" for="server_automatic_updates_enabled">Enable Updates</label>
+        </div>
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="$('#server_automatic_updates_enabled')[0].checked ? disableAutomaticUpdates() : enableAutomaticUpdates(); toggleChecked('#server_automatic_updates_enabled');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="$('#server_automatic_updates_enabled')[0].checked ? enableAutomaticUpdates() : disableAutomaticUpdates();">Save</button>
+        </div>
+      </div>
+    </div>
     <% end %>
 
     <!-- SteamCMD Log -->

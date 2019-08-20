@@ -4,23 +4,54 @@
   </div>
   <div class="d-flex flex-column horizontal-expand justify-content-between">
 
-    <!-- Server Status -->
-    <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
-      <div class="ml-4 p-2 col-2">Server Status</div>
-      <div class="ml-4 p-2 col-1"><span id="server-status" class="monospace-font horizontal-expand text-center badge badge-<%= @server_status == 'OFF' ? 'danger' : 'success' %>"><%= @server_status %></span></div>
-      <div class="p-2 col-4 justify-content-end">
-        <div class="d-flex justify-content-between">
-          <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start');">Start</button>
-          <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart');">Restart</button>
-          <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop');">Stop</button>
-        </div>
+    <!-- Server Config Selection -->
+    <div class="d-flex justify-content-between horizontal-expand bg-secondary m-1">
+      <div class="p-2 ml-4 col-2">Config Name</div>
+      <div class="p-2 col">
+        <input id="server-config-name" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server-config-name'] %>" readonly>
+        <ul class="nav nav-pills col-3">
+          <li class="nav-item dropdown horizontal-expand text-center">
+            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Configs</a>
+            <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
+              <div id='server-configs' class="horizontal-expand d-flex flex-column">
+              </div>
+            </div>
+          </li>
+        </ul>
+        <ul class="nav nav-pills col-3 flex-column bg-secondary m-1 p-2">
+          <li class="nav-item dropdown horizontal-expand d-flex justify-content-end">
+            <a id='active-servers-label' class="horizontal-expand nav-link dropdown-toggle active text-center" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Active Servers</a>
+            <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
+              <div id='active-servers' class="horizontal-expand d-flex flex-column">
+              </div>
+            </div>
+          </li>
+        </ul>
       </div>
-      <div id="threads" class="p-2 col"></div>
     </div>
 
-    <!-- Players -->
-    <div id='players' class="horizontal-expand">
-      <%= yield %>
+    <!-- Server Status -->
+    <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
+      <div class="ml-4 p-2 col-2"><%= @config['server-config-name'] %></div>
+      <div class="p-2 col-2 d-flex flex-column" style="font-size: 80%">
+        <div style="white-space: pre;">Game Port: <span id="game-port"><%= @game_port %></span></div>
+        <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= @rcon_port %></span></div>
+        <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= @query_port %></span></div>
+      </div>
+      <div id="threads" class="p-2 col-2 justify-content-center d-flex flex-column" style="font-size: 75%"></div>
+      <div class="col"></div>
+      <div class="ml-4 p-2 col-1"><span id="server-status" class="monospace-font horizontal-expand text-center badge badge-<%= @server_status == 'OFF' ? 'danger' : 'success' %>"><%= @server_status %></span></div>
+      <div class="p-2 col-2 justify-content-end">
+        <div class="d-flex justify-content-between horizontal-expand">
+          <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Start</button>
+          <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Restart</button>
+          <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monitoring Details -->
+    <div id="monitoring-details" class="horizontal-expand">
     </div>
 
     <!-- Server Log -->
@@ -46,7 +77,7 @@
       <div class="p-2 col-2 justify-content-end">
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="$('#rcon_input').val('');">Clear</button>
-          <button type="button" class="btn btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon`, 1000, {'command': $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
+          <button type="button" class="btn btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon`, 1000, {game_port: '<%= @game_port %>', command: $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
         </div>
       </div>
     </div>

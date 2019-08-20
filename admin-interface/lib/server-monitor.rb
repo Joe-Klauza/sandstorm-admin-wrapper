@@ -10,8 +10,9 @@ class ServerMonitor
   attr_reader :query_port
   attr_reader :rcon_port
   attr_reader :rcon_pass
+  attr_reader :rcon_buffer
 
-  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0, rcon_fail_limit: 60, query_fail_limit: 30, name: '')
+  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0, rcon_fail_limit: 60, query_fail_limit: 30, name: '', rcon_buffer: nil)
     @stop = false
     @ip = ip
     @query_port = query_port
@@ -21,6 +22,8 @@ class ServerMonitor
     @rcon_fail_limit = rcon_fail_limit
     @query_fail_limit = query_fail_limit
     @name = name
+    @rcon_buffer = rcon_buffer
+    @rcon_buffer[:persistent] = true
 
     @rcon_client = RconClient.new
     @info = {
@@ -72,7 +75,7 @@ class ServerMonitor
   end
 
   def do_rcon_query
-    rcon_players, rcon_bots = @rcon_client.get_players_and_bots(@ip, @rcon_port, @rcon_pass)
+    rcon_players, rcon_bots = @rcon_client.get_players_and_bots(@ip, @rcon_port, @rcon_pass, buffer: @rcon_buffer, ignore_status: true, ignore_message: true)
     process_rcon_players(rcon_players, @info[:rcon_players])
     log "Got RCON players: #{rcon_players}"
     @info.merge!({
@@ -119,12 +122,15 @@ class ServerMonitor
 
   def stop
     @stop = true
+    @rcon_buffer[:status] = true
+    @rcon_buffer[:message] = "#{@host} Monitor stopped"
     @thread.kill if @thread.respond_to?('kill')
   end
 
   def monitor
     return nil if @stop
     Thread.new do
+      @rcon_buffer.reset
       original_start = Time.now.to_i
       loop do
         lapsed = Benchmark.realtime do

@@ -58,21 +58,21 @@
   </head>
   <body class="normal-font">
     <div id="toast-templates" style="display: none;">
-      <div id="toast-template-success" class="toast success_toast bg-light" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" style="display: flex;align-items: center;">
+      <div id="toast-template-success" class="toast success_toast bg-light" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" style="display: flex;align-items: center; pointer-events: none;">
         <div class="toast-header bg-dark">
           <strong class="text-white">Success</strong>
         </div>
       </div>
 
-      <div id="toast-template-failure" class="toast failure_toast bg-light" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" style="display: flex;align-items: center;">
+      <div id="toast-template-failure" class="toast failure_toast bg-light" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" style="display: flex;align-items: center; pointer-events: none;">
         <div class="toast-header bg-danger">
           <strong class="text-white">Failure</strong>
         </div>
       </div>
     </div>
     <!-- Flexbox container for aligning the toasts -->
-    <div aria-live="polite" aria-atomic="true" style="position: fixed; min-height: 0px; z-index: 999999999 !important;">
-      <div class="d-flex flex-column" id="toast-container" style="position: fixed; top: 20px; left: 40%;">
+    <div aria-live="polite" aria-atomic="true" style="position: fixed; min-height: 0px; z-index: 999999999 !important; pointer-events: none;">
+      <div class="d-flex flex-column" id="toast-container" style="position: fixed; top: 20px; left: 40%; pointer-events: none;">
       </div>
     </div>
 

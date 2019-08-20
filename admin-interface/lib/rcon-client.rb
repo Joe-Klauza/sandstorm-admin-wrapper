@@ -303,7 +303,7 @@ class RconClient
   end
 
   # User interface
-  def send(server_ip, port, password, command, buffer: nil, timeout: 2, retries: 1)
+  def send(server_ip, port, password, command, buffer: nil, ignore_status: false, ignore_message: false, timeout: 2, retries: 1)
     socket = get_socket_for_host server_ip, port, password
     raise "Couldn't get socket for #{server_ip}:#{port}!" if socket.nil?
     packet = build_packet command
@@ -319,8 +319,8 @@ class RconClient
         buffer[:data] << "#{datetime} | RCON #{server_ip}:#{port} (RX <<) #{response}"
         num_truncated = buffer.truncate
         log "Truncated #{num_truncated} lines from buffer"
-        buffer[:status] = true
-        buffer[:message] = "RCON response received from [#{server_ip}:#{port}]."
+        buffer[:status] = true unless ignore_status
+        buffer[:message] = "RCON response received from [#{server_ip}:#{port}]." unless ignore_message
       end
     end
     response
@@ -328,15 +328,15 @@ class RconClient
     log "Error while sending RCON", e
     if buffer
       buffer.synchronize do
-        buffer[:status] = false
-        buffer[:message] = e.message
+        buffer[:status] = false unless ignore_status
+        buffer[:message] = e.message unless ignore_message
       end
     end
     raise e
   end
 
-  def get_players_and_bots(server_ip, port, password, timeout: 2, retries: 1)
-    resp = send(server_ip, port, password, 'listplayers', timeout: timeout, retries: retries)
+  def get_players_and_bots(server_ip, port, password, buffer: nil, ignore_status: false, ignore_message: false, timeout: 2, retries: 1)
+    resp = send(server_ip, port, password, 'listplayers', buffer: buffer, ignore_status: ignore_status, ignore_message: ignore_message, timeout: timeout, retries: retries)
     raise "#{server_ip}:#{port} Response was nil!" if resp.nil?
     players_text = resp.unpack('xxxxxxxxxxxxxxxxxxxxxxxxxxxxZ*').last.split("\n").last
     begin
