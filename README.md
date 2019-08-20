@@ -2,7 +2,7 @@
 
 ### About
 
-Sandstorm Admin Wrapper is a set of tools designed to ease the burden of hosting a server for the `New World Interactive` video game [Insurgency: Sandstorm](https://store.steampowered.com/app/581320/Insurgency_Sandstorm/). It is comprised of a Ruby webserver (Sinatra) and associated tools which provide an easy-to-use browser front-end for configuring and managing a server on either Linux or Windows.
+Sandstorm Admin Wrapper is a set of tools designed to ease the burden of hosting one or more servers for the `New World Interactive` video game [Insurgency: Sandstorm](https://store.steampowered.com/app/581320/Insurgency_Sandstorm/). It is comprised of a Ruby webserver (Sinatra) and associated tools which provide an easy-to-use browser front-end for configuring and managing a server on either Linux or Windows.
 
 It can also be used to remotely monitor and administer servers via RCON.
 
@@ -27,7 +27,8 @@ It can also be used to remotely monitor and administer servers via RCON.
     - Provides a simple interface to install and manually update/verify the server files
     - SteamCMD log (see known issue below for Windows)
   - **Server Config page**
-    - Easy-to-use configuration options for your server
+    - Supports multiple server configurations
+    - Easy-to-use configuration options for your servers
     - Blurring/redaction of sensitive information
     - Dropdowns for enumerated settings
     - Editable config files (Paste your current settings here! Matching settings above will override what was entered.)
@@ -38,10 +39,11 @@ It can also be used to remotely monitor and administer servers via RCON.
       - `Bans.json`
       - Local copies of these files are stored in `sandstorm-admin-wrapper/server-config`. Before launching the server, the manual config is applied to the `server-config` files, then those files are copied into the appropriate places in order for the server to use them. This prevents the server from overwriting our changes. After the server closes, any new bans are added to the local copy.
   - **Server Control page**
+    - Selectable server configuration
     - Server status
     - Start/Restart/Stop buttons
     - Detailed PID and process exit toasts
-    - Thread, player, and bot count
+    - Thread, player, and bot counts
     - Player list (with kick/ban buttons)
     - Server log
     - RCON console
@@ -72,6 +74,9 @@ It can also be used to remotely monitor and administer servers via RCON.
 - User features
   - **Change password**
   - **Log out**
+- Command-line parameters
+  - `admin-interface/lib/webapp.rb` supports the following command-line parameter(s)
+    - `--start 'My Server'` - Starts a server on boot with the `My Server` configuration. This can be used in combination with system startup scripts (e.g. systemd unit example in `extras/systemd`) to run your server(s) on boot. Use multiple `--start` parameters to start multiple servers.
 
 ### Prerequisites
 
