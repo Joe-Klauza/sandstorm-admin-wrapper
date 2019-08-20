@@ -274,7 +274,7 @@ class ConfigHandler
 
   def load_server_configs
     @server_configs = Oj.load(File.read(SERVER_CONFIGS_FILE))
-    @server_configs = {} if @server_configs.to_s.empty?
+    @server_configs = {'Default' => get_default_config} if @server_configs.nil? || @server_configs.empty?
     @server_configs
   rescue Errno::ENOENT
     {}

@@ -720,6 +720,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
         uuid
       when 'start'
         config = $config_handler.server_configs[options[:config_name]]
+        if config.nil?
+          status 400
+          return "Unknown config: #{options[:config_name]}"
+        end
         daemon = if @@daemons[config['server_game_port']].nil?
           @@daemons[config['server_game_port']] = self.class.init_daemon
         else
