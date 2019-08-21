@@ -4,7 +4,7 @@ class CertificateGenerator
   def self.generate
     key = OpenSSL::PKey::RSA.new(2048)
     public_key = key.public_key
-    subject = "/C=BE/O=Test/OU=Test/CN=Test"
+    subject = "/CN=localhost"
     cert = OpenSSL::X509::Certificate.new
     cert.subject = cert.issuer = OpenSSL::X509::Name.parse(subject)
     cert.not_before = Time.now
