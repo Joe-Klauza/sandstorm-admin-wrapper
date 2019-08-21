@@ -562,6 +562,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     redirect '/setup' unless @@prereqs_complete
     @config = $config_handler.config.dup
     config_name = @config['server-config-name']
+    $config_handler.init_server_config_files config_name unless config_name.to_s.empty?
     @game_ini = ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding)
     @engine_ini = ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding)
     @admins_txt = ERB.new(CONFIG_FILES[:admins_txt][:local_erb]).result(binding)
@@ -998,9 +999,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
       $config_handler.server_configs.delete config_name
       CONFIG_FILES.values.each do |it|
         local = ERB.new(it[:local_erb]).result(binding) # relies on config_name
-        FileUtils.rm local
+        FileUtils.rm local rescue nil
       end
-      FileUtils.rmdir File.join(CONFIG_FILES_DIR, config_name.shellescape)
+      FileUtils.rmdir File.join(CONFIG_FILES_DIR, config_name.shellescape) rescue nil
       $config_handler.write_server_configs
       "Deleted #{params['name']}"
     else

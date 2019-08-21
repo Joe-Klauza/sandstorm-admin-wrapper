@@ -332,7 +332,7 @@ class ConfigHandler
     false
   end
 
-  def init_server_config_files(config_name=nil)
+  def init_server_config_files(config_name='Default')
     CONFIG_FILES.values.each do |it|
       FileUtils.mkdir_p File.dirname(it[:actual])
       FileUtils.touch it[:actual]
