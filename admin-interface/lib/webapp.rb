@@ -4,7 +4,6 @@ require 'pry'
 require 'cgi'
 require 'net/http'
 require 'openssl'
-require 'shellwords'
 require 'sinatra/base'
 require 'sys/proctable'
 require 'sysrandom'
@@ -755,7 +754,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/config/file/:file', auth: :admin do
     config_name = params['config']
-    file = File.join CONFIG_FILES_DIR, config_name.shellescape, params['file'].gsub('..', '')
+    file = File.join CONFIG_FILES_DIR, config_name, params['file'].gsub('..', '')
     if File.exist? file
       File.read(file)
     else
@@ -769,7 +768,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     file = params['file']
     content = params['content']
     content << "\n" unless content.end_with? "\n"
-    File.write(File.join(CONFIG_FILES_DIR, config_name.shellescape, file), content)
+    File.write(File.join(CONFIG_FILES_DIR, config_name, file), content)
     "Wrote #{file.sub(USER_HOME, '~')}."
   end
 
@@ -1001,7 +1000,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
         local = ERB.new(it[:local_erb]).result(binding) # relies on config_name
         FileUtils.rm local rescue nil
       end
-      FileUtils.rmdir File.join(CONFIG_FILES_DIR, config_name.shellescape) rescue nil
+      FileUtils.rmdir File.join(CONFIG_FILES_DIR, config_name) rescue nil
       $config_handler.write_server_configs
       "Deleted #{params['name']}"
     else

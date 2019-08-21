@@ -3,7 +3,6 @@ require 'erb'
 require 'fileutils'
 require 'inifile'
 require 'oj'
-require 'shellwords'
 require 'socket'
 require 'sysrandom'
 require_relative 'logger'
@@ -33,27 +32,27 @@ CONFIG_FILES = {
   game_ini: {
     type: :ini,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Saved', 'Config', (WINDOWS ? 'WindowsServer' : 'LinuxServer'), 'Game.ini'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name.shellescape, 'Game.ini')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'Game.ini')%>"
   },
   engine_ini: {
     type: :ini,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Saved', 'Config', (WINDOWS ? 'WindowsServer' : 'LinuxServer'), 'Engine.ini'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name.shellescape, 'Engine.ini')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'Engine.ini')%>"
   },
   admins_txt: {
     type: :txt,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Admins.txt'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name.shellescape, 'Admins.txt')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'Admins.txt')%>"
   },
   mapcycle_txt: {
     type: :txt,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'MapCycle.txt'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name.shellescape, 'MapCycle.txt')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'MapCycle.txt')%>"
   },
   bans_json: {
     type: :json,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Bans.json'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name.shellescape, 'Bans.json')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'Bans.json')%>"
   }
 }
 
@@ -308,7 +307,8 @@ class ConfigHandler
   def write_server_configs(config_name=nil)
     if config_name
       log "Writing #{config_name} server config"
-      FileUtils.mkdir_p(File.join(CONFIG_FILES_DIR, config_name.shellescape))
+      FileUtils.mkdir_p(File.join(CONFIG_FILES_DIR, config_name))
+      init_server_config_files config_name
     end
     log "Writing server configs"
     File.write(SERVER_CONFIGS_FILE, Oj.dump(@server_configs))
