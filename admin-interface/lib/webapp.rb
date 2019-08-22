@@ -542,6 +542,13 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
+  post '/update-wrapper', auth: :host do
+    SelfUpdater.update_to_latest
+  rescue => e
+    status 500
+    e.message
+  end
+
   get '/', auth: :user do
     @steamcmd_path, @game_server_path = check_prereqs
     redirect '/setup' unless @steamcmd_path && @game_server_path
@@ -1046,12 +1053,6 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  post '/wrapper-update', auth: :host do
-    SelfUpdater.update_to_latest
-  rescue => e
-    status 500
-    e.message
-  end
 end
 
 def get_webrick_options(config = SandstormAdminWrapperSite.load_webapp_config)
