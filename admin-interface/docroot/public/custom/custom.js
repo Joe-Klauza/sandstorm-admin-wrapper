@@ -346,6 +346,7 @@ function saveUser(id, name, role) {
 }
 
 function updateWrapper() {
+  successToast('Updating Sandstorm Admin Wrapper...');
   $.ajax({
     url: '/update-wrapper',
     type: 'POST',
