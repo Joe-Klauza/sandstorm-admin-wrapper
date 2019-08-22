@@ -6,6 +6,7 @@ require 'pathname'
 require 'zip'
 
 class SelfUpdater
+  UPDATE_ZIP = File.join WRAPPER_ROOT, 'update.zip'
   IGNORE_FILES = [
     'config/config.toml'
   ]
@@ -31,10 +32,10 @@ class SelfUpdater
     log "Downloading #{version}: #{zip_download_url}"
 
     Dir.chdir WRAPPER_ROOT do
-      SelfUpdater.download(zip_download_url, 'update.zip')
+      SelfUpdater.download(zip_download_url, UPDATE_ZIP)
       log "Downloaded #{version} to update.zip"
       log "Extracting update.zip"
-      Zip::ZipFile.open('update.zip') do |zip_file|
+      Zip::ZipFile.open(UPDATE_ZIP) do |zip_file|
         zip_file.each do |f|
           filename = File.join Pathname(f.name).each_filename.to_a[1..] # Ignore project dir
           filepath = File.join(WRAPPER_ROOT, filename)
@@ -45,7 +46,7 @@ class SelfUpdater
     end
     log "Extracted update.zip"
     log "Deleting update.zip"
-    FileUtils.rm('update.zip')
+    FileUtils.rm(UPDATE_ZIP)
     log "Deleted update.zip"
     "Updated to #{version}! Restart the wrapper to apply."
   rescue => e
