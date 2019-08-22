@@ -344,11 +344,24 @@ function saveUser(id, name, role) {
   });
 }
 
+function updateWrapper() {
+  $.ajax({
+    url: '/update-wrapper',
+    type: 'POST',
+    success: response => {
+      successToast(response);
+    },
+    error: (request, msg, error) => {
+      failureToast(request.responseText);
+    }
+  });
+}
+
 function restartWrapper() {
   $.ajax({
     url: '/restart-wrapper',
     type: 'POST',
-    success: function(endpoint) {
+    success: function() {
       successToast("Wrapper is restarting.");
     },
     error: function(request,msg,error) {

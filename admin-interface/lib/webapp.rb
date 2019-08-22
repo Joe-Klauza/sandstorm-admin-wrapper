@@ -17,6 +17,7 @@ require_relative 'daemon'
 require_relative 'config-handler'
 require_relative 'user'
 require_relative 'rcon-client'
+require_relative 'self-updater'
 require_relative 'server-updater'
 
 Encoding.default_external = "UTF-8"
@@ -1045,6 +1046,12 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
+  post '/wrapper-update', auth: :host do
+    SelfUpdater.update_to_latest
+  rescue => e
+    status 500
+    e.message
+  end
 end
 
 def get_webrick_options(config = SandstormAdminWrapperSite.load_webapp_config)
