@@ -32,27 +32,27 @@ CONFIG_FILES = {
   game_ini: {
     type: :ini,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Saved', 'Config', (WINDOWS ? 'WindowsServer' : 'LinuxServer'), 'Game.ini'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'Game.ini')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Game.ini')%>"
   },
   engine_ini: {
     type: :ini,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Saved', 'Config', (WINDOWS ? 'WindowsServer' : 'LinuxServer'), 'Engine.ini'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'Engine.ini')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Engine.ini')%>"
   },
   admins_txt: {
     type: :txt,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Admins.txt'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'Admins.txt')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Admins.txt')%>"
   },
   mapcycle_txt: {
     type: :txt,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'MapCycle.txt'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'MapCycle.txt')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'MapCycle.txt')%>"
   },
   bans_json: {
     type: :json,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Bans.json'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_name, 'Bans.json')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, 'Bans.json')%>" # Master Bans.json due to multi-server
   }
 }
 
@@ -101,143 +101,146 @@ RULE_SETS = [
   'OfficialRules'
 ]
 
-def self.valid_port?(port)
-  port = port.to_i
-  port >= 1 && port <= 65535
-rescue
-  false
-end
-
-CONFIG_VARIABLES = {
-  'server-config-name' => {
-    'default' => 'Default',
-    'validation' => Proc.new { true }
-  },
-  'server_executable' => {
-    'default' => BINARY,
-    'validation' => Proc.new { |f| File.exist?(f) }
-  },
-  'server_default_map' => {
-    'default' => MAPMAP.keys.sample,
-    'random' => false,
-    'validation' => Proc.new { |map| MAPMAP.keys.include?(map) || map == 'Random' },
-    'type' => :map
-  },
-  'server_default_side' => {
-    'default' => SIDES.sample,
-    'random' => false,
-    'validation' => Proc.new { |side| SIDES.include?(side) || side == 'Random' }
-  },
-  'server_max_players' => {
-    'default' => '8',
-    'type' => :argument,
-    'validation' => Proc.new do |num|
-        num.to_s =~ /\A\d+\Z/
-      rescue
-        false
-      end
-  },
-  'server_max_players_override' => {
-    'default' => '10',
-    'type' => :engine_ini,
-    'validation' => Proc.new do |num|
-        num.to_s =~ /\A\d+\Z/
-      rescue
-        false
-      end,
-    'getter' => Proc.new { |engine_ini| engine_ini['SystemSettings']['net.MaxPlayersOverride'] },
-    'setter' => Proc.new { |engine_ini, players| engine_ini['SystemSettings']['net.MaxPlayersOverride'] = players }
-  },
-  'server_game_mode' => {
-    'default' => 'Checkpoint',
-    'validation' => Proc.new { |mode| GAME_MODES.include? mode }
-  },
-  'server_scenario_mode' => {
-    'default' => 'Checkpoint',
-    'validation' => Proc.new { |mode| SCENARIO_MODES.include? mode }
-  },
-  'server_rule_set' => {
-    'default' => 'None',
-    'validation' => Proc.new { |rule_set| RULE_SETS.include?(rule_set) || rule_set = 'None' }
-  },
-  'server_cheats' => {
-    'default' => 'false',
-    'validation' => Proc.new { |cheats| ['true', 'false'].include? cheats }
-  },
-  'server_hostname' => {
-    'default' => 'Sandstorm Admin Wrapper',
-    'type' => :argument,
-    'template' => '-hostname=<%= it %>',
-    'validation' => Proc.new { true },
-  },
-  'server_password' => {
-    'default' => '',
-    'type' => :argument,
-    'template' => '-password=<%= it %>',
-    'validation' => Proc.new { true },
-    'sensitive' => true
-  },
-  'server_game_port' => {
-    'default' => '7777',
-    'type' => :argument,
-    'template' => '-Port=<%= it %>',
-    'validation' => method('valid_port?'),
-  },
-  'server_query_port' => {
-    'default' => '27131',
-    'type' => :argument,
-    'template' => '-QueryPort=<%= it %>',
-    'validation' => method('valid_port?'),
-  },
-  'server_rcon_enabled' => {
-    'default' => 'true',
-    'type' => :game_ini,
-    'getter' => Proc.new { |game_ini| game_ini['Rcon']['bEnabled'] },
-    'setter' => Proc.new { |game_ini, bool| game_ini['Rcon']['bEnabled'] = bool.to_s.casecmp('true').zero? ? 'True' : 'False' },
-    'validation' => Proc.new { true }
-  },
-  'server_rcon_allow_console_commands' => {
-    'default' => 'true',
-    'type' => :game_ini,
-    'getter' => Proc.new { |game_ini| game_ini['Rcon']['bAllowConsoleCommands'] },
-    'setter' => Proc.new { |game_ini, bool| game_ini['Rcon']['bAllowConsoleCommands'] = bool.to_s.casecmp('true').zero? ? 'True' : 'False' },
-    'validation' => Proc.new { true },
-  },
-  'server_rcon_port' => {
-    'default' => '27015',
-    'type' => :game_ini,
-    'getter' => Proc.new { |game_ini| game_ini['Rcon']['ListenPort'] },
-    'setter' => Proc.new { |game_ini, port| game_ini['Rcon']['ListenPort'] = port },
-    'validation' => method('valid_port?'),
-  },
-  'server_rcon_password' => {
-    'default' => Sysrandom.base64(32),
-    'type' => :game_ini,
-    'getter' => Proc.new { |game_ini| game_ini['Rcon']['Password'] },
-    'setter' => Proc.new { |game_ini, password| game_ini['Rcon']['Password'] = password },
-    'validation' => Proc.new { true },
-    'sensitive' => true
-  },
-  'server_gslt' => {
-    'default' => '',
-    'type' => :argument,
-    'validation' => Proc.new { |token| token =~ /\A[ABCDEF0-9]+\Z/ || token.empty? },
-    'sensitive' => true
-  }
-}
-
 
 class ConfigHandler
-  attr_accessor :config
   attr_reader :monitor_configs
   attr_reader :server_configs
   attr_reader :users
 
+  CONFIG_VARIABLES = {
+    'server-config-name' => {
+      'default' => 'Default',
+      'validation' => Proc.new { true }
+    },
+    'server_executable' => {
+      'default' => BINARY,
+      'validation' => Proc.new { |f| File.exist?(f) }
+    },
+    'server_default_map' => {
+      'default' => MAPMAP.keys.sample,
+      'random' => false,
+      'validation' => Proc.new { |map| MAPMAP.keys.include?(map) || map == 'Random' },
+      'type' => :map
+    },
+    'server_default_side' => {
+      'default' => SIDES.sample,
+      'random' => false,
+      'validation' => Proc.new { |side| SIDES.include?(side) || side == 'Random' }
+    },
+    'server_max_players' => {
+      'default' => '8',
+      'type' => :argument,
+      'validation' => Proc.new do |num|
+          num.to_s =~ /\A\d+\Z/
+        rescue
+          false
+        end
+    },
+    'server_max_players_override' => {
+      'default' => '10',
+      'type' => :engine_ini,
+      'validation' => Proc.new do |num|
+          num.to_s =~ /\A\d+\Z/
+        rescue
+          false
+        end,
+      'getter' => Proc.new { |engine_ini| engine_ini['SystemSettings']['net.MaxPlayersOverride'] },
+      'setter' => Proc.new { |engine_ini, players| engine_ini['SystemSettings']['net.MaxPlayersOverride'] = players }
+    },
+    'server_game_mode' => {
+      'default' => 'Checkpoint',
+      'validation' => Proc.new { |mode| GAME_MODES.include? mode }
+    },
+    'server_scenario_mode' => {
+      'default' => 'Checkpoint',
+      'validation' => Proc.new { |mode| SCENARIO_MODES.include? mode }
+    },
+    'server_rule_set' => {
+      'default' => 'None',
+      'validation' => Proc.new { |rule_set| RULE_SETS.include?(rule_set) || rule_set = 'None' }
+    },
+    'server_cheats' => {
+      'default' => 'false',
+      'validation' => Proc.new { |cheats| ['true', 'false'].include? cheats }
+    },
+    'server_hostname' => {
+      'default' => 'Sandstorm Admin Wrapper',
+      'type' => :argument,
+      'template' => '-hostname=<%= it %>',
+      'validation' => Proc.new { true },
+    },
+    'server_password' => {
+      'default' => '',
+      'type' => :argument,
+      'template' => '-password=<%= it %>',
+      'validation' => Proc.new { true },
+      'sensitive' => true
+    },
+    'server_game_port' => {
+      'default' => '7777',
+      'type' => :argument,
+      'template' => '-Port=<%= it %>',
+      'validation' => Proc.new { |port| ConfigHandler.valid_port? port }
+    },
+    'server_query_port' => {
+      'default' => '27131',
+      'type' => :argument,
+      'template' => '-QueryPort=<%= it %>',
+      'validation' => Proc.new { |port| ConfigHandler.valid_port? port }
+    },
+    'server_rcon_enabled' => {
+      'default' => 'true',
+      'type' => :game_ini,
+      'getter' => Proc.new { |game_ini| game_ini['Rcon']['bEnabled'] },
+      'setter' => Proc.new { |game_ini, bool| game_ini['Rcon']['bEnabled'] = bool.to_s.casecmp('true').zero? ? 'True' : 'False' },
+      'validation' => Proc.new { true }
+    },
+    'server_rcon_allow_console_commands' => {
+      'default' => 'true',
+      'type' => :game_ini,
+      'getter' => Proc.new { |game_ini| game_ini['Rcon']['bAllowConsoleCommands'] },
+      'setter' => Proc.new { |game_ini, bool| game_ini['Rcon']['bAllowConsoleCommands'] = bool.to_s.casecmp('true').zero? ? 'True' : 'False' },
+      'validation' => Proc.new { true },
+    },
+    'server_rcon_port' => {
+      'default' => '27015',
+      'type' => :game_ini,
+      'getter' => Proc.new { |game_ini| game_ini['Rcon']['ListenPort'] },
+      'setter' => Proc.new { |game_ini, port| game_ini['Rcon']['ListenPort'] = port },
+      'validation' => Proc.new { |port| ConfigHandler.valid_port? port }
+    },
+    'server_rcon_password' => {
+      'default' => Sysrandom.base64(32),
+      'type' => :game_ini,
+      'getter' => Proc.new { |game_ini| game_ini['Rcon']['Password'] },
+      'setter' => Proc.new { |game_ini, password| game_ini['Rcon']['Password'] = password },
+      'validation' => Proc.new { true },
+      'sensitive' => true
+    },
+    'server_gslt' => {
+      'default' => '',
+      'type' => :argument,
+      'validation' => Proc.new { |token| token =~ /\A[ABCDEF0-9]+\Z/ || token.empty? },
+      'sensitive' => true
+    }
+  }
+
   def initialize
-    @config = load_server_config
     @users = load_user_config
     @monitor_configs = load_monitor_configs
     @server_configs = load_server_configs
+    @bans_mutex = Mutex.new
+  end
+
+  def self.valid_port?(port)
+    port = port.to_i
+    port >= 1 && port <= 65535
+  rescue
+    false
+  end
+
+  def self.sanitize_directory(directory_name)
+    directory_name.gsub(/[^ 0-9A-Za-z.\-]/, '')
   end
 
   def get_default_config
@@ -274,23 +277,12 @@ class ConfigHandler
   def load_server_configs
     @server_configs = Oj.load(File.read(SERVER_CONFIGS_FILE))
     @server_configs = {'Default' => get_default_config} if @server_configs.nil? || @server_configs.empty?
+    init_server_config_files
     @server_configs
   rescue Errno::ENOENT
-    {}
+    {'Default' => get_default_config}
   rescue => e
     log "Failed to load server configs from #{SERVER_CONFIGS_FILE}. Using empty config.", e
-    raise
-
-  end
-
-  def load_server_config(file_path=CONFIG_FILE)
-    @config = Oj.load File.read(file_path)
-    @config.merge! get_default_config.reject { |k, _| @config.keys.include? k }
-    @config
-  rescue Errno::ENOENT
-    get_default_config
-  rescue => e
-    log "Failed to load config from #{file_path}. Using default config.", e
     raise
   end
 
@@ -304,50 +296,57 @@ class ConfigHandler
     File.write(MONITOR_CONFIGS_FILE, Oj.dump(@monitor_configs))
   end
 
-  def write_server_configs(config_name=nil)
-    if config_name
-      log "Writing #{config_name} server config"
-      FileUtils.mkdir_p(File.join(CONFIG_FILES_DIR, config_name))
-      init_server_config_files config_name
-    end
-    log "Writing server configs"
-    File.write(SERVER_CONFIGS_FILE, Oj.dump(@server_configs))
+  def create_server_config(config_name, settings)
+    log "Creating server config: #{config_name}"
+    server_configs[config_name] =
+      get_default_config.merge(
+      server_configs[config_name] || {}).merge(
+      settings).merge(
+      {'server-config-name' => config_name}
+    )
+    write_server_configs
+    init_server_config_files(config_name)
+    nil
   end
 
-  def write_current_config(config=@config, file_path=CONFIG_FILE)
-    log "Writing current config"
-    File.write(file_path + '.tmp', Oj.dump(config))
-    FileUtils.mv(file_path, file_path + '.bak') if File.exist? file_path
-    FileUtils.mv(file_path + '.tmp', file_path)
+  def delete_server_config(config_name)
+    log "Deleting server config: #{config_name}"
+    server_configs.delete config_name
+    CONFIG_FILES.values.each do |it|
+      local = ERB.new(it[:local_erb]).result(binding)
+      FileUtils.rm local rescue nil
+    end
+    FileUtils.rmdir File.join(CONFIG_FILES_DIR, config_name) rescue nil
+    write_server_configs
+    nil
+  end
+
+  def write_server_configs
+    log "Writing server configs"
+    File.write(SERVER_CONFIGS_FILE, Oj.dump(@server_configs))
+    nil
   end
 
   def write_config
     write_user_config
     write_monitor_configs
     write_server_configs
-    write_current_config
     true
   rescue => e
     log 'Failed to write config', e
     false
   end
 
-  def init_server_config_files(config_name='Default')
-    CONFIG_FILES.values.each do |it|
-      FileUtils.mkdir_p File.dirname(it[:actual])
-      FileUtils.touch it[:actual]
-      if config_name.nil?
-        @server_configs.each do |config_name, _|
-          path = ERB.new(it[:local_erb]).result(binding)
-          FileUtils.mkdir_p File.dirname path
-          FileUtils.touch path
-        end
-      else
+  def init_server_config_files(config_name=nil)
+    configs = config_name.nil? ? @server_configs.keys : [config_name]
+    configs.map {|name| ConfigHandler.sanitize_directory name }.each do |config_name|
+      CONFIG_FILES.values.each do |it|
         path = ERB.new(it[:local_erb]).result(binding)
         FileUtils.mkdir_p File.dirname path
         FileUtils.touch path
       end
     end
+    nil
   end
 
   def apply_server_config_files(config, config_name)
@@ -363,20 +362,23 @@ class ConfigHandler
     nil
   end
 
-  def apply_server_bans(config_name)
-    server_bans = Oj.load(File.read CONFIG_FILES[:bans_json][:actual]) || []
-    previous_bans = Oj.load(File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)) || [] # ERB relies on config_name
-    return if server_bans == previous_bans
-    log "Applying new player bans"
-    server_bans.concat(previous_bans).uniq! { |ban| ban['playerId'] }
-    File.write(ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding), Oj.dump(server_bans))
+  def apply_server_bans
+    @bans_mutex.synchronize do
+      server_bans = Oj.load(File.read CONFIG_FILES[:bans_json][:actual]) || []
+      previous_bans = Oj.load(File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)) || []
+      return if server_bans == previous_bans
+      log "Applying new player bans"
+      server_bans.concat(previous_bans).uniq! { |ban| ban['playerId'] }
+      File.write(ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding), Oj.dump(server_bans))
+    end
+    nil
   end
 
   def set(config_name, variable, value)
     return [false, "Variable not in config: #{variable}"] unless CONFIG_VARIABLES.keys.include? variable
     return [false, "Variable has no validation: #{variable}"] unless CONFIG_VARIABLES[variable]['validation'].respond_to?('call')
-    @config = (@server_configs[config_name] = get_default_config.merge(@server_configs[config_name] || {}))
-    old_value = @server_configs[config_name][variable] rescue @config[variable]
+    config = (@server_configs[config_name] = get_default_config.merge(@server_configs[config_name] || {}))
+    old_value = config[variable]
     return [false, "Variable #{variable} is already set to #{CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : value}."] if value.to_s == old_value.to_s
     status = false
     msg = "Failed to set #{variable.inspect} to #{CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : value.inspect}"
@@ -384,9 +386,8 @@ class ConfigHandler
 
     if CONFIG_VARIABLES[variable]['validation'].call(value)
       log "Value passed validation: #{CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : value.inspect}"
-      @config[variable] = value
-      write_current_config
-      write_server_configs(config_name)
+      config[variable] = value
+      write_server_configs
       apply_game_ini_local(@server_configs[config_name], config_name) if CONFIG_VARIABLES[variable]['type'] == :game_ini
       apply_engine_ini_local(@server_configs[config_name], config_name) if CONFIG_VARIABLES[variable]['type'] == :engine_ini
       status = true
@@ -395,15 +396,11 @@ class ConfigHandler
       log msg, level: :warn
     end
 
-    return [status, msg, CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : @config[variable], CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : old_value]
+    return [status, msg, CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : config[variable], CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : old_value]
   end
 
   def get(config_name, variable)
-    if config_name
-      @server_configs[config_name][variable]
-    else
-      @config[variable]
-    end
+    @server_configs[config_name][variable]
   end
 
   def get_scenario(map, mode, side)

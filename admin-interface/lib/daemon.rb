@@ -10,10 +10,13 @@ class SandstormServerDaemon
   attr_accessor :executable
   attr_accessor :server_root_dir
   attr_accessor :arguments
-  attr_accessor :active_rcon_port
   attr_accessor :rcon_ip
   attr_accessor :rcon_port
   attr_accessor :rcon_pass
+  attr_reader :active_game_port
+  attr_reader :active_rcon_port
+  attr_reader :active_query_port
+  attr_reader :active_rcon_pass
   attr_reader :buffer
   attr_reader :config
   attr_reader :rcon_buffer

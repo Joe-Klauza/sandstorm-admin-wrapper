@@ -232,7 +232,7 @@ function loadActiveServerConfig(game_port) {
 }
 
 function loadServerConfig(name) {
-  $.get(`/server-config/${name}`, function(data) {
+  $.get(`/server-config/${encodeURIComponent(name)}`, function(data) {
     if ($('#server-status').length) {
       window.location.href = '/control';
       return;
@@ -268,12 +268,13 @@ function saveServerConfig() {
   });
   var name = $('#server-config-name').val() || $('#server-config-name').attr('placeholder');
   $.ajax({
-    url: `/server-config/${name}`,
+    url: `/server-config/${encodeURIComponent(name)}`,
     type: 'POST',
     contentType: "application/json",
     data: JSON.stringify(config),
     success: function(message) {
       successToast(message);
+      $('#server-config-name').val('').attr('placeholder', name);
       loadServerConfigs('#server-configs');
     },
     error: function(request,msg,error) {
@@ -284,7 +285,7 @@ function saveServerConfig() {
 
 function deleteServerConfig(name) {
   $.ajax({
-    url: `/server-config/${name}`,
+    url: `/server-config/${encodeURIComponent(name)}`,
     type: 'DELETE',
     success: function(message) {
       successToast(message);

@@ -36,7 +36,6 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @@buffer_mutex = Mutex.new
     @@rcon_client = RconClient.new
     @@server_updater = ServerUpdater.new(SERVER_ROOT, STEAMCMD_EXE, STEAM_APPINFO_VDF)
-    $config_handler.init_server_config_files
     @@update_thread = nil
     @@prereqs_complete = false
     init_startup_daemons unless ARGV.empty?
@@ -77,7 +76,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  def self.init_daemon(config=$config_handler.config.dup, start: false)
+  def self.init_daemon(config, start: false)
     key = config['server_game_port']
     log "Initializing daemon with game port [#{key}]", level: :info
     @@daemons[key] = SandstormServerDaemon.new(
@@ -506,10 +505,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @monitor = daemon.monitor rescue nil
     @info = @monitor.info rescue nil
     <<~HERE
-      <div style="white-space: pre;">PID: <span id="game-port">#{pid}</span></div>
-      <div style="white-space: pre;">Threads: <span id="game-port">#{threads}</span></div>
-      <div style="white-space: pre;">Players: <span id="rcon-port">#{@info[:rcon_players].size rescue 0}</span></div>
-      <div style="white-space: pre;">Bots: <span id="rcon-port">#{@info[:rcon_bots].size rescue 0}</span></div>
+      <div style="white-space: pre;">PID: <span id="pid">#{pid}</span></div>
+      <div style="white-space: pre;">Threads: <span id="threads">#{threads}</span></div>
+      <div style="white-space: pre;">Players: <span id="players">#{@info[:rcon_players].size rescue 0}</span></div>
+      <div style="white-space: pre;">Bots: <span id="bots">#{@info[:rcon_bots].size rescue 0}</span></div>
     HERE
   end
 
@@ -567,9 +566,13 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/config', auth: :admin do
     redirect '/setup' unless @@prereqs_complete
-    @config = $config_handler.config.dup
+    @config = $config_handler.server_configs[session[:active_server_config]] || $config_handler.server_configs.values.last
     config_name = @config['server-config-name']
-    $config_handler.init_server_config_files config_name unless config_name.to_s.empty?
+    if config_name.to_s.empty?
+      status 400
+      return "Unknown config"
+    end
+    $config_handler.init_server_config_files config_name
     @game_ini = ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding)
     @engine_ini = ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding)
     @admins_txt = ERB.new(CONFIG_FILES[:admins_txt][:local_erb]).result(binding)
@@ -580,11 +583,11 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/control', auth: :admin do
     redirect '/setup' unless @@prereqs_complete
-    @config = $config_handler.config
-    @game_port = @config['server_game_port']
-    @rcon_port = @config['server_rcon_port']
-    @query_port = @config['server_query_port']
-    daemon = @@daemons[@game_port]
+    @config = $config_handler.server_configs[session[:active_server_config]] || $config_handler.server_configs.values.last
+    daemon = @@daemons[@config['server_game_port']]
+    @game_port = daemon.server_running? ? daemon.active_game_port : @config['server_game_port'] rescue @config['server_game_port']
+    @rcon_port = daemon.server_running? ? daemon.active_rcon_port : @config['server_rcon_port'] rescue @config['server_rcon_port']
+    @query_port = daemon.server_running? ? daemon.active_query_port : @config['server_query_port'] rescue @config['server_query_port']
     @server_status = get_server_status(@game_port)
     erb(:'server-control', layout: :'layout-main') do
       @monitor = daemon.monitor rescue nil
@@ -594,7 +597,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/tools/:resource', auth: :admin do
-    @config = $config_handler.config.dup
+    @config = $config_handler.server_configs[session[:active_server_config]] || $config_handler.server_configs.values.last
     resource = params['resource']
     case resource
     when 'rcon'
@@ -733,7 +736,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
           return "Unknown config: #{options[:config_name]}"
         end
         daemon = if @@daemons[config['server_game_port']].nil?
-          @@daemons[config['server_game_port']] = self.class.init_daemon
+          @@daemons[config['server_game_port']] = self.class.init_daemon config
         else
           @@daemons[config['server_game_port']]
         end
@@ -817,10 +820,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/daemon/:game_port', auth: :admin do
     daemon = @@daemons[params[:game_port]]
-    if daemon
-      $config_handler.config = daemon.config.dup
-      ''
-    else
+    if daemon.nil?
       status 400
       "Could not find server daemon for game port #{params[:game_port]}"
     end
@@ -977,39 +977,29 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/server-config/:name', auth: :admin do
-    if $config_handler.server_configs[params['name']]
-      $config_handler.config = $config_handler.server_configs[params['name']]
-      Oj.dump($config_handler.server_configs[params['name']])
+    config_name = params['name']
+    config = $config_handler.server_configs[config_name]
+    if config
+      session[:active_server_config] = config_name
+      Oj.dump(config)
     else
       status 400
-      "Unknown server config: #{params['name']}"
+      "Unknown server config: #{config_name}"
     end
   end
 
   post '/server-config/:name', auth: :admin do
     overwrote = !$config_handler.server_configs[params['name']].nil?
-    data = Oj.load(request.body.read)
+    settings = Oj.load(request.body.read)
     request.body.rewind
-    $config_handler.server_configs[params['name']] =
-      $config_handler.get_default_config.merge(
-      $config_handler.server_configs[params['name']] || {}).merge(
-      data).merge(
-      {'server-config-name' => params['name']}
-    )
-    $config_handler.write_server_configs(params['name'])
+    $config_handler.create_server_config params['name'], settings
     "#{overwrote ? 'Overwrote' : 'Saved' } #{params['name']}"
   end
 
   delete '/server-config/:name', auth: :admin do
     config_name = params['name']
     if $config_handler.server_configs[config_name]
-      $config_handler.server_configs.delete config_name
-      CONFIG_FILES.values.each do |it|
-        local = ERB.new(it[:local_erb]).result(binding) # relies on config_name
-        FileUtils.rm local rescue nil
-      end
-      FileUtils.rmdir File.join(CONFIG_FILES_DIR, config_name) rescue nil
-      $config_handler.write_server_configs
+      $config_handler.delete_server_config config_name
       "Deleted #{params['name']}"
     else
       status 400
