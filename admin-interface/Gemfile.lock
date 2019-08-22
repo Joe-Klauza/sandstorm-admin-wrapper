@@ -34,6 +34,7 @@ GEM
     toml-rb (1.1.2)
       citrus (~> 3.0, > 3.0)
     unicode-display_width (1.6.0)
+    zip (2.0.2)
 
 PLATFORMS
   ruby
@@ -51,6 +52,7 @@ DEPENDENCIES
   sysrandom
   toml-rb
   unicode-display_width
+  zip
 
 BUNDLED WITH
    1.17.2
