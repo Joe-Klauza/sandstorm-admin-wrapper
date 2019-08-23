@@ -83,7 +83,7 @@ It can also be used to remotely monitor and administer servers via RCON.
 - Windows (10 tested) or Linux (Debian 9 tested)
 - A Ruby `2.6.3`+ (check with `ruby -v`) installation with the Bundler gem (`gem install bundler`). I recommend [rbenv](https://github.com/rbenv/rbenv) to manage Ruby installations on Linux and [RubyInstaller for Windows](https://rubyinstaller.org/downloads/) to install Ruby on Windows.
 - If using this tool to run a server, grab a portable version of [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Cross-Platform_Installation) (we'll extract it to `sandstorm-admin-wrapper/steamcmd/installation`)
-- Ensure the Insurgency: Sandstorm server prerequisites are installed:
+- Ensure the Insurgency: Sandstorm server prerequisites are installed (Windows):
   - Visual C++ 2015 Redistributable: https://www.microsoft.com/en-us/download/details.aspx?id=53587
   - Visual C++ 2017 Redistributable: https://aka.ms/vs/15/release/vc_redist.x64.exe
 
