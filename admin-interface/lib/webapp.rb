@@ -354,6 +354,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
       return "Invalid password. The password must be new and not blank!"
     end
     @user.password = password
+    $config_handler.write_user_config
     destination
   end
 
