@@ -147,7 +147,7 @@ class SandstormServerDaemon
       @game_pid = pid
       Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5, delay: 10) }
       @rcon_tail_thread = Thread.new do
-        last_modified_log_time = File.mtime(Dir[File.join(SERVER_LOG_DIR, '*.log')].sort_by{|f| File.mtime(f) }.last).to_i
+        last_modified_log_time = File.mtime(Dir[File.join(SERVER_LOG_DIR, '*.log')].sort_by{|f| File.mtime(f) }.last).to_i rescue 0
         other_used_logs = @daemons.map { |_, daemon| daemon.log_file }
         @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@config['server_game_port']}] Waiting to detect log file in use"
         log "Waiting to detect log file in use"
@@ -204,7 +204,7 @@ class SandstormServerDaemon
     @log_file = nil
     socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
     @rcon_client.delete_socket(socket) unless socket.nil?
-    Thread.new { $config_handler.apply_server_bans @config['server-config-name'] }
+    Thread.new { $config_handler.apply_server_bans }
   end
 
   def get_game_server_thread
