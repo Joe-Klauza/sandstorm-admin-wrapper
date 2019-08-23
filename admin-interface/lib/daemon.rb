@@ -152,7 +152,7 @@ class SandstormServerDaemon
         @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@config['server_game_port']}] Waiting to detect log file in use"
         log "Waiting to detect log file in use"
         loop do
-          updated_log = Dir[File.join(SERVER_LOG_DIR, '*.log')].reject { |f| f.include?('backup') || other_used_logs.include?(f) }.sort_by{ |f| File.mtime(f) }.last
+          updated_log = Dir[File.join(SERVER_LOG_DIR, '*.log')].reject { |f| f.include?('backup') || other_used_logs.include?(f) }.sort_by{ |f| File.mtime(f) }.last || File.join(SERVER_LOG_DIR, 'Insurgency.log')
           if File.mtime(updated_log).to_i > last_modified_log_time
             log "Found log file in use: #{updated_log.sub(USER_HOME, '~')}"
             @log_file = updated_log
