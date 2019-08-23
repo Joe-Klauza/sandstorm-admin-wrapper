@@ -341,9 +341,10 @@ class ConfigHandler
     configs = config_name.nil? ? @server_configs.keys : [config_name]
     configs.map {|name| ConfigHandler.sanitize_directory name }.each do |config_name|
       CONFIG_FILES.values.each do |it|
-        path = ERB.new(it[:local_erb]).result(binding)
-        FileUtils.mkdir_p File.dirname path
-        FileUtils.touch path
+        [ERB.new(it[:local_erb]).result(binding), it[:actual]].each do |path|
+          FileUtils.mkdir_p File.dirname path
+          FileUtils.touch path
+        end
       end
     end
     nil
