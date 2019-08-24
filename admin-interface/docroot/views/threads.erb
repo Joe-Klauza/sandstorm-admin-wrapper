@@ -1,0 +1,6 @@
+<% if is_admin? %>
+  <div style="white-space: pre;">PID: <span id="pid"><%= @pid %></span></div>
+  <div style="white-space: pre;">Threads: <span id="threads"><%= @threads %></span></div>
+<% end %>
+<div style="white-space: pre;">Players: <span id="players"><%= @info[:rcon_players].size rescue 0 %></span></div>
+<div style="white-space: pre;">Bots: <span id="bots"><%= @info[:rcon_bots].size rescue 0 %></span></div>

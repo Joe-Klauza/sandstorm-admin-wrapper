@@ -13,7 +13,7 @@ class MultiTargetLogger
   attr_reader :loggers
 
   def initialize(loggers)
-    @level = Logger::DEBUG
+    @level = Logger::INFO
     loggers.each do |name, logger|
       logger.formatter = proc do |severity, datetime, progname, message|
         "#{datetime} | #{severity.ljust SEVERITY_JUSTIFY}#{" | #{progname}" if progname} | #{message}\n"
@@ -26,6 +26,11 @@ class MultiTargetLogger
   Logger::Severity.constants.each do |severity|
     severity = severity.downcase
     define_method(severity) do |*args|
+      # Suppress SSL error for self-generated certificate
+      if args.first.to_s.end_with? ': sslv3 alert certificate unknown'
+        severity = :debug
+        args[0] = args.first.to_s
+      end
       @loggers.each { |_, logger| logger.send(severity, *args) if Logger.const_get(severity.to_s.upcase) >= logger.level }
       if args.first.is_a? Exception
         @loggers.each { |_, logger| logger.send(severity, "Backtrace:#{args.first.backtrace.join("\n  ").prepend("\n  ")}") if Logger.const_get(severity.to_s.upcase) >= logger.level }

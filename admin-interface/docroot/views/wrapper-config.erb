@@ -5,7 +5,7 @@
   <div class="d-flex flex-column horizontal-expand justify-content-between">
     <!-- Server Hostname -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2">Bind IP</div>
+      <div class="p-2 col-2 d-flex justify-content-between">Bind IP<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="<span class='monospace-font pre text-left'>    127.0.0.1 - Allow localhost only<br><%= @lan_access_bind_ip.rjust(13) %> - Allow any IP on this LAN<br>      0.0.0.0 - Allow any IP anywhere</span>" style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col">
         <input id="admin_interface_bind_ip" type="text" class="form-control" placeholder="<%= @config['admin_interface_bind_ip'] %>">
       </div>
@@ -19,7 +19,7 @@
 
     <!-- Bind Port -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2">Bind Port</div>
+      <div class="p-2 col-2 d-flex justify-content-between">Bind Port<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="This is the port to use when connecting to the wrapper." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col">
         <input id="admin_interface_bind_port" type="text" class="form-control" placeholder="<%= @config['admin_interface_bind_port'] %>">
       </div>
@@ -33,7 +33,7 @@
 
     <!-- Use SSL -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2">Use SSL (HTTPS)</div>
+      <div class="p-2 col-2 d-flex justify-content-between">Use SSL (HTTPS)<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Strongly recommended, otherwise communications are in plain text. Disable if you have (e.g.) NGINX handling your SSL." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col justify-content-end">
           <div class="custom-control custom-switch p-2 ml-5">
             <input type="checkbox" class="custom-control-input" id="admin_interface_use_ssl" <%= 'checked' if @config['admin_interface_use_ssl'] %>>
@@ -50,7 +50,7 @@
 
     <!-- Verify SSL -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2">Verify SSL (strict)</div>
+      <div class="p-2 col-2 d-flex justify-content-between">Verify SSL (strict)<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Only recommended if you have a valid certificate." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col justify-content-end">
           <div class="custom-control custom-switch p-2 ml-5">
             <input type="checkbox" class="custom-control-input" id="admin_interface_verify_ssl" <%= 'checked' if @config['admin_interface_verify_ssl'] %>>
@@ -67,7 +67,7 @@
 
     <!-- SSL Cert Path -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2">SSL Cert Path</div>
+      <div class="p-2 col-2 d-flex justify-content-between">SSL Cert Path<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="The path to your SSL certificate. Use this to provide a signed certificate for the wrapper webserver." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col">
         <input id="admin_interface_ssl_cert" type="text" class="form-control" placeholder="<%= @config['admin_interface_ssl_cert'] %>">
       </div>
@@ -81,7 +81,7 @@
 
     <!-- SSL Key Path -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2">SSL Key Path</div>
+      <div class="p-2 col-2 d-flex justify-content-between">SSL Key Path<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="The path to your SSL key. Use this to provide a signed certificate for the wrapper webserver." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col">
         <input id="admin_interface_ssl_key" type="text" class="form-control" placeholder="<%= @config['admin_interface_ssl_key'] %>">
       </div>
@@ -95,12 +95,13 @@
 
     <!-- Session Secret -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2">Session Secret</div>
+      <div class="p-2 col-2 d-flex justify-content-between">Session Secret<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Set this in order to persist user sessions over wrapper restarts. You won't have to log in again every time the wrapper restarts. Keep this secret secret." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col-4">
         <input id="admin_interface_session_secret" type="text" class="form-control blur" placeholder="<%= @config['admin_interface_session_secret'] %>">
       </div>
-      <div class="p-2 col-2">
-        <button id="admin_interface_session_secret_revealer" type="button" class="btn btn-success horizontal-expand mr-4" onclick="revealHide('#admin_interface_session_secret', '#admin_interface_session_secret_revealer');">Reveal</button>
+      <div class="p-2 col-2 d-flex justify-content-start">
+        <button type="button" class="btn btn-sm btn-outline-warning horizontal-expand mx-1" onclick="generatePassword('#admin_interface_session_secret');">Generate</button>
+        <button id="admin_interface_session_secret_revealer" type="button" class="btn btn-sm btn-success horizontal-expand mr-4" onclick="revealHide('#admin_interface_session_secret', '#admin_interface_session_secret_revealer');">Reveal</button>
       </div>
       <div class="p-2 col-4">
         <div class="d-flex justify-content-between">
@@ -112,13 +113,19 @@
 
     <!-- Update Wrapper -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2"><button type="button" class="btn btn-info m-1" onclick="updateWrapper();">Update Wrapper</button></div>
-      <div class="p-2 col text-dark d-inline-block">Attempts to update to the latest release on <a target="_blank" href="https://github.com/Joe-Klauza/sandstorm-admin-wrapper/releases">GitHub</a>.</div>
+      <div class="p-2 col-2 d-flex justify-content-between">
+        <button type="button" class="btn btn-info m-1" onclick="updateWrapper();">Update Wrapper</button>
+        <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Downloads and extracts the latest release from GitHub." style="font-size: 125%;font-weight: bold;">?</button>
+      </div>
+      <div class="p-2 col text-dark d-inline-block">Updates to the latest release on <a target="_blank" href="https://github.com/Joe-Klauza/sandstorm-admin-wrapper/releases">GitHub</a>.</div>
     </div>
 
     <!-- Restart Wrapper -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-2"><button type="button" class="btn btn-danger m-1" onclick="restartWrapper();">Restart Wrapper</button></div>
+      <div class="p-2 col-2 d-flex justify-content-between">
+        <button type="button" class="btn btn-danger m-1" onclick="restartWrapper();">Restart Wrapper</button>
+        <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Restarts the wrapper (and any running servers). Use this to apply updates and changes saved on this page. Edit config/config.toml to change these settings if you lose access." style="font-size: 125%;font-weight: bold;">?</button>
+      </div>
       <div class="p-2 col text-dark">This also stops all Sandstorm servers.</div>
     </div>
 

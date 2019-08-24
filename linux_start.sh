@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-pushd admin-interface
+wrapper_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-bundle && bundle exec ruby lib/webapp.rb
+cd "$wrapper_root"/admin-interface
+
+bundle && bundle exec ruby "$wrapper_root"/admin-interface/lib/webapp.rb "$@"
 

@@ -27,7 +27,7 @@ class SandstormServerDaemon
   attr_reader :log_file
 
   def initialize(config, daemons, mutex, rcon_client, server_buffer, rcon_buffer)
-    @config = config.dup
+    @config = config
     @name = @config['server-config-name']
     @daemons = daemons
     @daemons_mutex = mutex
@@ -204,7 +204,7 @@ class SandstormServerDaemon
     @log_file = nil
     socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
     @rcon_client.delete_socket(socket) unless socket.nil?
-    Thread.new { $config_handler.apply_server_bans }
+    $config_handler.apply_server_bans
   end
 
   def get_game_server_thread

@@ -1,7 +1,0 @@
-admin_interface_bind_ip         = "127.0.0.1" # Set to "0.0.0.0" to allow external connections; bad idea without user roles (use SSH port forwarding for now to access from another machine)
-admin_interface_bind_port       = "51422" # The port you'll use to access the web interface. Certbot/NGINX can be used to forward requests at ports 80/443
-admin_interface_use_ssl         = true # Whether to use SSL; you may want to disable this if you have NGINX handling your SSL communications
-admin_interface_verify_ssl      = false # Whether to verify SSL connections
-admin_interface_ssl_cert        = "/etc/letsencrypt/live/your-domain.com/fullchain.pem" # Only applicable if using SSL; WEBrick will generate ones if these don't exist
-admin_interface_ssl_key         = "/etc/letsencrypt/live/your-domain.com/privkey.pem" # Only applicable if using SSL; WEBrick will generate ones if these don't exist
-admin_interface_session_secret  = "" # Used to persist sessions over webserver restarts (if not blank). Use a long, random string (generate with a password manager)

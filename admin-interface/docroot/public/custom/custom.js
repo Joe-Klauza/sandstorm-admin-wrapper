@@ -1,9 +1,9 @@
-// var touchDevice = (navigator.maxTouchPoints || 'ontouchstart' in document.documentElement);
-// if (touchDevice) {
-//   var tooltipTrigger = 'hover click'
-// } else {
-//   var tooltipTrigger = 'hover'
-// }
+var touchDevice = (navigator.maxTouchPoints || 'ontouchstart' in document.documentElement);
+if (touchDevice) {
+  var tooltipTrigger = 'hover click'
+} else {
+  var tooltipTrigger = 'hover'
+}
 
 // var user_scrolled_tailing_log = false;
 var server_log_active = false;
@@ -23,7 +23,9 @@ var tailBufferUuids = [];
 var tailBufferStopUuids = [];
 
 $(document).ready(function() {
-//   $("body").tooltip({ selector: '[data-toggle=tooltip]', trigger : tooltipTrigger });
+  $(() => {
+    $('[data-toggle="tooltip"]').tooltip({ trigger : tooltipTrigger, container : 'body' })
+  });
 
   // TO DO - abstract to all log elements; use element attribute to track scrolled state
   // if ($('#tailing-log').length) {
@@ -238,8 +240,17 @@ function loadServerConfig(name) {
       return;
     }
     config = JSON.parse(data);
-    $.each(config, (key, val)=>{
+    $.each(config, (key, val) => {
       console.log(`${key} => ${val}`);
+      if (key === 'server_mutators')
+      {
+        $('.server-config-mutator-input').each((i, el) => { el.checked = false });
+        $.each(val, (i, mutator) => {
+          $(`#server_mutator_${mutator}`)[0].checked = true;
+        });
+        setMutatorCount();
+        return;
+      }
       var element = $(`#${key}`)
       if (element.length) {
         if (element.hasClass('server-config-text-input')) {
@@ -266,6 +277,13 @@ function saveServerConfig() {
   $('.server-config-checkbox-input').each((index, element)=>{
     config[element.id] = element.checked
   });
+  var mutators = []
+  $('.server-config-mutator-input').each((index, element) =>{
+    if (element.checked) {
+      mutators.push(element.getAttribute('mutator-key'));
+    }
+  });
+  config['server_mutators'] = mutators
   var name = $('#server-config-name').val() || $('#server-config-name').attr('placeholder');
   $.ajax({
     url: `/server-config/${encodeURIComponent(name)}`,
@@ -365,6 +383,7 @@ function restartWrapper() {
     type: 'POST',
     success: function() {
       successToast("Wrapper is restarting.");
+      setTimeout(()=>{ window.location.href = '/wrapper-config'; }, 2000);
     },
     error: function(request,msg,error) {
       failureToast(request.responseText);
@@ -443,12 +462,25 @@ function startServerRconTail(element, game_port, interval) {
   }
 }
 
-function updatePlayers(game_port) {
+function updateServerList(element) {
+  $.ajax({
+    url: `/server-list`,
+    type: 'GET',
+    success: function(data) {
+      $(element || '#server-list').html(data);
+    },
+    error: function(request,msg,error) {
+      console.log("Failed to request server list.");
+    }
+  });
+}
+
+function updatePlayers(game_port, element) {
  $.ajax({
     url: `/players/${game_port}`,
     type: 'GET',
     success: function(data) {
-      $('#players').html(data);
+      $(element || '#players').html(data);
     },
     error: function(request,msg,error) {
       console.log("Failed to request players.");
@@ -456,12 +488,12 @@ function updatePlayers(game_port) {
   });
 }
 
-function updateThreads(game_port) {
+function updateThreads(game_port, element) {
  $.ajax({
     url: `/threads/${game_port}`,
     type: 'GET',
     success: function(data) {
-      $('#threads').html(data);
+      $(element || '#threads').html(data);
     },
     error: function(request,msg,error) {
       console.log("Failed to request threads.");
@@ -469,7 +501,7 @@ function updateThreads(game_port) {
   });
 }
 
-function updateServerStatusBadge(game_port, rcon_port) {
+function updateServerStatusBadge(game_port, rcon_port, status_element) {
   game_port = $(game_port).html();
   rcon_port = $(rcon_port).html();
   $.get(`/server-status/${game_port}`, function(data) {
@@ -491,20 +523,20 @@ function updateServerStatusBadge(game_port, rcon_port) {
     } else {
       add = 'badge-success'
       remove = 'badge-danger'
-      if (!server_log_active) {
+      if (!server_log_active && $('#server-log').length) {
         setTimeout(startServerLogTail('#server-log', game_port, server_log_tail_interval), 0);
         // setTimeout(() => {updatePlayers($('#game-port').html());}, 0);
         setTimeout(() => {updateThreads($('#game-port').html());}, 0);
         // updatePlayersInterval = setInterval(() => {updatePlayers($('#game-port').html());}, 5000);
         updateThreadsInterval = setInterval(() => {updateThreads($('#game-port').html());}, 5000)
-        setTimeout(() => { updateMonitoringDetails('127.0.0.1', rcon_port); }, 750);
+        setTimeout(() => { updateMonitoringDetails('127.0.0.1', game_port); }, 750);
         updateMonitoringDetailsInterval = setInterval(() => { updateMonitoringDetails('127.0.0.1', rcon_port); }, 2000);
       }
-      if (!server_rcon_log_active) {
+      if (!server_rcon_log_active && $('#rcon-log').length) {
         setTimeout(startServerRconTail('#rcon-log', game_port, server_log_tail_interval), 0);
       }
     }
-    $('#server-status').addClass(add).removeClass(remove).text(data);
+    $(status_element || '#server-status').addClass(add).removeClass(remove).text(data);
   });
 }
 
@@ -586,7 +618,8 @@ function failureToast(string) {
 function copyToClipboard(element, sensitive) {
   var $temp = $("<input>");
   $("body").append($temp);
-  $temp.val($(element).text().trim()).select();
+  var text = $(element).text().trim() || $(element).val().trim() || $(element).attr('placeholder').trim()
+  $temp.val(text).select();
   document.execCommand("copy");
   if (typeof sensitive === 'undefined' || !sensitive) {
     successToast(`Successfully copied '${$temp.val()}' to clipboard!`);
@@ -899,8 +932,11 @@ function enableAutomaticUpdates() {
   });
 }
 
-function htmlDecode(input)
-{
-  var doc = new DOMParser().parseFromString(input, "text/html");
-  return doc.documentElement.textContent;
+function setMutatorCount() {
+  var size = $('.server-config-mutator-input').filter(":checked").length;
+  $('#mutator-count').html(size);
+}
+
+function generatePassword(element) {
+  $.get('/generate-password', (password) => { $(element).val(password); });
 }

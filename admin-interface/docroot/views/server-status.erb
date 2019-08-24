@@ -1,0 +1,13 @@
+<div class="d-flex flex-column horizontal-expand mb-3">
+  <div class="container-fluid d-flex justify-content-center bg-primary m-1">
+    <h3 class="py-2">Server Status</h3>
+  </div>
+  <div id="server-list" class="d-flex flex-column horizontal-expand justify-content-between">
+    <%= yield %>
+  </div>
+</div>
+
+<script>
+  setInterval(()=>{ updateServerList(); }, 15000);
+</script>
+

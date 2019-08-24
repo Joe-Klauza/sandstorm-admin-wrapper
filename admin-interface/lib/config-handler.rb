@@ -16,6 +16,7 @@ SERVER_CONFIGS_FILE = File.join CONFIG_PATH, 'server-configs.json'
 WRAPPER_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..', '..')).freeze
 WEBAPP_ROOT = File.join WRAPPER_ROOT, 'admin-interface'
 WEBAPP_CONFIG = File.join(WRAPPER_ROOT, 'config', 'config.toml')
+WEBAPP_CONFIG_SAMPLE = File.join(WRAPPER_ROOT, 'config', 'config.toml.sample')
 SERVER_ROOT = File.join WRAPPER_ROOT, 'sandstorm-server'
 STEAMCMD_ROOT = File.join WRAPPER_ROOT, 'steamcmd'
 STEAMCMD_EXE = File.join STEAMCMD_ROOT, 'installation', (WINDOWS ? "steamcmd.exe" : "steamcmd.sh")
@@ -60,6 +61,7 @@ MAPMAP = {
   'Canyon'    => 'Crossing',
   'Compound'  => 'Outskirts',
   'Farmhouse' => 'Farmhouse',
+  'Hillside'  => 'Hillside',
   'Ministry'  => 'Ministry',
   'Mountain'  => 'Summit',
   'Oilfield'  => 'Refinery',
@@ -100,12 +102,44 @@ RULE_SETS = [
   'MatchmakingCasual',
   'OfficialRules'
 ]
+MUTATORS = {
+  'AllYouCanEat' => { 'name' => 'All You Can Eat', 'description' => 'Start with 100 supply points.' },
+  'AntiMaterielRiflesOnly' => { 'name' => 'Anti-Materiel Only', 'description' => 'Only anti-materiel rifles are available along with normal equipment and explosives.' },
+  'BoltActionsOnly' => { 'name' => 'Bolt-Actions Only', 'description' =>'Only bolt-action rifles are available along with normal equipment and explosives.' },
+  'Broke' => { 'name' => 'Broke', 'description' => 'Start with 0 supply poinys.' },
+  'BulletSponge' => { 'name' => 'Bullet Sponge', 'description' => 'Health is increased.' },
+  'Competitive' => { 'name' => 'Competitive', 'description' => 'Equipment is more expensive, rounds are shorter, and capturing objectives is faster.' },
+  'CompetitiveLoadouts' => { 'name' => 'Competitive Loadouts', 'description' => 'Player classes are replaced with those from Competitive.' },
+  'FastMovement' => { 'name' => 'Fast Movement', 'description' => 'Move faster.' },
+  'Frenzy' => { 'name' => 'Frenzy', 'description' => 'Fight against AI enemies who only use melee attacks. Watch out for special enemies.' },
+  'Guerrillas' => { 'name' => 'Guerrillas', 'description' => 'Start with 5 supply points.' },
+  'Hardcore' => { 'name' => 'Hardcore', 'description' => 'Mutator featuring slower movement speeds and longer capture times.' },
+  'HeadshotOnly' => { 'name' => 'Headshots Only', 'description' => 'Players only take damage when shot in the head.' },
+  'HotPotato' => { 'name' => 'Hot Potato', 'description' => 'A live fragmentation grenade is dropped on death.' },
+  'LockedAim' => { 'name' => 'Locked Aim', 'description' => 'Weapons always point to the center of the screen.' },
+  'LowGravity' => { 'name' => 'Low Gravity', 'description' => 'Float when jumping or falling, and shoot while midair.' },
+  'NoAim' => { 'name' => 'No Aim Down Sights', 'description' => 'Aiming down sights is disabled.' },
+  'PistolsOnly' => { 'name' => 'Pistols Only', 'description' => 'Only pistols are available along with normal equipment and explosives.' },
+  'ShotgunsOnly' => { 'name' => 'Shotguns Only', 'description' => 'Only Shotguns are available along with normal equipment and explosives.' },
+  'SlowCaptureTimes' => { 'name' => 'Slow Capture Times', 'description' => 'Objectives will take longer to capture.' },
+  'SlowMovement' => { 'name' => 'Slow Movement', 'description' => 'Move slower.' },
+  'SoldierOfFortune' => { 'name' => 'Soldier of Fortune', 'description' => 'Gain supply points as your score increases.' },
+  'SpecialOperations' => { 'name' => 'Special Operations', 'description' => 'Start with 30 supply points.' },
+  'Strapped' => { 'name' => 'Strapped', 'description' => 'Start with 1 supply point.' },
+  'Ultralethal' => { 'name' => 'Ultralethal', 'description' => 'Everyone dies with one shot.' },
+  'Vampirism' => { 'name' => 'Vampirism', 'description' => 'Receive health when dealing damage to enemies equal to the amount of damage dealt.' },
+  'Warlords' => { 'name' => 'Warlords', 'description' => 'Start with 10 supply points.' }
+}
 
 
 class ConfigHandler
   attr_reader :monitor_configs
   attr_reader :server_configs
   attr_reader :users
+
+  def self.generate_password
+    Sysrandom.base64(32 + Sysrandom.random_number(32)).gsub("\n", '')
+  end
 
   CONFIG_VARIABLES = {
     'server-config-name' => {
@@ -159,6 +193,10 @@ class ConfigHandler
       'default' => 'None',
       'validation' => Proc.new { |rule_set| RULE_SETS.include?(rule_set) || rule_set = 'None' }
     },
+    'server_mutators' => {
+      'default' => [],
+      'validation' => Proc.new { |mutators| mutators.all? { |mutator| MUTATORS.keys.include?(mutator) } }
+    },
     'server_cheats' => {
       'default' => 'false',
       'validation' => Proc.new { |cheats| ['true', 'false'].include? cheats }
@@ -210,7 +248,7 @@ class ConfigHandler
       'validation' => Proc.new { |port| ConfigHandler.valid_port? port }
     },
     'server_rcon_password' => {
-      'default' => Sysrandom.base64(32),
+      'default' => ConfigHandler.generate_password,
       'type' => :game_ini,
       'getter' => Proc.new { |game_ini| game_ini['Rcon']['Password'] },
       'setter' => Proc.new { |game_ini, password| game_ini['Rcon']['Password'] = password },
@@ -249,15 +287,19 @@ class ConfigHandler
     defaults
   end
 
-  def load_user_config
-    @users = Oj.load(File.read(USERS_CONFIG_FILE))
-    @users = {} if @users.to_s.empty?
-    @users
-  rescue Errno::ENOENT
+  def get_default_user_config
     default_admin_user = User.new('admin', :host, password: BCrypt::Password.create('password').to_s, initial_password: 'password')
     {
       default_admin_user.id => default_admin_user
     }
+  end
+
+  def load_user_config
+    @users = Oj.load(File.read(USERS_CONFIG_FILE))
+    @users = get_default_user_config if @users.to_s.strip.empty?
+    @users
+  rescue Errno::ENOENT
+    get_default_user_config
   rescue => e
     log "Failed to load user config from #{USERS_CONFIG_FILE}. Using default user config.", e
     raise
@@ -278,6 +320,9 @@ class ConfigHandler
     @server_configs = Oj.load(File.read(SERVER_CONFIGS_FILE))
     @server_configs = {'Default' => get_default_config} if @server_configs.nil? || @server_configs.empty?
     init_server_config_files
+    @server_configs.each do |config_name, config|
+      server_configs[config_name] = get_default_config.merge(config)
+    end
     @server_configs
   rescue Errno::ENOENT
     {'Default' => get_default_config}
@@ -298,12 +343,10 @@ class ConfigHandler
 
   def create_server_config(config_name, settings)
     log "Creating server config: #{config_name}"
-    server_configs[config_name] =
-      get_default_config.merge(
-      server_configs[config_name] || {}).merge(
-      settings).merge(
-      {'server-config-name' => config_name}
-    )
+    server_configs[config_name] = get_default_config.
+        merge(server_configs[config_name] || {}).
+        merge(settings).
+        merge({'server-config-name' => config_name})
     write_server_configs
     init_server_config_files(config_name)
     nil
@@ -435,6 +478,7 @@ class ConfigHandler
       "-MapCycle=MapCycle"
     )
     arguments.push("-ruleset=#{config['server_rule_set']}") unless config['server_rule_set'] == 'None'
+    arguments.push("-mutators=#{config['server_mutators'].join(',')}") unless config['server_mutators'].empty?
     if config['server_gslt'].to_s.empty?
       arguments.push("-EnableCheats") if config['server_cheats'].to_s.casecmp('true').zero?
     else

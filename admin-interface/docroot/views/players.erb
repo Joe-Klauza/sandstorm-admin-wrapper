@@ -10,7 +10,7 @@
     <div class="col-3">Player</div>
     <div class="col-2">Score</div>
     <div class="col-2">Duration</div>
-    <div class="col-5">Admin</div>
+    <div class="col-5"><% if is_admin? %>Admin<% end %></div>
   </div>
   <% players.sort_by { |p| [p['score'].to_i, (p['duration'] || ''), p['name']] }.reverse.each_with_index do |player, i| %>
   <div class="row horizontal-expand m-1 p-1 align-items-center text-white" style="background-color:#<%= i.even? ? '393b44' : '535663'%>">
@@ -20,8 +20,10 @@
     <div class="col-2"><%= player['score'] %></div>
     <div class="col-2"><%= player['duration'] %></div>
     <div class="col-5">
+      <% if is_admin? %>
       <button class="btn btn-warning m-1" data-toggle="modal" data-target="#confirm_modal" onclick="confirmModal('Kick <%= "#{player['name']} (#{player['steam_id']})" %>', 'Are you sure you want to kick <%= "#{player['name']} (#{player['steam_id']})" %>?', 'playerKick(\'<%= @monitor.ip %>\', \'<%= @monitor.rcon_port %>\', \'<%= CGI.escape @monitor.rcon_pass %>\', \'<%= player['steam_id'] %>\')', 'failureToast(\'Failed to kick player.\'');">Kick</button>
       <button class="btn btn-danger m-1" data-toggle="modal" data-target="#confirm_modal" onclick="confirmModal('Ban <%= "#{player['name']} (#{player['steam_id']})" %>', 'Are you sure you want to ban <%= "#{player['name']} (#{player['steam_id']})" %>?', 'playerBan(\'<%= @monitor.ip %>\', \'<%= @monitor.rcon_port %>\', \'<%= CGI.escape @monitor.rcon_pass %>\', \'<%= player['steam_id'] %>\')', 'failureToast(\'Failed to ban player.\'');">Ban</button>
+      <% end %>
     </div>
   </div>
   <% end %>

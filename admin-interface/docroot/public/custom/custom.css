@@ -98,6 +98,15 @@ div {
   white-space: pre;
 }
 
+.pre {
+  white-space: pre;
+}
+
+.tooltip-inner {
+  max-width: 350px;
+  width: inherit;
+}
+
 /* Pushy */
 .pushy {
   overflow-x: hidden;

@@ -77,18 +77,22 @@
     </div>
 
     <!-- Pushy sidebar -->
-    <nav class="pushy pushy-left" data-focus="#server-setup-link">
+    <nav class="pushy pushy-left" data-focus="#about-link">
       <div class="pushy-content">
         <ul>
           <!-- Submenu -->
           <li class="pushy-submenu pushy-submenu-open">
             <button>Server</button>
             <ul>
-              <li id="server-setup-link" class="pushy-link"><a href="/setup">Setup</a></li>
+              <% if is_admin? %>
+              <li class="pushy-link"><a href="/setup">Setup</a></li>
               <li class="pushy-link"><a href="/config">Config</a></li>
               <li class="pushy-link"><a href="/control">Control</a></li>
+              <% end %>
+              <li class="pushy-link"><a href="/status">Status</a></li>
             </ul>
           </li>
+          <% if is_admin? %>
           <li class="pushy-submenu pushy-submenu-open">
             <button>Tools</button>
             <ul>
@@ -97,6 +101,8 @@
               <li class="pushy-link"><a href="/tools/steamcmd">SteamCMD</a></li>
             </ul>
           </li>
+          <% end %>
+          <% if is_host? %>
           <li class="pushy-submenu pushy-submenu-open">
             <button>Wrapper</button>
             <ul>
@@ -104,7 +110,8 @@
               <li class="pushy-link"><a href="/wrapper-users">Users</a></li>
             </ul>
           </li>
-          <li class="pushy-link"><a href="/about">About</a></li>
+          <% end %>
+          <li id="about-link" class="pushy-link"><a href="/about">About</a></li>
           <li class="pushy-link"><a href="/change-password">Change Password</a></li>
           <li class="pushy-link"><a href="/logout">Log Out</a></li>
         </ul>
@@ -148,8 +155,12 @@
   <!-- Pushy (sidebar) -->
   <script src="/pushy/pushy.min.js"></script>
   <!-- Touch punch (for jQuery touch controls) -->
+  <!-- Store the jQuery tooltip function to avoid jQueryUI's implementation -->
+  <script>var _tooltip = jQuery.fn.tooltip;</script>
   <script src="/touch-punch/jquery-ui.min.js"></script>
   <script src="/touch-punch/jquery.ui.touch-punch.min.js"></script>
+  <script>jQuery.fn.tooltip = _tooltip;</script>
+
   <!-- Ours -->
   <script src="/custom/custom.js"></script>
 </html>

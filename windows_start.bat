@@ -6,7 +6,7 @@ if ERRORLEVEL 1 goto bundle_error
 echo Starting webapp
 
 :run_webapp
-call bundle exec ruby lib/webapp.rb
+call bundle exec ruby lib/webapp.rb %*
 echo Error level: %errorlevel%
 if errorlevel 2 goto run_webapp
 if errorlevel 1 goto exit_error

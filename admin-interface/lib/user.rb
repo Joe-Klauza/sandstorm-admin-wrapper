@@ -32,7 +32,7 @@ class User
   end
 
   def generate_initial_password
-    @initial_password = Sysrandom.base64(32 + Sysrandom.random_number(32))
+    @initial_password = ConfigHandler.generate_password
     @password = BCrypt::Password.create(@initial_password).to_s
   end
 

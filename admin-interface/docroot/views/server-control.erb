@@ -32,21 +32,18 @@
 
     <!-- Server Status -->
     <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
-      <div class="ml-4 p-2 col-2"><%= @config['server-config-name'] %></div>
+      <div class="ml-4 p-2 col-2 badge badge-primary"><%= @config['server-config-name'] %></div>
       <div class="p-2 col-2 d-flex flex-column" style="font-size: 80%">
         <div style="white-space: pre;">Game Port: <span id="game-port"><%= @game_port %></span></div>
-        <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= @query_port %></span></div>
+        <div style="white-space: pre;">Query Port: <span id="query-port"><%= @query_port %></span></div>
         <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= @rcon_port %></span></div>
       </div>
       <div id="threads" class="p-2 col-2 justify-content-center d-flex flex-column" style="font-size: 75%"></div>
-      <div class="col"></div>
-      <div class="ml-4 p-2 col-1"><span id="server-status" class="monospace-font horizontal-expand text-center badge badge-<%= @server_status == 'OFF' ? 'danger' : 'success' %>"><%= @server_status %></span></div>
-      <div class="p-2 col-2 justify-content-end">
-        <div class="d-flex justify-content-between horizontal-expand">
-          <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Start</button>
-          <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Restart</button>
-          <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Stop</button>
-        </div>
+      <div class="p-2 col d-flex justify-content-end">
+        <div class="ml-4 p-2 col-2"><span id="server-status" class="monospace-font horizontal-expand text-center badge badge-<%= @server_status == 'OFF' ? 'danger' : 'success' %>"><%= @server_status %></span></div>
+        <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Start</button>
+        <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Restart</button>
+        <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Stop</button>
       </div>
     </div>
 

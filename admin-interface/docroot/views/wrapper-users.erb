@@ -16,7 +16,7 @@
           <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Roles</a>
           <div class="dropdown-menu" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
             <% User::ROLES.keys.each do |role| %>
-            <a class="dropdown-item" onclick="$('#new-user-role').val('<%= role.to_s.capitalize %>')"><%= role.to_s.capitalize %></a>
+            <a class="dropdown-item" onclick="$('#new-user-role').val('<%= role.to_s.capitalize %>')" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="<%= role == :host ? 'Has full access to everything' :  (role == :admin ? 'Has access to everything except wrapper/user config' : 'Currently unused; will later have access to server status/players') %>"><%= role.to_s.capitalize %></a>
             <% end %>
           </div>
         </li>

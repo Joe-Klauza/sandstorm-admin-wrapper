@@ -223,7 +223,7 @@ class RconClient
     header, _ = if IO.select([socket], nil, nil, timeout)
       socket.recv 12
     end
-    raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if header.nil?
+    raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if header.to_s.empty?
     log "#{socket.remote_host.ljust(21)} Header: #{header.inspect}"
     size, id, type = header.unpack('l<l<l<')
     if type == 2 # Authentication
@@ -240,7 +240,7 @@ class RconClient
       header, _ = if IO.select([socket], nil, nil, timeout)
         socket.recv 12
       end
-      raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if header.nil?
+      raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if header.to_s.empty?
       log "#{socket.remote_host.ljust(21)} Header: #{header.inspect}"
       size, id, type = header.unpack('l<l<l<')
       raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if size.nil? || size.zero?
