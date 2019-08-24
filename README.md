@@ -48,6 +48,8 @@ It can also be used to remotely monitor and administer servers via RCON.
     - Server log
     - RCON console
     - RCON log
+  - **Server Status page**
+    - Read-only listing of running servers with their metadata and players
 - Extra tools
   - **Remote Monitor Tool**
     - Allows monitoring and administration of servers when provided with valid IP, Query Port, RCON Port, and RCON Password
@@ -69,14 +71,19 @@ It can also be used to remotely monitor and administer servers via RCON.
     - User roles:
       - `Host`: Server host; can configure webserver, users, and everything else
       - `Admin`: Server admin; can do everything except configure the webserver and users
-      - `User`: Currently unused; this will eventually be a read-only role that can access a server status page with player list
+      - `User`: Read-only role which can access basic account features and the server status page
     - New users have a random password automatically generated; this (along with the user name) is given to the user by the host. Upon first login, users are asked to change their password. This helps keep passwords private.
 - User features
   - **Change password**
   - **Log out**
 - Command-line parameters
   - `admin-interface/lib/webapp.rb` supports the following command-line parameter(s)
-    - `--start 'My Server'` - Starts a server on boot with the `My Server` configuration. This can be used in combination with system startup scripts (e.g. systemd unit example in `extras/systemd`) to run your server(s) on boot. Use multiple `--start` parameters to start multiple servers.
+    - `--start/-s [server_config]`
+      - Example: `-s 'My Server'`
+      - Starts a server on boot with the `My Server` configuration. This can be used in combination with system startup scripts (e.g. systemd unit example in `extras/systemd`) to run your server(s) on boot. Use multiple `--start`/`-s` parameters to start multiple servers.
+    - `--log-level/-l [log_level]`
+      - Example: `-l debug`
+      - Sets the log level. Only messages at or above the set level are printed to STDOUT; all logs are still written to `admin-interface/log/sandstorm-admin-wrapper.log`. One of: `debug`, `info`, `warn`, `error`, `fatal`
 
 ### Prerequisites
 
