@@ -1,0 +1,16 @@
+<div class="d-flex justify-content-start horizontal-expand bg-light m-1">
+  <div class="ml-4 p-2 col-4 badge badge-info"><%= @config['server-config-name'] %></div>
+  <div class="ml-4 p-2 col-1"><span id="server-status" class="monospace-font horizontal-expand text-center badge badge-<%= @server_status == 'OFF' ? 'danger' : 'success' %>"><%= @server_status %></span></div>
+  <div class="ml-4 p-2 col">
+    <div class="p-2 col-3 d-flex flex-column" style="font-size: 80%">
+      <div style="white-space: pre;">Game Port: <span id="game-port"><%= @game_port %></span></div>
+      <div style="white-space: pre;">Query Port: <span id="query-port"><%= @query_port %></span></div>
+      <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= @rcon_port %></span></div>
+    </div>
+    <div id="threads" class="p-2 col-3 justify-content-center d-flex flex-column" style="font-size: 75%"><%= erb :threads %></div>
+  </div>
+</div>
+<!-- Monitoring Details -->
+<div id="monitoring-details" class="horizontal-expand">
+  <%= erb :'monitoring-details' %>
+</div>

@@ -23,7 +23,7 @@ require_relative 'self-updater'
 require_relative 'server-updater'
 
 Encoding.default_external = "UTF-8"
-
+LOGGER.threshold :info
 log "Loading config"
 $config_handler = ConfigHandler.new
 
@@ -237,7 +237,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
     working_directory = File.join File.dirname(__FILE__), '..', 'docroot'
     log "Setting webserver root dir to: #{working_directory.sub(USER_HOME, '~')}", level: :info
     set :root, working_directory
-    enable :sessions#, :logging, :dump_errors, :raise_errors, :show_exceptions
+    enable :sessions, :dump_errors #, :raise_errors, :show_exceptions #, :logging
+    set :raise_errors, false
+    set :show_exceptions, false
     set :session_secret, @@config['admin_interface_session_secret'] unless @@config['admin_interface_session_secret'].empty?
   end
 
@@ -287,6 +289,25 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
     def is_user?
       has_role?(:user)
+    end
+
+    def get_active_config
+      active_config = (@@daemons.values.select{ |d| d.buffer[:uuid] == session[:active_daemon_uuid]}.first.config rescue nil) ||
+          $config_handler.server_configs[session[:active_server_config]] ||
+          (@@daemons.values.select { |d| d.config['server-config-name'] == session[:active_server_config] }.first.config rescue nil) ||
+          $config_handler.server_configs.values.last
+      log "Got active server config with name #{active_config['server-config-name']} (game port #{active_config['server_game_port']})"
+      active_config
+    end
+  end
+
+  error do
+    e = env['sinatra.error']
+    log "#{request.ip} | Error occurred in route #{request.path}", e
+    if is_host?
+      "(#{e.class}) #{e.message} | Backtrace:<br>#{e.backtrace.join('<br>')}"
+    else
+      "An error occurred (#{e.class}). Please view the logs or contact the maintainer."
     end
   end
 
@@ -595,8 +616,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/config', auth: :admin do
     redirect '/setup' unless @@prereqs_complete
-    @config = $config_handler.server_configs[session[:active_server_config]] || $config_handler.server_configs.values.last
-    config_name = @config['server-config-name']
+    config = get_active_config
+    config_name = config['server-config-name']
+    @config = $config_handler.server_configs[config_name] || $config_handler.server_configs.first
     if config_name.to_s.empty?
       status 400
       return "Unknown config"
@@ -612,21 +634,28 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/control', auth: :admin do
     redirect '/setup' unless @@prereqs_complete
-    @config = $config_handler.server_configs[session[:active_server_config]] || (@@daemons.values.select(&:server_running?).first ? @@daemons.values.select(&:server_running?).first.config : $config_handler.server_configs.values.last)
-    daemon = @@daemons[@config['server_game_port']]
+    @config = get_active_config
+    daemon = @@daemons[@config['server_game_port']] || @@daemons.values.select { |d| d.config['server-config-name'] == session[:active_server_config] }.first
+    if daemon
+      log "/control working with daemon name #{daemon.config['server-config-name']} (active game port #{daemon.active_game_port})"
+    else
+      log "/control Failed to get running daemon for config with name #{@config['server-config-name']} (game port #{@config['server_game_port']})"
+    end
     @game_port = daemon.server_running? ? daemon.active_game_port : @config['server_game_port'] rescue @config['server_game_port']
     @rcon_port = daemon.server_running? ? daemon.active_rcon_port : @config['server_rcon_port'] rescue @config['server_rcon_port']
     @query_port = daemon.server_running? ? daemon.active_query_port : @config['server_query_port'] rescue @config['server_query_port']
     @server_status = get_server_status(@game_port)
-    erb(:'server-control', layout: :'layout-main') do
-      @monitor = daemon.monitor rescue nil
-      @info = @monitor.info rescue nil
-      erb :players
-    end
+    @pid = daemon.game_pid if daemon
+    process = Sys::ProcTable.ps(pid: @pid) if @pid
+    threads = (WINDOWS ? process.thread_count : process.nlwp) if process
+    @threads = threads || 0
+    @monitor = daemon.monitor rescue nil
+    @info = @monitor.info rescue nil
+    erb(:'server-control', layout: :'layout-main')
   end
 
   get '/tools/:resource', auth: :admin do
-    @config = $config_handler.server_configs[session[:active_server_config]] || $config_handler.server_configs.values.last
+    @config = get_active_config
     resource = params['resource']
     case resource
     when 'rcon'
@@ -659,6 +688,27 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
+  get '/server-control-status' do
+    @config = get_active_config
+    daemon = @@daemons[@config['server_game_port']] || @@daemons.values.select { |d| d.config['server-config-name'] == session[:active_server_config] }.first
+    if daemon
+      log "/server-control-status working with daemon name #{daemon.config['server-config-name']} (active game port #{daemon.active_game_port})"
+    else
+      log "/server-control-status Failed to get running daemon for config with name #{@config['server-config-name']} (game port #{@config['server_game_port']})"
+    end
+    @game_port = daemon.server_running? ? daemon.active_game_port : @config['server_game_port'] rescue @config['server_game_port']
+    @rcon_port = daemon.server_running? ? daemon.active_rcon_port : @config['server_rcon_port'] rescue @config['server_rcon_port']
+    @query_port = daemon.server_running? ? daemon.active_query_port : @config['server_query_port'] rescue @config['server_query_port']
+    @server_status = get_server_status(@game_port)
+    @pid = daemon.game_pid if daemon
+    process = Sys::ProcTable.ps(pid: @pid) if @pid
+    threads = (WINDOWS ? process.thread_count : process.nlwp) if process
+    @threads = threads || 0
+    @monitor = daemon.monitor rescue nil
+    @info = @monitor.info rescue nil
+    erb :'server-control-status'
+  end
+
   get '/server-status/:game_port', auth: :user do
     game_port = params[:game_port]
     get_server_status(game_port)
@@ -678,8 +728,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
       buffer[:iterator] = buffer[:iterator].nil? ? 1 : buffer[:iterator] + 1
       # log "Buffer [#{uuid}][#{buffer[:iterator]}] arrived with bookmark: [#{@bookmark_uuid}] -> #{buffer[:bookmarks][@bookmark_uuid]}"
       # log "Buffer [#{uuid}][#{buffer[:iterator]}] Bookmarks: #{buffer[:bookmarks]}"
-      if buffer[:bookmarks].length > 10
-        log "Buffer has many bookmarks! Are that many clients connected? #{buffer}", level: :warn
+      if buffer[:bookmarks].length > 100
+        log "Buffer has many bookmarks! Are that many clients connected? #{buffer[:uuid]} (#{buffer[:bookmarks].length} bookmarks)", level: :warn
+        log "Purging first 20 bookmarks", level: :warn
+        buffer[:bookmarks].shift 20
       end
       unless buffer[:bookmarks].keys.include?(@bookmark_uuid) || @bookmark_uuid.nil?
         status 400
@@ -764,15 +816,19 @@ class SandstormAdminWrapperSite < Sinatra::Base
           status 400
           return "Unknown config: #{options[:config_name]}"
         end
-        daemon = if @@daemons[config['server_game_port']].nil?
+        daemon = if @@daemons[config['server_game_port']].nil? && (@@daemons.values.select { |d| d.name == config['server-config-name'] }.empty? rescue true)
           @@daemons[config['server_game_port']] = self.class.init_daemon config
         else
-          @@daemons[config['server_game_port']]
+          @@daemons[config['server_game_port']] || @@daemons.values.select { |d| d.name == config['server-config-name']}.first
         end
+        daemon.config.merge!(config)
+        session[:active_daemon_uuid] = daemon.buffer[:uuid]
         daemon.do_start_server
       when 'stop'
         daemon.do_stop_server
+        session[:active_daemon_uuid] = nil if daemon.buffer[:uuid] == session[:active_daemon_uuid]
       when 'restart'
+        daemon.config.merge!($config_handler.server_configs[daemon.name]) if $config_handler.server_configs[daemon.name]
         daemon.do_restart_server
       when 'rcon'
         begin
@@ -858,6 +914,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
     if daemon.nil?
       status 400
       "Could not find server daemon for game port #{params[:game_port]}"
+    else
+      session[:active_daemon_uuid] = daemon.buffer[:uuid]
+      log "Set active_server_config to daemon config with name #{daemon.config['server-config-name']} (original game port #{daemon.config['server_game_port']})"
+      nil
     end
   end
 
@@ -967,13 +1027,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
       key = "#{ip}:#{rcon_port}"
       @@monitors[key] if @@monitors[key]
     end
-    @info = @monitor.info unless @monitor.nil?
-    if @info.empty?
-      status 400
-      ''
-    else
-      erb :'monitoring-details'
-    end
+    @info = @monitor.info rescue nil
+    erb :'monitoring-details'
   end
 
   post '/admin/:action/:steam_id', auth: :admin do
@@ -1016,6 +1071,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
     config_name = params['name']
     config = $config_handler.server_configs[config_name]
     if config
+      log "Set active server config to config with name #{config_name} (game port #{config['server_game_port']})"
+      session[:active_daemon_uuid] = nil
       session[:active_server_config] = config_name
       Oj.dump(config)
     else
@@ -1107,6 +1164,12 @@ def get_webrick_options(config = SandstormAdminWrapperSite.load_webapp_config)
     else
       # Make temporary cert/key, since WEBrick's defaults won't work with modern browsers
       cert, key = CertificateGenerator.generate
+      log "Writing generated certs to file", level: :info
+      config['admin_interface_ssl_cert'] = GENERATED_SSL_CERT
+      config['admin_interface_ssl_key'] = GENERATED_SSL_KEY
+      SandstormAdminWrapperSite.save_webapp_config(config)
+      File.write GENERATED_SSL_CERT, cert
+      File.write GENERATED_SSL_KEY, key
       webrick_options.merge!({
         SSLCertificate: cert,
         SSLPrivateKey: key,

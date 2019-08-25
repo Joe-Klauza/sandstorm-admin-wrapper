@@ -1,6 +1,6 @@
-<% server_down = @info[:server_down].nil? ? true : @info[:server_down] %>
-<% rcon_down = @info[:rcon_connection_problem].nil? ? true : @info[:rcon_connection_problem] %>
-<% query_down = @info[:a2s_connection_problem].nil? ? true : @info[:a2s_connection_problem] %>
+<% server_down = @info[:server_down].nil? ? true : @info[:server_down] rescue true %>
+<% rcon_down = @info[:rcon_connection_problem].nil? ? true : @info[:rcon_connection_problem] rescue true %>
+<% query_down = @info[:a2s_connection_problem].nil? ? true : @info[:a2s_connection_problem] rescue true %>
 <div class="d-flex flex-column horizontal-expand">
   <!-- Server Status -->
   <div id='remote-server-status' class='horizontal-expand'>

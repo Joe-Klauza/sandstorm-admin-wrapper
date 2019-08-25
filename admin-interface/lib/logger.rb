@@ -13,7 +13,7 @@ class MultiTargetLogger
   attr_reader :loggers
 
   def initialize(loggers)
-    @level = Logger::INFO
+    @level = Logger::DEBUG
     loggers.each do |name, logger|
       logger.formatter = proc do |severity, datetime, progname, message|
         "#{datetime} | #{severity.ljust SEVERITY_JUSTIFY}#{" | #{progname}" if progname} | #{message}\n"
@@ -33,7 +33,7 @@ class MultiTargetLogger
       end
       @loggers.each { |_, logger| logger.send(severity, *args) if Logger.const_get(severity.to_s.upcase) >= logger.level }
       if args.first.is_a? Exception
-        @loggers.each { |_, logger| logger.send(severity, "Backtrace:#{args.first.backtrace.join("\n  ").prepend("\n  ")}") if Logger.const_get(severity.to_s.upcase) >= logger.level }
+        @loggers.each { |_, logger| logger.send(:error, "Backtrace:#{args.first.backtrace.join("\n  ").prepend("\n  ")}") if Logger.const_get(severity.to_s.upcase) >= logger.level }
       end
 
       nil

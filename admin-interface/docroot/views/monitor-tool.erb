@@ -17,7 +17,7 @@
           <div class="d-flex justify-content-end horizontal-expand">
             <div class="col-2">Name</div>
             <div class="col-7">
-              <input id="name" type="text" class="form-control" placeholder="My Server">
+              <input id="name" type="text" class="form-control" placeholder="<%= CGI.escapeHTML @config['server-config-name'] %>">
             </div>
             <div class="col-3">
               <button class="btn btn-info" onclick="saveMonitorConfig($('#name').val() || $('#name').attr('placeholder'), $('#ip').val() || $('#ip').attr('placeholder'), $('#query_port').val() || $('#query_port').attr('placeholder'), $('#rcon_port').val() || $('#rcon_port').attr('placeholder'), $('#rcon_password').val() || $('#rcon_password').attr('placeholder'));">Save</button>

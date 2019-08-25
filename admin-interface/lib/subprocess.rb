@@ -56,7 +56,7 @@ class SubprocessRunner
         end
       end
     end
-    pid, process_status = Process.wait2
+    pid, process_status = Process.wait2(pid)
 
     log "Checking exit status"
     status, message = if process_status.exitstatus

@@ -1,10 +1,10 @@
 <% @daemons.select{|_, daemon| daemon.server_running? }.sort_by {|_, daemon| daemon.config['server-config-name'] }.each do |key, daemon| %>
 <div class="horizontal-expand d-flex justify-content-between">
-  <a href="#" class="col-10 dropdown-item horizontal-expand d-flex justify-content-between" onclick="loadActiveServerConfig('<%= key %>');">
-    <div class="col-6 horizontal-expand" style="font-size: small; padding: 0;"><%= daemon.config['server-config-name'] %></div>
-    <div class="col-6 horizontal-expand" style="font-size: small; padding: 0;"><%= "[#{key}]" %></div>
+  <a href="#" class="p-2 col-11 dropdown-item d-flex justify-content-between" onclick="loadActiveServerConfig('<%= daemon.active_game_port %>');" style="padding: 0 0">
+    <div class="col-10" style="font-size: small; padding: 0;"><%= daemon.config['server-config-name'] %></div>
+    <div class="col-2" style="font-size: small; padding: 0;"><%= "[#{key}]" %></div>
   </a>
-  <a href="#" class="col-2 dropdown-item text-right" onclick="serverControl('stop', '<%= daemon.config['server_game_port'] %>');">
+  <a href="#" class="py-2 col-1 dropdown-item text-center" onclick="serverControl('stop', '<%= daemon.active_game_port %>');reloadControlStatus();" style="padding: 0 0">
     <span aria-hidden="true">&times;</span>
   </a>
 </div>

@@ -12,7 +12,7 @@ var server_rcon_log_active = false;
 var rcon_log_uuid = null;
 
 var log_buffer_size = 500;
-var server_log_tail_interval = 500;
+var server_log_tail_interval = 1000;
 var server_status_interval = 1000;
 
 var updatePlayersInterval = null;
@@ -37,8 +37,8 @@ $(document).ready(function() {
   //   });
   // }
 
-  if ($('#server-configs').length) {
-    setTimeout(()=>{ loadServerConfigs('#server-configs'); }, 0);
+  if ($('#server-control-status').length) {
+    setTimeout(()=>{ updateServerControlStatus(); }, 0); // Recursive
   }
 
   if ($('#server-monitor-configs').length) {
@@ -47,15 +47,6 @@ $(document).ready(function() {
 
   if ($('#active-server-monitors').length) {
     setTimeout(()=>{ loadActiveMonitors('#active-server-monitors'); }, 0);
-  }
-
-  if ($('#active-servers').length) {
-    setTimeout(()=>{ loadActiveServers('#active-servers'); }, 0);
-    setInterval(()=>{ loadActiveServers('#active-servers'); }, 1000);
-  }
-
-  if ($('#server-status').length) {
-    setInterval(()=>{ updateServerStatusBadge('#game-port', '#rcon-port'); }, server_status_interval);
   }
 
   if ($('#server-update-info').length) {
@@ -212,7 +203,7 @@ function saveMonitorConfig(name, ip, query_port, rcon_port, rcon_password) {
 }
 
 function loadServerConfigs(element) {
-  $.get('/server-configs', function(data) { $(element).html(data); });
+  $.get('/server-configs', function(data) { $(element || '#server-configs').html(data); });
 }
 
 function loadActiveServers(element) {
@@ -447,7 +438,15 @@ function updateServerUpdateInfo() {
 function startServerLogTail(element, game_port, interval) {
   if (!server_log_active) {
     server_log_active = true;
-    $.get(`/get-buffer/${game_port}/server`, (data)=>{ server_log_uuid = data; setTimeout(()=>{tailBuffer(element, interval, data)}, 0);})
+     $.ajax({
+      url: `/get-buffer/${game_port}/server`,
+      type: 'GET',
+      success: (buffer_uuid)=>{ server_log_uuid = buffer_uuid; setTimeout(()=>{ tailBuffer(element, interval, buffer_uuid) }, 0);},
+      error: function(request,msg,error) {
+        console.log(`Failed to start server log for port ${game_port}.`);
+        server_log_active = false;
+      }
+    });
   } else {
     console.error("Server log tail already running");
   }
@@ -456,7 +455,15 @@ function startServerLogTail(element, game_port, interval) {
 function startServerRconTail(element, game_port, interval) {
   if (!server_rcon_log_active) {
     server_rcon_log_active = true;
-    $.get(`/get-buffer/${game_port}/rcon`, (data)=>{ rcon_log_uuid = data; setTimeout(()=>{tailBuffer(element, interval, data)}, 0);})
+     $.ajax({
+      url: `/get-buffer/${game_port}/rcon`,
+      type: 'GET',
+      success: (buffer_uuid)=>{ rcon_log_uuid = buffer_uuid; setTimeout(()=>{ tailBuffer(element, interval, buffer_uuid) }, 0);},
+      error: function(request,msg,error) {
+        console.log(`Failed to start rcon log for port ${game_port}.`);
+        server_rcon_log_active = false;
+      }
+    });
   } else {
     console.error("Server RCON log tail already running");
   }
@@ -501,56 +508,63 @@ function updateThreads(game_port, element) {
   });
 }
 
-function updateServerStatusBadge(game_port, rcon_port, status_element) {
-  game_port = $(game_port).html();
-  rcon_port = $(rcon_port).html();
-  $.get(`/server-status/${game_port}`, function(data) {
-    if (data == 'OFF') {
-      add = 'badge-danger'
-      remove = 'badge-success'
-      if (server_log_active) {
-        server_log_active = false;
-      }
-      if (server_rcon_log_active) {
-        server_rcon_log_active = false;
-      }
-      // clearInterval(updatePlayersInterval);
-      clearInterval(updateThreadsInterval);
-      clearInterval(updateMonitoringDetailsInterval);
-      $('#monitoring-details').html('');
-      $('#threads').html('');
-      // setTimeout(() => {updatePlayers($('#game-port').html());}, 50);
-    } else {
-      add = 'badge-success'
-      remove = 'badge-danger'
-      if (!server_log_active && $('#server-log').length) {
-        setTimeout(startServerLogTail('#server-log', game_port, server_log_tail_interval), 0);
-        // setTimeout(() => {updatePlayers($('#game-port').html());}, 0);
-        setTimeout(() => {updateThreads($('#game-port').html());}, 0);
-        // updatePlayersInterval = setInterval(() => {updatePlayers($('#game-port').html());}, 5000);
-        updateThreadsInterval = setInterval(() => {updateThreads($('#game-port').html());}, 5000)
-        setTimeout(() => { updateMonitoringDetails('127.0.0.1', game_port); }, 750);
-        updateMonitoringDetailsInterval = setInterval(() => { updateMonitoringDetails('127.0.0.1', rcon_port); }, 2000);
-      }
-      if (!server_rcon_log_active && $('#rcon-log').length) {
-        setTimeout(startServerRconTail('#rcon-log', game_port, server_log_tail_interval), 0);
-      }
+function reloadControlStatus() {
+  $.ajax({
+    url: `/server-control-status`,
+    type: 'GET',
+    success: (response) => {
+      $('#server-control-status').html(response);
+    },
+    error: (request, msg, error) => {
+      console.log("Failed to get server control status: " + request.responseText);
     }
-    $(status_element || '#server-status').addClass(add).removeClass(remove).text(data);
   });
+}
+
+function updateServerControlStatus() {
+  reloadControlStatus();
+  game_port = $('#game-port').html();
+  rcon_port = $('#rcon-port').html();
+  if ($('#server-status').html() == 'ON') {
+    if (!server_log_active && $('#server-log').length) {
+      setTimeout(()=>{startServerLogTail('#server-log', game_port, server_log_tail_interval);}, 0);
+    }
+    if (!server_rcon_log_active && $('#rcon-log').length) {
+      setTimeout(()=>{startServerRconTail('#rcon-log', game_port, server_log_tail_interval);}, 0);
+    }
+  }
+  setTimeout(()=>{updateServerControlStatus();}, 1000);
 }
 
 function addLogLines(target, lines) {
+  var target = $(target);
+
+  // Add log lines to a temporary non-visible element
+  var temp = $("<div style='display: none'>");
+  $("body").append(temp);
   $.each(lines, function(index, text) {
-    addLogLine(target, text);
+    addLogLine(temp, text);
   });
+
+  // Trim the temp element before applying
+  if(temp.contents().length > log_buffer_size) {
+    temp.html(temp.contents().slice(temp.contents().length - log_buffer_size, temp.contents().length));
+  }
+
+  // Apply
+  target.append(temp.html());
+  temp.remove();
+  // Trim the final element after applying
+  if(target.contents().length > log_buffer_size) {
+    target.html(target.contents().slice(target.contents().length - log_buffer_size, target.contents().length));
+  }
+
   resetLogScroll(target);
 }
 
-function addLogLine(target, text, reset) {
-  var el = $(target)
+function addLogLine(target, text, colorful) {
   text = _.escape(text)
-  if (el.hasClass('colorful')) {
+  if (colorful !== false) {
     if (~text.indexOf('Error')) {
       text = `<span class="logspan" style="background-color: #FFE1E0;">${text}</span>\n`;
     } else if (~text.indexOf('Warning')) {
@@ -561,15 +575,9 @@ function addLogLine(target, text, reset) {
   } else {
     text = `<span class="logspan">${text}</span>\n`;
   }
-  el.append(
+  target.append(
     text
   );
-  if(el.contents().length > log_buffer_size) {
-    el.html(el.contents().slice(el.contents().length - log_buffer_size, el.contents().length));
-  }
-  if (typeof reset !== 'undefined' && reset !== false) {
-    resetLogScroll(target);
-  }
 }
 
 function resetLogScroll(target)

@@ -14,9 +14,12 @@ MONITOR_CONFIGS_FILE = File.join CONFIG_PATH, 'monitor-configs.json'
 SERVER_CONFIGS_FILE = File.join CONFIG_PATH, 'server-configs.json'
 
 WRAPPER_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..', '..')).freeze
+WRAPPER_CONFIG = File.join WRAPPER_ROOT, 'config'
 WEBAPP_ROOT = File.join WRAPPER_ROOT, 'admin-interface'
-WEBAPP_CONFIG = File.join(WRAPPER_ROOT, 'config', 'config.toml')
-WEBAPP_CONFIG_SAMPLE = File.join(WRAPPER_ROOT, 'config', 'config.toml.sample')
+WEBAPP_CONFIG = File.join(WRAPPER_CONFIG, 'config.toml')
+WEBAPP_CONFIG_SAMPLE = File.join(WRAPPER_CONFIG, 'config.toml.sample')
+GENERATED_SSL_CERT = File.join(WRAPPER_CONFIG, 'generated_ssl_cert.pem')
+GENERATED_SSL_KEY = File.join(WRAPPER_CONFIG, 'generated_ssl_key.pem')
 SERVER_ROOT = File.join WRAPPER_ROOT, 'sandstorm-server'
 STEAMCMD_ROOT = File.join WRAPPER_ROOT, 'steamcmd'
 STEAMCMD_EXE = File.join STEAMCMD_ROOT, 'installation', (WINDOWS ? "steamcmd.exe" : "steamcmd.sh")

@@ -9,7 +9,7 @@ class Buffer < Hash
       status: nil,
       message: nil,
       mutex: Mutex.new,
-      limit: 1000,
+      limit: 500,
       filters: [],
       persistent: false
     })

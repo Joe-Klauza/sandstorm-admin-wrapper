@@ -7,18 +7,19 @@ require_relative 'subprocess'
 include Process
 
 class SandstormServerDaemon
+  attr_accessor :config
   attr_accessor :executable
   attr_accessor :server_root_dir
   attr_accessor :arguments
   attr_accessor :rcon_ip
   attr_accessor :rcon_port
   attr_accessor :rcon_pass
+  attr_reader :name
   attr_reader :active_game_port
   attr_reader :active_rcon_port
   attr_reader :active_query_port
   attr_reader :active_rcon_pass
   attr_reader :buffer
-  attr_reader :config
   attr_reader :rcon_buffer
   attr_reader :rcon_client
   attr_reader :game_pid
@@ -93,6 +94,17 @@ class SandstormServerDaemon
       if server_running? || (@threads[:game_server] && @threads[:game_server].alive?)
         "Server is already running. PID: #{@game_pid}"
       else
+        new_game_port = @config['server_game_port']
+        if @active_game_port && @active_game_port != new_game_port
+          # We need to move the daemon for future access
+          log "Moving daemon #{@active_game_port} -> #{new_game_port}"
+          former_tenant = @daemons[new_game_port]
+          if former_tenant
+            log "Stopping daemon #{former_tenant.name} using desired game port #{new_game_port}", level: :warn
+            former_tenant.implode
+          end
+          @daemons[new_game_port] = @daemons.delete @active_game_port
+        end
         log "Starting server", level: :info
         @threads[:game_server] = get_game_server_thread
         sleep 0.1 until @game_pid && @log_file
@@ -103,40 +115,64 @@ class SandstormServerDaemon
 
   def do_restart_server
     log "Restarting server", level: :info
-    server_running? ? kill_server_process : do_start_server
+    do_stop_server
+    do_start_server
     "Server restarting."
   end
 
   def do_stop_server
-    log "Stopping server", level: :info
-    return 'Server not running.' unless server_running?
-    # No need to do anything besides remove it from monitoring
-    # We want the signal to be sent to the thread's subprocess
-    # so that the thread has time to set the status/message in the buffer
-    thread = @threads.delete(:game_server)
+    @daemons_mutex.synchronize do
+      log "Stopping server", level: :info
+      return 'Server not running.' unless server_running?
+      # No need to do anything besides remove it from monitoring
+      # We want the signal to be sent to the thread's subprocess
+      # so that the thread has time to set the status/message in the buffer
+      @monitor.stop
+      @monitor = nil
+      thread = @threads.delete(:game_server)
+      kill_server_process
+      @game_pid = nil unless server_running?
+    end
+  end
+
+  def implode
+    log "Daemon for server #{@name} imploding", level: :info
     kill_server_process
+    @game_pid = nil
+    @buffer.reset
+    @buffer = nil
+    @rcon_buffer.reset
+    @rcon_buffer = nil
+    @threads.keys.each do |thread_name|
+      thread = @threads.delete thread_name
+      thread.kill if thread.respond_to? :kill
+    end
   end
 
   def kill_server_process(signal: nil)
     signal = 'KILL' if signal.nil? # TERM can hang shutting down EAC. KILL doesn't, but might not disconnect players (instead they time out).
     return "Unable to send #{signal} (#{Signal.list[signal]}) signal to server; no known PID!" unless @game_pid
-    message = "Sent #{signal} (#{Signal.list[signal]}) signal to PID #{@game_pid}."
+    return "Server isn't running!" unless server_running?
     Process.kill(signal, @game_pid)
-    log message, level: :info
-    @game_pid = nil
-    message
+    sleep 0.2
+    msg = "Sent #{signal} (#{Signal.list[signal]}) signal to PID #{@game_pid}."
+    log msg, level: :info
+    msg
   end
 
-  def run_game_server(executable=@config['server_executable'], arguments=$config_handler.get_server_arguments(@config))
+  def run_game_server
     @buffer.reset
     @rcon_buffer.reset
     log "Applying config"
-    $config_handler.apply_server_config_files @config, @config['server-config-name']
-    @active_game_port = @config['server_game_port']
-    @active_query_port = @config['server_query_port']
-    @active_rcon_port = @config['server_rcon_port']
-    @active_rcon_password = @config['server_rcon_password']
-    log "Spawning game process: #{executable} #{arguments.join(' ')}", level: :info
+    @frozen_config = @config.dup
+    $config_handler.apply_server_config_files @frozen_config, @frozen_config['server-config-name']
+    executable = @frozen_config['server_executable']
+    arguments = $config_handler.get_server_arguments(@frozen_config)
+    @active_game_port = @frozen_config['server_game_port']
+    @active_query_port = @frozen_config['server_query_port']
+    @active_rcon_port = @frozen_config['server_rcon_port']
+    @active_rcon_password = @frozen_config['server_rcon_password']
+    log "Spawning game process: #{[executable, *arguments].inspect}", level: :info
     SubprocessRunner.run(
       [executable, *arguments],
       buffer: @buffer,
@@ -145,11 +181,14 @@ class SandstormServerDaemon
       formatter: Proc.new { |output, _| WINDOWS ? "#{datetime} | #{output.chomp}" : output.chomp } # Windows doesn't have the timestamp, so we'll add our own to make it look nice.
     ) do |pid|
       @game_pid = pid
-      Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5, delay: 10) }
+      monitor_delay = 10
+      log "Game process spawned. Starting self-monitoring after #{monitor_delay}s.", level: :info
+      Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5, delay: monitor_delay) }
+      log "Monitor spawned. Starting tailing thread for RCON log."
       @rcon_tail_thread = Thread.new do
         last_modified_log_time = File.mtime(Dir[File.join(SERVER_LOG_DIR, '*.log')].sort_by{|f| File.mtime(f) }.last).to_i rescue 0
         other_used_logs = @daemons.map { |_, daemon| daemon.log_file }
-        @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@config['server_game_port']}] Waiting to detect log file in use"
+        @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] Waiting to detect log file in use"
         log "Waiting to detect log file in use"
         loop do
           updated_log = Dir[File.join(SERVER_LOG_DIR, '*.log')].reject { |f| f.include?('backup') || other_used_logs.include?(f) }.sort_by{ |f| File.mtime(f) }.last || File.join(SERVER_LOG_DIR, 'Insurgency.log')
@@ -160,11 +199,11 @@ class SandstormServerDaemon
           end
           sleep 0.2
         end
-        @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@config['server_game_port']}] RCON log file detected: #{log_file.sub(USER_HOME, '~')}"
+        @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] RCON log file detected: #{log_file.sub(USER_HOME, '~')}"
         begin
           File.open(@log_file) do |log|
             log.extend(File::Tail)
-            log.interval = 1
+            log.interval = 0.5
             log.backward(0)
             last_line_was_rcon = false
             log.tail do |line|
@@ -172,7 +211,7 @@ class SandstormServerDaemon
               if line.include? 'LogRcon'
                 last_line_was_rcon = true
               elsif last_line_was_rcon
-                if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/
+                if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/ || line =~ /^Log/
                   last_line_was_rcon = false
                   next
                 end
@@ -185,34 +224,29 @@ class SandstormServerDaemon
         rescue => e
           log "Error in RCON tail thread (retrying)", e
           retry
+        ensure
+          log "RCON tail thread stopped"
         end
-      ensure
-        @rcon_buffer[:message] = "RCON log tailing complete."
-        @rcon_buffer[:status] = true
       end
+      log "RCON tailing thread started."
     end
     log 'Game process exited', level: :info
   ensure
-    begin
-      kill_server_process
-    rescue Errno::ESRCH
-    end
-    @monitor.stop unless @monitor.nil?
-    @monitor = nil
-    @rcon_tail_thread.kill unless @rcon_tail_thread.nil?
-    @rcon_tail_thread = nil
-    @log_file = nil
-    socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
-    @rcon_client.delete_socket(socket) unless socket.nil?
-    $config_handler.apply_server_bans
+    @rcon_tail_thread.kill rescue nil
   end
 
   def get_game_server_thread
-    @game_pid = nil
     Thread.new do
       run_game_server
     rescue => e
       log "Game server failed", e
+    ensure
+      @monitor.stop unless @monitor.nil?
+      @monitor = nil
+      @log_file = nil
+      socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
+      @rcon_client.delete_socket(socket) unless socket.nil?
+      $config_handler.apply_server_bans
     end
   end
 
