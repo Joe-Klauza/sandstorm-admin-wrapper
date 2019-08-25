@@ -40,7 +40,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @@server_updater = ServerUpdater.new(SERVER_ROOT, STEAMCMD_EXE, STEAM_APPINFO_VDF)
     @@update_thread = nil
     @@prereqs_complete = false
-    @@lan_access_bind_ip = Socket.ip_address_list.detect{ |intf| intf.ipv4_private? }.ip_address
+    @@lan_access_bind_ip = Socket.ip_address_list.detect{ |intf| intf.ipv4_private? }.ip_address rescue '?'
     handle_arguments unless ARGV.empty?
   end
 
