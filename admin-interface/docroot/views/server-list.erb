@@ -3,7 +3,8 @@
 <% server_running = daemon.server_running? %>
 <% next unless server_running %>
 <% at_least_one_daemon_running = true %>
-<% @info = daemon.monitor.info %>
+<% @monitor = daemon.monitor %>
+<% @info = @monitor.info %>
 
 <!-- Server List -->
 <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
