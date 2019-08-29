@@ -73,6 +73,8 @@ It can also be used to remotely monitor and administer servers via RCON.
       - `Admin`: Server admin; can do everything except configure the webserver and users
       - `User`: Read-only role which can access basic account features and the server status page
     - New users have a random password automatically generated; this (along with the user name) is given to the user by the host. Upon first login, users are asked to change their password. This helps keep passwords private.
+  - **Log page**
+    - Shows live user authentication and incoming request information
 - User features
   - **Change password**
   - **Log out**
