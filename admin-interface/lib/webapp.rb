@@ -44,6 +44,14 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @@prereqs_complete = false
     @@lan_access_bind_ip = Socket.ip_address_list.detect{ |intf| intf.ipv4_private? }.ip_address rescue '?'
     handle_arguments unless ARGV.empty?
+    trap 'EXIT' do
+      Thread.new do
+        if @@daemons.any?
+          log "Stopping daemons", level: :info
+          @@daemons.each { |_, daemon| daemon.do_stop_server }
+        end
+      end.join
+    end
   end
 
   def self.load_webapp_config
@@ -588,20 +596,18 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   post '/restart-wrapper', auth: :host do
-    @@daemons_mutex.synchronize do
-      @@daemons.each { |_, daemon| daemon.do_stop_server }
-      ENV['HOME'] = USER_HOME
-      # The below exec doesn't work on Windows (port conflict?), so we'll exit with a particular code instead, to be handled by the start script
-      if WINDOWS
-        at_exit do
-          exit 2
-        end
-        Thread.new { sleep 0.2; log "Replacing the current process..."; exit }
-      else
-        Thread.new { sleep 0.2; log "Replacing the current process..."; exec 'bundle', 'exec', 'ruby', $PROGRAM_NAME, *ARGV }
+    @@daemons.each { |_, daemon| daemon.do_stop_server }
+    ENV['HOME'] = USER_HOME
+    # The below exec doesn't work on Windows (port conflict?), so we'll exit with a particular code instead, to be handled by the start script
+    if WINDOWS
+      at_exit do
+        exit 2
       end
-      ''
+      Thread.new { sleep 0.2; log "Replacing the current process..."; exit }
+    else
+      Thread.new { sleep 0.2; log "Replacing the current process..."; exec 'bundle', 'exec', 'ruby', $PROGRAM_NAME, *ARGV }
     end
+    ''
   end
 
   post '/update-wrapper', auth: :host do
@@ -842,7 +848,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
         session[:active_daemon_uuid] = daemon.buffer[:uuid]
         daemon.do_start_server
       when 'stop'
-        daemon.do_stop_server
+        body daemon.do_stop_server
         session[:active_daemon_uuid] = nil if daemon.buffer[:uuid] == session[:active_daemon_uuid]
       when 'restart'
         daemon.config.merge!($config_handler.server_configs[daemon.name]) if $config_handler.server_configs[daemon.name]

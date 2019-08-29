@@ -149,10 +149,6 @@ class ConfigHandler
       'default' => 'Default',
       'validation' => Proc.new { true }
     },
-    'server_executable' => {
-      'default' => BINARY,
-      'validation' => Proc.new { |f| File.exist?(f) }
-    },
     'server_default_map' => {
       'default' => MAPMAP.keys.sample,
       'random' => false,

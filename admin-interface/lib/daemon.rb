@@ -122,16 +122,17 @@ class SandstormServerDaemon
 
   def do_stop_server
     @daemons_mutex.synchronize do
-      log "Stopping server", level: :info
       return 'Server not running.' unless server_running?
+      log "Stopping server", level: :info
       # No need to do anything besides remove it from monitoring
       # We want the signal to be sent to the thread's subprocess
       # so that the thread has time to set the status/message in the buffer
-      @monitor.stop
+      @monitor.stop unless @monitor.nil?
       @monitor = nil
-      thread = @threads.delete(:game_server)
-      kill_server_process
-      @game_pid = nil unless server_running?
+      @threads.delete(:game_server)
+      msg = kill_server_process
+      @game_pid = nil
+      msg
     end
   end
 
@@ -153,8 +154,10 @@ class SandstormServerDaemon
     signal = 'KILL' if signal.nil? # TERM can hang shutting down EAC. KILL doesn't, but might not disconnect players (instead they time out).
     return "Unable to send #{signal} (#{Signal.list[signal]}) signal to server; no known PID!" unless @game_pid
     return "Server isn't running!" unless server_running?
-    Process.kill(signal, @game_pid)
-    sleep 0.2
+    begin
+      Process.kill(signal, @game_pid)
+    rescue Errno::ESRCH
+    end
     msg = "Sent #{signal} (#{Signal.list[signal]}) signal to PID #{@game_pid}."
     log msg, level: :info
     msg
@@ -166,7 +169,7 @@ class SandstormServerDaemon
     log "Applying config"
     @frozen_config = @config.dup
     $config_handler.apply_server_config_files @frozen_config, @frozen_config['server-config-name']
-    executable = @frozen_config['server_executable']
+    executable = BINARY
     arguments = $config_handler.get_server_arguments(@frozen_config)
     @active_game_port = @frozen_config['server_game_port']
     @active_query_port = @frozen_config['server_query_port']
@@ -221,9 +224,10 @@ class SandstormServerDaemon
               @rcon_buffer[:data] << line.gsub(/\x1b\[[0-9;]*m/, '').chomp
             end
           end
+        rescue EOFError
         rescue => e
-          log "Error in RCON tail thread (retrying)", e
-          retry
+          log "Error in RCON tail thread!", e
+          raise e
         ensure
           log "RCON tail thread stopped"
         end
