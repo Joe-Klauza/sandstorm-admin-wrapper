@@ -19,6 +19,10 @@ class Buffer < Hash
     self[:mutex].synchronize { yield }
   end
 
+  def <<(string)
+    self[:data] << string
+  end
+
   def truncate(limit: self[:limit])
     size = self[:data].size
     return 0 unless size > limit

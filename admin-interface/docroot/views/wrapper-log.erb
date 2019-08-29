@@ -1,0 +1,37 @@
+<div class="d-flex flex-column horizontal-expand mb-3">
+  <div class="container-fluid d-flex justify-content-center bg-info m-1">
+    <h3 class="py-2">Wrapper Log</h3>
+  </div>
+  <div class="d-flex flex-column horizontal-expand justify-content-between">
+
+    <!-- User Log -->
+    <div class="d-flex flex-column justify-content-start horizontal-expand m-1 bg-light">
+      <div class="d-flex justify-content-between horizontal-expand">
+        <div class="ml-4 p-2 col-2 horizontal-expand">User Log</div>
+        <div class="p-2 col-4 justify-content-end">
+            <button type="button" class="btn btn-secondary m-1" onclick="$('#wrapper-user-log').html('');">Clear</button>
+            <button type="button" class="font-weight-bold btn btn-info m-1" onclick="resetLogScroll('#wrapper-user-log', true);">Tail</button>
+        </div>
+      </div>
+      <pre id='wrapper-user-log' class="log log-lg"></pre>
+    </div>
+
+    <!-- Connection Log -->
+    <div class="d-flex flex-column justify-content-start horizontal-expand m-1 bg-light">
+      <div class="d-flex justify-content-between horizontal-expand">
+        <div class="ml-4 p-2 col-2 horizontal-expand">Connection Log</div>
+        <div class="p-2 col-4 justify-content-end">
+            <button type="button" class="btn btn-secondary m-1" onclick="$('#wrapper-connection-log').html('');">Clear</button>
+            <button type="button" class="font-weight-bold btn btn-info m-1" onclick="resetLogScroll('#wrapper-connection-log', true);">Tail</button>
+        </div>
+      </div>
+      <pre id='wrapper-connection-log' class="log log-lg"></pre>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  setTimeout(()=>{ tailBuffer('#wrapper-user-log', 2000, '<%= @user_log_id %>'); }, 100);
+  setTimeout(()=>{ tailBuffer('#wrapper-connection-log', 2000, '<%= @conn_log_id %>'); }, 100);
+</script>

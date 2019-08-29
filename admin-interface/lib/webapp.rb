@@ -36,6 +36,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @@monitors = {}
     @@buffers = {}
     @@buffer_mutex = Mutex.new
+    @@wrapper_user_log = create_buffer.last
+    @@wrapper_connection_log = create_buffer.last
     @@rcon_client = RconClient.new
     @@server_updater = ServerUpdater.new(SERVER_ROOT, STEAMCMD_EXE, STEAM_APPINFO_VDF)
     @@update_thread = nil
@@ -249,7 +251,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
       condition do
         begin
           unless has_role?(role)
-            log "#{request.ip} | User unauthorized: #{"'#{@user.name}' (#{session[:user_id]})" rescue '[logged out]'} requesting #{role}-privileged content: #{request.path_info}", level: :warn
+            message = "IP: #{request.ip} | User unauthorized: #{"'#{@user.name}' #{"[#{@user.role}]".ljust(7)} (#{session[:user_id]})" rescue '[logged out]'} requesting #{role}-privileged content: #{request.path_info}"
+            @@wrapper_user_log << "#{datetime} | #{message}"
+            log message, level: :warn
             status 403
             redirect "/login#{CGI.escape(request.path_info) unless request.path_info.casecmp('/').zero?}" if request.request_method == 'GET'
             error = "403 Unauthorized - You don't have permission to do this."
@@ -315,14 +319,14 @@ class SandstormAdminWrapperSite < Sinatra::Base
     env['rack.logger'] = LOGGER
     env['rack.errors'] = LOGGER
     @user = $config_handler.users[session[:user_id]] if session[:user_id]
-    # log "Redirecting unauthenticated user to login"
-    # redirect "/login/#{CGI.escape request.path_info}" if @user.nil? && !(request.path_info.start_with? '/login')
     check_prereqs unless @@prereqs_complete
     request.body.rewind
-    body = request.body.read
-    request.body.rewind # Be kind
-    # message = "Request: #{request.request_method}#{' ' << request.script_name unless request.script_name.strip.empty? } #{request.path_info}#{'?' << request.query_string unless request.query_string.strip.empty?} from #{request.ip}#{(' | Body: ' << body) unless body.strip.empty?}"
-    # log message
+    # body = request.body.read
+    # request.body.rewind # Be kind
+    message = "IP: #{request.ip} | Agent: #{request.user_agent} | Request: #{request.request_method}#{' ' << request.script_name unless request.script_name.strip.empty? } #{request.path_info}#{'?' << request.query_string unless request.query_string.strip.empty?}" # #{(' | Body: ' << body) unless body.strip.empty?}"
+    log message
+    @@wrapper_connection_log << "#{datetime} | #{message}"
+    nil
   end
 
   # after do
@@ -359,7 +363,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
     if user && password
       known_user = $config_handler.users.values.select { |u| u.name == user }.first
       if known_user && known_user.password == password # BCrypt::Password == string comparison
-        log "#{request.ip} | Logged in as #{known_user.name}", level: :info
+        message = "IP: #{request.ip} | #{known_user.name} #{"[#{known_user.role}]".ljust(7)} logged in  (#{known_user.id})"
+        log message, level: :info
+        @@wrapper_user_log << "#{datetime} | #{message}"
         session[:user_id] = known_user.id
         return known_user.first_login? ? "/change-password#{destination}" : destination
       end
@@ -369,6 +375,11 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/logout' do
+    user = $config_handler.users[session[:user_id]]
+    halt 400, 'Not logged in' if user.nil?
+    message = "IP: #{request.ip} | #{user.name} #{"[#{user.role}]".ljust(7)} logged out (#{user.id})"
+    log message, level: :info
+    @@wrapper_user_log << "#{datetime} | #{message}"
     session[:user_id] = nil
     redirect '/login'
   end
@@ -403,6 +414,12 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @user.password = password
     $config_handler.write_user_config
     destination
+  end
+
+  get '/wrapper-log', auth: :host do
+    @user_log_id = @@wrapper_user_log[:uuid]
+    @conn_log_id = @@wrapper_connection_log[:uuid]
+    erb :'wrapper-log', layout: :'layout-main'
   end
 
   get '/wrapper-config', auth: :host do
