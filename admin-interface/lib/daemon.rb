@@ -127,11 +127,12 @@ class SandstormServerDaemon
       # No need to do anything besides remove it from monitoring
       # We want the signal to be sent to the thread's subprocess
       # so that the thread has time to set the status/message in the buffer
-      @monitor.stop unless @monitor.nil?
-      @monitor = nil
+      @server_thread_exited = false
       @threads.delete(:game_server)
       msg = kill_server_process
-      @game_pid = nil
+      log "Waiting for server thread to exit and clean up"
+      sleep 0.2 until @server_thread_exited
+      log "Server thread exited and cleaned up"
       msg
     end
   end
@@ -175,6 +176,7 @@ class SandstormServerDaemon
     @active_query_port = @frozen_config['server_query_port']
     @active_rcon_port = @frozen_config['server_rcon_port']
     @active_rcon_password = @frozen_config['server_rcon_password']
+    @log_file = $config_handler.get_log_file(@frozen_config['server-config-name'])
     log "Spawning game process: #{[executable, *arguments].inspect}", level: :info
     SubprocessRunner.run(
       [executable, *arguments],
@@ -184,25 +186,22 @@ class SandstormServerDaemon
       formatter: Proc.new { |output, _| WINDOWS ? "#{datetime} | #{output.chomp}" : output.chomp } # Windows doesn't have the timestamp, so we'll add our own to make it look nice.
     ) do |pid|
       @game_pid = pid
-      monitor_delay = 10
-      log "Game process spawned. Starting self-monitoring after #{monitor_delay}s.", level: :info
-      Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5, delay: monitor_delay) }
-      log "Monitor spawned. Starting tailing thread for RCON log."
+      log "Game process spawned. Starting self-monitoring after detecting RCON listening message.", level: :info
       @rcon_tail_thread = Thread.new do
-        last_modified_log_time = File.mtime(Dir[File.join(SERVER_LOG_DIR, '*.log')].sort_by{|f| File.mtime(f) }.last).to_i rescue 0
-        other_used_logs = @daemons.map { |_, daemon| daemon.log_file }
-        @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] Waiting to detect log file in use"
-        log "Waiting to detect log file in use"
-        loop do
-          updated_log = Dir[File.join(SERVER_LOG_DIR, '*.log')].reject { |f| f.include?('backup') || other_used_logs.include?(f) }.sort_by{ |f| File.mtime(f) }.last || File.join(SERVER_LOG_DIR, 'Insurgency.log')
-          if File.mtime(updated_log).to_i > last_modified_log_time
-            log "Found log file in use: #{updated_log.sub(USER_HOME, '~')}"
-            @log_file = updated_log
-            break
-          end
-          sleep 0.2
-        end
-        @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] RCON log file detected: #{log_file.sub(USER_HOME, '~')}"
+        # last_modified_log_time = File.mtime(Dir[File.join(SERVER_LOG_DIR, '*.log')].sort_by{|f| File.mtime(f) }.last).to_i rescue 0
+        # other_used_logs = @daemons.map { |_, daemon| daemon.log_file }
+        # @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] Waiting to detect log file in use"
+        # log "Waiting to detect log file in use"
+        # loop do
+        #   updated_log = Dir[File.join(SERVER_LOG_DIR, '*.log')].reject { |f| f.include?('backup') || other_used_logs.include?(f) }.sort_by{ |f| File.mtime(f) }.last || File.join(SERVER_LOG_DIR, 'Insurgency.log')
+        #   if File.mtime(updated_log).to_i > last_modified_log_time
+        #     log "Found log file in use: #{updated_log.sub(USER_HOME, '~')}"
+        #     @log_file = updated_log
+        #     break
+        #   end
+        #   sleep 0.2
+        # end
+        # @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] RCON log file detected: #{log_file.sub(USER_HOME, '~')}"
         begin
           File.open(@log_file) do |log|
             log.extend(File::Tail)
@@ -213,6 +212,9 @@ class SandstormServerDaemon
               next if line.nil?
               if line.include? 'LogRcon'
                 last_line_was_rcon = true
+                if line.include?('LogRcon: Rcon listening') && @monitor.nil?
+                  Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5) }
+                end
               elsif last_line_was_rcon
                 if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/ || line =~ /^Log/
                   last_line_was_rcon = false
@@ -247,10 +249,13 @@ class SandstormServerDaemon
     ensure
       @monitor.stop unless @monitor.nil?
       @monitor = nil
+      @game_pid = nil
       @log_file = nil
+      @rcon_listening = false
       socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
       @rcon_client.delete_socket(socket) unless socket.nil?
       $config_handler.apply_server_bans
+      @server_thread_exited = true
     end
   end
 

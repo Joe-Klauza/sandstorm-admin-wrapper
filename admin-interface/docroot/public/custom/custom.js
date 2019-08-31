@@ -247,6 +247,7 @@ function loadServerConfig(name) {
         if (element.hasClass('server-config-text-input')) {
           element.attr('placeholder', val);
           element.attr('previous', '');
+          element.val('');
         } else if (element.hasClass('server-config-checkbox-input')) {
           element[0].checked = val
         } else {
@@ -254,6 +255,7 @@ function loadServerConfig(name) {
         }
       }
     })
+    loadServerConfigFileContent(name);
   });
 }
 
@@ -276,6 +278,7 @@ function saveServerConfig() {
   });
   config['server_mutators'] = mutators
   var name = $('#server-config-name').val() || $('#server-config-name').attr('placeholder');
+  writeConfigFiles(name);
   $.ajax({
     url: `/server-config/${encodeURIComponent(name)}`,
     type: 'POST',
@@ -283,8 +286,7 @@ function saveServerConfig() {
     data: JSON.stringify(config),
     success: function(message) {
       successToast(message);
-      $('#server-config-name').val('').attr('placeholder', name);
-      loadServerConfigs('#server-configs');
+      loadServerConfig(name);
     },
     error: function(request,msg,error) {
       failureToast(request.responseText);
@@ -705,6 +707,16 @@ function loadPreviousServerConfig() {
   }
 }
 
+function loadServerConfigFileContent(config_name) {
+  if ($('#config-files-tab-content').length) {
+    setTimeout(()=>{getConfigFileContent(config_name, '#game-ini')}, 0);
+    setTimeout(()=>{getConfigFileContent(config_name, '#engine-ini')}, 10);
+    setTimeout(()=>{getConfigFileContent(config_name, '#admins-txt')}, 20);
+    setTimeout(()=>{getConfigFileContent(config_name, '#mapcycle-txt')}, 30);
+    setTimeout(()=>{getConfigFileContent(config_name, '#bans-json')}, 40);
+  }
+}
+
 function setServerConfig(config_name, variable, value) {
   $.ajax({
       url: `/config/set?config=${encodeURIComponent(config_name)}&variable=${encodeURIComponent(variable)}&value=${encodeURIComponent(value)}`,
@@ -713,10 +725,7 @@ function setServerConfig(config_name, variable, value) {
         $(`#${variable}`).attr('previous', $(`#${variable}`).attr('placeholder'));
         if ($(`#${variable}`).is('[placeholder]')) { $(`#${variable}`).attr('placeholder', value); }
         $(`#${variable}`).val("");
-        if ($('#config-files-tab-content').length) {
-          setTimeout(getConfigFileContent(config_name, '#game-ini'), 0);
-          setTimeout(getConfigFileContent(config_name, '#engine-ini'), 0);
-        }
+        loadServerConfigFileContent(config_name);
         successToast(response);
       },
       error: function(request,msg,error) {
@@ -754,7 +763,7 @@ function getConfigFileContent(config_name, identifier) {
   var element = $(identifier);
   var file = element.attr('file');
   $.ajax({
-      url: `/config/file/${file}?config=${config_name}`,
+      url: `/config/file/${encodeURIComponent(file)}?config=${encodeURIComponent(config_name)}`,
       type: 'GET',
       success: function(response) {
         element.val(response);
@@ -767,7 +776,7 @@ function getConfigFileContent(config_name, identifier) {
 
 function serverControl(action, game_port, config_name) {
   $.ajax({
-      url: `/control/server/${action}`,
+      url: `/control/server/${encodeURIComponent(action)}`,
       type: 'POST',
       data: JSON.stringify({config_name: config_name, game_port: game_port}),
       success: function(response) {
@@ -779,8 +788,23 @@ function serverControl(action, game_port, config_name) {
   });
 }
 
-function writeConfigFile(config_name) {
-  var textarea = $('#config-files-tab-content').children('.active').first().children('textarea').first();
+function writeConfigFiles(config_name) {
+  setTimeout(
+    ()=>{
+      $('#config-files-tab-content').children().each((i, e)=>{
+        var textarea = $(e).children().first().attr('id');
+        writeConfigFile(config_name, textarea, true);
+      });
+    }
+  ,0);
+}
+
+function writeConfigFile(config_name, textarea, suppress_toasts) {
+  if (textarea) {
+    var textarea = $(`#${textarea}`);
+  } else {
+    var textarea = $('#config-files-tab-content').children('.active').first().children('textarea').first();
+  }
   var file = textarea.attr('file');
   var content = textarea.val();
   $.ajax({
@@ -788,10 +812,14 @@ function writeConfigFile(config_name) {
     type: 'POST',
     data: {'content': content},
     success: function(response) {
-      successToast(response);
+      if (!suppress_toasts) {
+        successToast(response);
+      }
     },
     error: function(request,msg,error) {
-      failureToast(request.responseText);
+      if (!suppress_toasts) {
+        failureToast(request.responseText);
+      }
     }
   });
 }

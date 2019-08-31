@@ -873,7 +873,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/config/file/:file', auth: :admin do
     config_name = params['config']
-    file = File.join CONFIG_FILES_DIR, config_name, params['file'].gsub('..', '')
+    file = params['file'].gsub('..', '')
+    file = File.join CONFIG_FILES_DIR, (file == 'Bans.json' ? '' : config_name), file
     if File.exist? file
       File.read(file)
     else

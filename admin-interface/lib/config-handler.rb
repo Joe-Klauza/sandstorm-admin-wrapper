@@ -446,6 +446,12 @@ class ConfigHandler
     @server_configs[config_name][variable]
   end
 
+  def get_log_file(config_name)
+    log_file = File.join(SERVER_LOG_DIR, "#{config_name}.log")
+    FileUtils.touch log_file
+    log_file
+  end
+
   def get_scenario(map, mode, side)
     filtered_map = MAPMAP[map]
     "Scenario_#{filtered_map}_#{mode}_#{side}"
@@ -472,7 +478,7 @@ class ConfigHandler
       "-MaxPlayers=#{config['server_max_players']}",
       "-Port=#{config['server_game_port']}",
       "-QueryPort=#{config['server_query_port']}",
-      "-log",
+      "-log=#{config['server-config-name']}.log",
       "-AdminList=Admins",
       "-MapCycle=MapCycle"
     )

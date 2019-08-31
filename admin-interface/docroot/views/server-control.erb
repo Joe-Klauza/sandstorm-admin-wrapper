@@ -29,8 +29,8 @@
       </div>
       <div class="p-2 col-3 d-flex justify-content-end">
         <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Start</button>
-        <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));reloadControlStatus();">Restart</button>
-        <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));reloadControlStatus();">Stop</button>
+        <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Restart</button>
+        <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Stop</button>
       </div>
     </div>
 

@@ -20,9 +20,8 @@
         </ul>
       </div>
       <div class="p-2 col-4 justify-content-end">
-        <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-light m-1" onclick="loadPreviousServerConfig();">Undo</button>
-          <button type="button" class="btn btn-info m-1 ml-4" onclick="saveServerConfig();">Save</button>
+        <div class="d-flex justify-content-end">
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="saveServerConfig();">Save All</button>
         </div>
       </div>
     </div>
@@ -179,7 +178,7 @@
 
     <!-- Game Server Login Token (GSLT) -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="p-2 col-3 d-inline-block">Game Server Login Token (<a href="https://steamcommunity.com/dev/managegameservers" target="_blank">GSLT</a>)</div>
+      <div class="p-2 col-3 d-inline-block">Game Server Login Token (<a href="https://steamcommunity.com/dev/managegameservers" target="_blank" data-toggle="tooltip" data-placement="top" title="" data-html="true" data-original-title="Use App ID <span class='monospace-font pre'> 581320 </span> (<span class='monospace-font pre'>887860 </span> for CTE)">GSLT</a>)</div>
       <div class="p-2 col-3">
         <input id="server_gslt" type="text" class="form-control server-config-text-input blur" placeholder="<%= @config['server_gslt'] %>">
       </div>
