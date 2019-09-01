@@ -481,6 +481,7 @@ class ConfigHandler
       "-Port=#{config['server_game_port']}",
       "-QueryPort=#{config['server_query_port']}",
       "-log=#{config['server-config-name']}.log",
+      "-LogCmds=LogGameplayEvents Log",
       "-AdminList=Admins",
       "-MapCycle=MapCycle"
     )
