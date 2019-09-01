@@ -411,7 +411,8 @@ class ConfigHandler
       master_bans = Oj.load(File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)) || []
       return if server_bans == master_bans
       log "Applying new player bans"
-      master_bans.concat(server_bans).uniq_by! { |ban| ban['playerId'] }.sort_by! { |ban| ban['banTime'] }
+      master_bans.concat(server_bans).uniq! { |ban| ban['playerId'] }
+      master_bans.sort_by! { |ban| ban['banTime'] }
       File.write(ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding), Oj.dump(master_bans))
     end
     nil

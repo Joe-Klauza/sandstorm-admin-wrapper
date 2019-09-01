@@ -245,14 +245,18 @@ class SandstormServerDaemon
     rescue => e
       log "Game server failed", e
     ensure
-      @monitor.stop unless @monitor.nil?
-      @monitor = nil
-      @game_pid = nil
-      @log_file = nil
-      @rcon_listening = false
-      socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
-      @rcon_client.delete_socket(socket) unless socket.nil?
-      $config_handler.apply_server_bans
+      begin
+        @monitor.stop unless @monitor.nil?
+        @monitor = nil
+        @game_pid = nil
+        @log_file = nil
+        @rcon_listening = false
+        socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
+        @rcon_client.delete_socket(socket) unless socket.nil?
+        $config_handler.apply_server_bans
+      rescue => e
+        log "Error while cleaning up game server thread", e
+      end
       @server_thread_exited = true
     end
   end
