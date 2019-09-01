@@ -1,11 +1,11 @@
 <div class="d-flex flex-column horizontal-expand mb-3">
-  <div class="container-fluid d-flex justify-content-center bg-primary m-1">
+  <div class="container-fluid d-flex justify-content-center bg-primary my-1">
     <h3 class="py-2">Server Config</h3>
   </div>
   <div class="d-flex flex-column horizontal-expand justify-content-between">
 
     <!-- Server Config Selection -->
-    <div class="d-flex justify-content-between horizontal-expand bg-secondary m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-secondary my-1">
       <div class="p-2 col-2">Config Name</div>
       <div class="p-2 col">
         <input id="server-config-name" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server-config-name'] || 'Default' %>">
@@ -27,7 +27,7 @@
     </div>
 
     <!-- Server Hostname -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Server Name</div>
       <div class="p-2 col">
         <input id="server_hostname" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_hostname'] %>">
@@ -41,7 +41,7 @@
     </div>
 
     <!-- Server Password -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Server Password</div>
       <div class="p-2 col-3">
         <input id="server_password" type="text" class="form-control server-config-text-input blur" placeholder="<%= @config['server_password'] %>">
@@ -60,7 +60,7 @@
     </div>
 
     <!-- Game Port -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Game Port</div>
       <div class="p-2 col">
         <input id="server_game_port" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_game_port'] %>">
@@ -74,7 +74,7 @@
     </div>
 
     <!-- Query Port -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Query Port</div>
       <div class="p-2 col">
         <input id="server_query_port" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_query_port'] %>">
@@ -88,7 +88,7 @@
     </div>
 
     <!-- RCON Port -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">RCON Port</div>
       <div class="p-2 col">
         <input id="server_rcon_port" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_rcon_port'] %>">
@@ -102,7 +102,7 @@
     </div>
 
     <!-- RCON Password -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">RCON Password</div>
       <div class="p-2 col-3">
         <input id="server_rcon_password" type="text" class="form-control server-config-text-input blur" placeholder="<%= @config['server_rcon_password'] %>">
@@ -121,7 +121,7 @@
     </div>
 
     <!-- RCON Enabled -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">RCON Enabled</div>
       <div class="p-2 col justify-content-end">
         <div class="custom-control custom-switch p-2 mr-2">
@@ -150,7 +150,7 @@
     </div>
 
     <!-- Max Players -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Max Players</div>
       <div class="p-2 col-1">Visible:</div>
       <div class="p-2 col-1">
@@ -177,7 +177,7 @@
     </div>
 
     <!-- Game Server Login Token (GSLT) -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-3 d-inline-block">Game Server Login Token (<a href="https://steamcommunity.com/dev/managegameservers" target="_blank" data-toggle="tooltip" data-placement="top" title="" data-html="true" data-original-title="Use App ID <span class='monospace-font pre'> 581320 </span> (<span class='monospace-font pre'>887860 </span> for CTE)">GSLT</a>)</div>
       <div class="p-2 col-3">
         <input id="server_gslt" type="text" class="form-control server-config-text-input blur" placeholder="<%= @config['server_gslt'] %>">
@@ -194,7 +194,7 @@
     </div>
 
     <!-- Cheats -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-3">Cheats (disabled if GSLT set)</div>
       <div class="p-2 col justify-content-end">
           <div class="custom-control custom-switch p-2 ml-5">
@@ -211,7 +211,7 @@
     </div>
 
     <!-- Game Mode -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Game Mode</div>
       <div class="p-2 col">
         <input id="server_game_mode" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_game_mode'] %>">
@@ -237,7 +237,7 @@
     </div>
 
     <!-- Scenario Mode -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Scenario Mode</div>
       <div class="p-2 col">
         <input id="server_scenario_mode" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_scenario_mode'] %>">
@@ -263,7 +263,7 @@
     </div>
 
     <!-- Default Map -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Default Map</div>
       <div class="p-2 col">
         <input id="server_default_map" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_default_map'] %>">
@@ -289,7 +289,7 @@
     </div>
 
     <!-- Default Side -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Default Side</div>
       <div class="p-2 col">
         <input id="server_default_side" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_default_side'] %>">
@@ -315,7 +315,7 @@
     </div>
 
     <!-- Ruleset -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2 justify-content-between">Ruleset<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="This is deprecated as of Sandstorm version 1.4 (replaced by mutators)." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col">
         <input id="server_rule_set" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_rule_set'] %>">
@@ -342,7 +342,7 @@
 
 
     <!-- Mutators -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2 justify-content-between"><div class="d-inline-block">Mutators (<span class="monospace-font"><span id="mutator-count"><%= @config['server_mutators'].length %></span>/<%= MUTATORS.length %></span>)</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="This only applies to Sandstorm version 1.4+ (intended to replace ruleset)." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col d-flex flex-wrap">
         <% MUTATORS.sort.each do |mutator, info| %>
@@ -361,7 +361,7 @@
     </div>
 
     <!-- Config files -->
-    <div class="d-flex flex-column justify-content-start horizontal-expand m-1 bg-light">
+    <div class="d-flex flex-column justify-content-start horizontal-expand my-1 bg-light">
       <div class="d-flex justify-content-between horizontal-expand">
         <div class="ml-4 p-2 col-2 horizontal-expand">Config Files</div>
         <ul class="nav nav-tabs">

@@ -1,3 +1,8 @@
+/* Element border helper */
+/** {
+  border: 1px solid #f00 !important;
+}*/
+
 div {
   display: -webkit-flex; /* Safari */
   -webkit-align-items: center; /* Safari 7.0+ */
@@ -171,3 +176,9 @@ div {
 
 /* Pushy sidebar */
 .pushy-link { margin-left: 1px; }
+/* Ensure pushy doesn't summon the horizontal scrollbar */
+html, body{
+    overflow-x: hidden;
+    height: 100%;
+    -webkit-overflow-scrolling: touch;
+}
