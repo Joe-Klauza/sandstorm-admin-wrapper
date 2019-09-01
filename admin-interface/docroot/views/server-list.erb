@@ -1,36 +1,53 @@
-<% at_least_one_daemon_running = false %>
+<% at_least_one_server = false %>
+<% at_least_one_server = true unless @daemons.values.empty? && @monitors.empty? %>
 <% @daemons.values.sort_by{ |d| d.config['server_hostname'] }.each do |daemon| %>
-<% server_running = daemon.server_running? %>
-<% next unless server_running %>
-<% at_least_one_daemon_running = true %>
-<% @monitor = daemon.monitor rescue nil %>
-<% @info = @monitor.info rescue nil %>
-<% next if @info.nil? %>
+  <% server_running = daemon.server_running? %>
+  <% @monitor = daemon.monitor rescue nil %>
+  <% @info = @monitor.info rescue nil %>
 
-<!-- Server List -->
-<div class="d-flex justify-content-start horizontal-expand bg-light m-1">
-  <div class="ml-4 p-2 col-4 badge badge-primary"><%= daemon.config['server_hostname'] %></div>
-  <div class="p-2 col-2 d-flex flex-column" style="font-size: 80%">
-    <div style="white-space: pre;">Game Port: <span id="game-port"><%= daemon.active_game_port %></span></div>
-    <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= daemon.active_query_port %></span></div>
-    <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= daemon.active_rcon_port %></span></div>
+  <!-- Server List -->
+  <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
+    <div class="ml-4 p-2 col-4 badge badge-primary"><%= daemon.config['server_hostname'] %></div>
+    <div class="p-2 col-2 d-flex flex-column" style="font-size: 80%">
+      <div style="white-space: pre;">Game Port: <span id="game-port"><%= daemon.active_game_port %></span></div>
+      <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= daemon.active_query_port %></span></div>
+      <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= daemon.active_rcon_port %></span></div>
+    </div>
+    <div class="p-2 col-2 justify-content-center d-flex flex-column" style="font-size: 75%">
+      <% @pid = daemon.game_pid %>
+      <% process = Sys::ProcTable.ps(pid: @pid) if @pid %>
+      <% threads = (WINDOWS ? process.thread_count : process.nlwp) if process %>
+      <% @threads = threads || 0 %>
+      <%= erb :threads %>
+    </div>
+    <div class="col"></div>
+    <div class="ml-4 p-2 col-1"><span class="monospace-font horizontal-expand text-center badge badge-<%= server_running ? 'success' : 'danger' %>"><%= server_running ? 'ON' : 'OFF' %></span></div>
+    <div class="p-2 col-2 justify-content-end"></div>
   </div>
-  <div class="p-2 col-2 justify-content-center d-flex flex-column" style="font-size: 75%">
-    <% @pid = daemon.game_pid %>
-    <% process = Sys::ProcTable.ps(pid: @pid) if @pid %>
-    <% threads = (WINDOWS ? process.thread_count : process.nlwp) if process %>
-    <% @threads = threads || 0 %>
-    <%= erb :threads %>
+  <div class="horizontal-expand">
+    <%= erb :'monitoring-details' %>
   </div>
-  <div class="col"></div>
-  <div class="ml-4 p-2 col-1"><span class="monospace-font horizontal-expand text-center badge badge-<%= server_running ? 'success' : 'danger' %>"><%= server_running ? 'ON' : 'OFF' %></span></div>
-  <div class="p-2 col-2 justify-content-end"></div>
-</div>
-<div class="horizontal-expand">
-  <%= erb :players %>
-</div>
 <% end %>
-<% unless at_least_one_daemon_running %>
+
+<% @monitors.values.each do |monitor| %>
+  <% @info = monitor.info rescue nil %>
+  <!-- Remote Server List -->
+  <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
+    <div class="ml-4 p-2 col-4 badge badge-primary"><%= @info[:a2s_info]['name'] rescue "Unknown Name (#{monitor.name})" %></div>
+    <div class="p-2 col-2 d-flex flex-column" style="font-size: 80%">
+      <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= monitor.query_port %></span></div>
+      <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= monitor.rcon_port %></span></div>
+    </div>
+    <div class="col"></div>
+    <div class="ml-4 p-2 col-1"><span class="monospace-font horizontal-expand text-center badge badge-<%= !@info[:server_down] ? 'success' : 'danger' %>"><%= !@info[:server_down] ? 'ON' : 'OFF' %></span></div>
+    <div class="p-2 col-2 justify-content-end"></div>
+  </div>
+  <div class="horizontal-expand">
+    <%= erb :'monitoring-details' %>
+  </div>
+<% end %>
+
+<% unless at_least_one_server %>
   <div class="d-flex justify-content-center horizontal-expand bg-light m-1">
     <div class="ml-4 p-2 col-4 justify-content-center bg-secondary">No servers running</div>
   </div>

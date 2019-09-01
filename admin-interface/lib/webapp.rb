@@ -394,6 +394,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/status', auth: :user do
     @daemons = @@daemons
+    @monitors = @@monitors
     erb :'server-status', layout: :'layout-main' do
       erb :'server-list'
     end
@@ -401,7 +402,13 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/server-list', auth: :user do
     @daemons = @@daemons
+    @monitors = @@monitors
     erb :'server-list'
+  end
+
+  get '/server-daemons', auth: :admin do
+    @daemons = @@daemons
+    erb :'server-daemons', layout: :'layout-main'
   end
 
   get '/change-password(/:destination)?', auth: :user do
@@ -854,6 +861,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
       when 'stop'
         body daemon.do_stop_server
         session[:active_daemon_uuid] = nil if daemon.buffer[:uuid] == session[:active_daemon_uuid]
+      when 'delete'
+        @@daemons.delete(@@daemons.key daemon).implode
       when 'restart'
         daemon.config.merge!($config_handler.server_configs[daemon.name]) if $config_handler.server_configs[daemon.name]
         daemon.do_restart_server

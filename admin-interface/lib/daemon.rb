@@ -139,7 +139,7 @@ class SandstormServerDaemon
 
   def implode
     log "Daemon for server #{@name} imploding", level: :info
-    kill_server_process
+    do_stop_server
     @game_pid = nil
     @buffer.reset
     @buffer = nil

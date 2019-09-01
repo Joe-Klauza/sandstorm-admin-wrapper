@@ -10,19 +10,13 @@
 
     <div class="d-flex flex-column justify-content-between horizontal-expand bg-light m-1">
       <div class="d-flex justify-content-between horizontal-expand">
-        <div class="col-4 bg-secondary m-1 p-2">
-          <button id="start-stop-monitor" type="button" class="btn btn-success btn-block" onclick="toggleMonitor($('#name').val() || $('#name').attr('placeholder'), $('#ip').val() || $('#ip').attr('placeholder'), $('#query_port').val() || $('#query_port').attr('placeholder'), $('#rcon_port').val() || $('#rcon_port').attr('placeholder'), $('#rcon_password').val() || $('#rcon_password').attr('placeholder'));">Start Monitor</button>
+        <div class="col-7 d-flex justify-content-between bg-secondary m-1 p-2">
+          <div class="col-2">Name</div>
+          <div class="col"><input id="name" type="text" class="form-control" placeholder="<%= CGI.escapeHTML @config['server-config-name'] %>"></div>
+          <div class="col-2"><button class="btn btn-info" onclick="saveMonitorConfig($('#name').val() || $('#name').attr('placeholder'), $('#ip').val() || $('#ip').attr('placeholder'), $('#query_port').val() || $('#query_port').attr('placeholder'), $('#rcon_port').val() || $('#rcon_port').attr('placeholder'), $('#rcon_password').val() || $('#rcon_password').attr('placeholder'));">Save</button></div>
         </div>
-        <div class="col-5 d-flex justify-content-end bg-secondary m-1 p-2">
-          <div class="d-flex justify-content-end horizontal-expand">
-            <div class="col-2">Name</div>
-            <div class="col-7">
-              <input id="name" type="text" class="form-control" placeholder="<%= CGI.escapeHTML @config['server-config-name'] %>">
-            </div>
-            <div class="col-3">
-              <button class="btn btn-info" onclick="saveMonitorConfig($('#name').val() || $('#name').attr('placeholder'), $('#ip').val() || $('#ip').attr('placeholder'), $('#query_port').val() || $('#query_port').attr('placeholder'), $('#rcon_port').val() || $('#rcon_port').attr('placeholder'), $('#rcon_password').val() || $('#rcon_password').attr('placeholder'));">Save</button>
-            </div>
-          </div>
+        <div class="d-flex col-2 justify-content-start horizontal-expand bg-secondary m-1 p-2">
+          <button id="start-stop-monitor" type="button" class="btn btn-success btn-block" onclick="toggleMonitor($('#name').val() || $('#name').attr('placeholder'), $('#ip').val() || $('#ip').attr('placeholder'), $('#query_port').val() || $('#query_port').attr('placeholder'), $('#rcon_port').val() || $('#rcon_port').attr('placeholder'), $('#rcon_password').val() || $('#rcon_password').attr('placeholder'));">Start Monitor</button>
         </div>
         <ul class="nav nav-pills col-3 flex-column bg-secondary m-1 p-2">
           <li class="nav-item dropdown horizontal-expand d-flex justify-content-end">
