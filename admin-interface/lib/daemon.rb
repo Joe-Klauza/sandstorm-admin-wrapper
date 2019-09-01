@@ -191,16 +191,14 @@ class SandstormServerDaemon
         # last_modified_log_time = File.mtime(Dir[File.join(SERVER_LOG_DIR, '*.log')].sort_by{|f| File.mtime(f) }.last).to_i rescue 0
         # other_used_logs = @daemons.map { |_, daemon| daemon.log_file }
         # @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] Waiting to detect log file in use"
-        # log "Waiting to detect log file in use"
-        # loop do
-        #   updated_log = Dir[File.join(SERVER_LOG_DIR, '*.log')].reject { |f| f.include?('backup') || other_used_logs.include?(f) }.sort_by{ |f| File.mtime(f) }.last || File.join(SERVER_LOG_DIR, 'Insurgency.log')
-        #   if File.mtime(updated_log).to_i > last_modified_log_time
-        #     log "Found log file in use: #{updated_log.sub(USER_HOME, '~')}"
-        #     @log_file = updated_log
-        #     break
-        #   end
-        #   sleep 0.2
-        # end
+        log "Waiting to ensure log file is in use"
+        earlier = Time.now.to_i
+        loop do
+          last_updated = File.mtime(@log_file).to_i
+          break if last_updated > earlier
+          sleep 0.5
+        end
+        log "Log file is in use. Proceeding with log tailing."
         # @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] RCON log file detected: #{log_file.sub(USER_HOME, '~')}"
         begin
           File.open(@log_file) do |log|
