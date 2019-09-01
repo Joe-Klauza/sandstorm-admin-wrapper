@@ -58,7 +58,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     FileUtils.cp(WEBAPP_CONFIG_SAMPLE, WEBAPP_CONFIG) unless File.exist?(WEBAPP_CONFIG)
     log "Loading wrapper config from #{File.basename WEBAPP_CONFIG}"
     config = TomlRB.load_file WEBAPP_CONFIG
-    config['automatic_updates'] ||= true
+    config['automatic_updates'] = true if config['automatic_updates'].nil?
     config
   rescue => e
     log "Couldn't load config from #{config_file}", e
@@ -161,7 +161,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     steamcmd_path = steamcmd_installed?
     game_server_path = game_server_installed?
     @@prereqs_complete = steamcmd_path && game_server_path
-    @@update_thread = get_game_update_thread if @@prereqs_complete && @@update_thread.nil?
+    @@update_thread = get_game_update_thread if @@prereqs_complete && @@update_thread.nil? && @@config['automatic_updates']
     return [steamcmd_path, game_server_path]
   end
 
@@ -219,12 +219,12 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   def start_updates
     if @@update_thread
-      log "Restarting updates"
+      log "Restarting updates", level: :info
       @@update_thread.kill
       @@update_thread = get_game_update_thread
       "Automated updates restarted"
     else
-      log "Starting updates"
+      log "Starting updates", level: :info
       @@update_thread = get_game_update_thread
       "Automated updates started"
     end
