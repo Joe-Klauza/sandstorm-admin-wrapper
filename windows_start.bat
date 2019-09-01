@@ -1,5 +1,5 @@
 @echo off
-cd admin-interface
+cd %~dp0\admin-interface
 echo Bundling
 call bundle
 if ERRORLEVEL 1 goto bundle_error
