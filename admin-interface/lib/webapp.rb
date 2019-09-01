@@ -433,6 +433,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
   get '/wrapper-config', auth: :host do
     @config = @@config
     @lan_access_bind_ip = @@lan_access_bind_ip
+    @wrapper_version = @@config['wrapper_version']
     erb :'wrapper-config', layout: :'layout-main'
   end
 
@@ -611,7 +612,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   post '/update-wrapper', auth: :host do
-    SelfUpdater.update_to_latest
+    version = SelfUpdater.update_to_latest
+    @@config['wrapper_version'] = version
+    self.class.save_webapp_config @@config
+    "Updated to #{version}! Restart the wrapper to apply."
   rescue => e
     status 500
     e.message

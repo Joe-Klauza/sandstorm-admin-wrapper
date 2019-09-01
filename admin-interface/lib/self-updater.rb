@@ -48,7 +48,7 @@ class SelfUpdater
     log "Deleting update.zip"
     FileUtils.rm(UPDATE_ZIP)
     log "Deleted update.zip"
-    "Updated to #{version}! Restart the wrapper to apply."
+    version
   rescue => e
     log "Failed to update to latest", e
     raise "Failed to update. (#{e.class}): #{e.message}"
