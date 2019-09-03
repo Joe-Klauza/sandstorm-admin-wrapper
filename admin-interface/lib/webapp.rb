@@ -82,7 +82,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
         config = $config_handler.server_configs[val]
         if config
           log "Starting daemon for #{val}", level: :info
-          init_daemon(config, start: true)
+          Thread.new { init_daemon(config, start: true) }
         else
           log "Unknown server config: #{val}", level: :warn
         end
@@ -102,15 +102,17 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   def self.init_daemon(config, start: false)
     key = config['server_game_port']
-    log "Initializing daemon with game port [#{key}]", level: :info
-    @@daemons[key] = SandstormServerDaemon.new(
-      config,
-      @@daemons,
-      @@daemons_mutex,
-      @@rcon_client,
-      create_buffer.last,
-      create_buffer.last
-    )
+    @@daemons_mutex.synchronize do
+      log "Initializing daemon with game port [#{key}]", level: :info
+      @@daemons[key] = SandstormServerDaemon.new(
+        config,
+        @@daemons,
+        @@daemons_mutex,
+        @@rcon_client,
+        create_buffer.last,
+        create_buffer.last
+      )
+    end
     @@daemons[key].do_start_server if start
     @@daemons[key]
   end
