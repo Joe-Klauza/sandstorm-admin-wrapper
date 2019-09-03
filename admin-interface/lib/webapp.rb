@@ -43,6 +43,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @@update_thread = nil
     @@prereqs_complete = false
     @@lan_access_bind_ip = Socket.ip_address_list.detect{ |intf| intf.ipv4_private? }.ip_address rescue '?'
+    @@loaded_wrapper_version = @@config['wrapper_version']
     handle_arguments unless ARGV.empty?
     trap 'EXIT' do
       Thread.new do
@@ -444,7 +445,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
   get '/wrapper-config', auth: :host do
     @config = @@config
     @lan_access_bind_ip = @@lan_access_bind_ip
-    @wrapper_version = @@config['wrapper_version']
+    @wrapper_version = @@loaded_wrapper_version
     erb :'wrapper-config', layout: :'layout-main'
   end
 
