@@ -865,7 +865,12 @@ class SandstormAdminWrapperSite < Sinatra::Base
         @@daemons.delete(@@daemons.key daemon).implode
       when 'restart'
         daemon.config.merge!($config_handler.server_configs[daemon.name]) if $config_handler.server_configs[daemon.name]
-        daemon.do_restart_server
+        if daemon.server_running?
+          daemon.do_restart_server
+        else
+          status 400
+          "Server is not running"
+        end
       when 'rcon'
         begin
           Thread.new { daemon.do_send_rcon(options[:command], host: options[:host], port: options[:port], pass: options[:pass], buffer: daemon.rcon_buffer) }
@@ -901,6 +906,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
     file = params['file']
     content = params['content']
     content << "\n" unless content.end_with? "\n"
+    file = File.join(CONFIG_FILES_DIR, config_name, file)
+    File.mkdir_p File.basename file
     File.write(File.join(CONFIG_FILES_DIR, config_name, file), content)
     "Wrote #{file.sub(USER_HOME, '~')}."
   end

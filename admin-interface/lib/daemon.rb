@@ -106,8 +106,9 @@ class SandstormServerDaemon
           @daemons[new_game_port] = @daemons.delete @active_game_port
         end
         log "Starting server", level: :info
+        @server_started = false
         @threads[:game_server] = get_game_server_thread
-        sleep 0.1 until @game_pid && @log_file
+        sleep 0.1 until @server_started
         "Server is starting. PID: #{@game_pid}"
       end
     end
@@ -199,6 +200,7 @@ class SandstormServerDaemon
           sleep 0.5
         end
         log "Log file is in use. Proceeding with log tailing."
+        @server_started = true
         # @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] RCON log file detected: #{log_file.sub(USER_HOME, '~')}"
         begin
           File.open(@log_file) do |log|
