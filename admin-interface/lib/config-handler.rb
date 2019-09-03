@@ -450,7 +450,11 @@ class ConfigHandler
   def get_log_file(config_name)
     log_file = File.join(SERVER_LOG_DIR, "#{config_name}.log")
     FileUtils.mkdir_p File.dirname log_file
-    FileUtils.touch log_file
+    begin
+      FileUtils.touch log_file
+    rescue Errno::EACCES
+      log "Unable to access log file: #{log_file}"
+    end
     log_file
   end
 

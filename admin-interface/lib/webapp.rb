@@ -79,12 +79,14 @@ class SandstormAdminWrapperSite < Sinatra::Base
       when '--start', '-s'
         val = args.shift
         break if val.nil?
-        config = $config_handler.server_configs[val]
-        if config
-          log "Starting daemon for #{val}", level: :info
-          Thread.new { init_daemon(config, start: true) }
-        else
-          log "Unknown server config: #{val}", level: :warn
+        @@daemons_mutex.synchronize do
+          config = $config_handler.server_configs[val]
+          if config
+            log "Starting daemon for #{val}", level: :info
+            Thread.new { init_daemon(config.dup, start: true) }
+          else
+            log "Unknown server config: #{val}", level: :warn
+          end
         end
       when '--log-level', '-l'
         val = args.shift.to_s.upcase.to_sym
@@ -909,8 +911,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
     content = params['content']
     content << "\n" unless content.end_with? "\n"
     file = File.join(CONFIG_FILES_DIR, config_name, file)
-    File.mkdir_p File.basename file
-    File.write(File.join(CONFIG_FILES_DIR, config_name, file), content)
+    FileUtils.mkdir_p(File.dirname(file))
+    File.write(file, content)
     "Wrote #{file.sub(USER_HOME, '~')}."
   end
 
