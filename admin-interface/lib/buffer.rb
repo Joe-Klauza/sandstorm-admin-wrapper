@@ -23,6 +23,10 @@ class Buffer < Hash
     self[:data] << string
   end
 
+  def push(string)
+    self[:data] << string
+  end
+
   def truncate(limit: self[:limit])
     size = self[:data].size
     return 0 unless size > limit

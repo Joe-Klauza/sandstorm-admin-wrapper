@@ -23,7 +23,7 @@ require_relative 'self-updater'
 require_relative 'server-updater'
 
 Encoding.default_external = "UTF-8"
-LOGGER.threshold :info
+LOGGER.threshold :info # Changes STDOUT only
 log "Loading config"
 $config_handler = ConfigHandler.new
 
@@ -264,7 +264,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
       condition do
         begin
           unless has_role?(role)
-            message = "IP: #{request.ip} | User unauthorized: #{"'#{@user.name}' #{"[#{@user.role}]".ljust(7)} (#{session[:user_id]})" rescue '[logged out]'} requesting #{role}-privileged content: #{request.path_info}"
+            message = "IP: #{request.ip} | User unauthorized: #{"'#{@user.name}' [#{@user.role}] (#{session[:user_id]})" rescue '[logged out]'} requesting #{role}-privileged content: #{request.path_info}"
             @@wrapper_user_log << "#{datetime} | #{message}"
             log message, level: :warn
             status 403
@@ -336,9 +336,11 @@ class SandstormAdminWrapperSite < Sinatra::Base
     request.body.rewind
     # body = request.body.read
     # request.body.rewind # Be kind
-    message = "IP: #{request.ip} | Agent: #{request.user_agent} | Request: #{request.request_method}#{' ' << request.script_name unless request.script_name.strip.empty? } #{request.path_info}#{'?' << request.query_string unless request.query_string.strip.empty?}" # #{(' | Body: ' << body) unless body.strip.empty?}"
+    timestamp = datetime
+    message = "IP: #{request.ip} | #{"User: #{@user.name} | " if @user}Request: #{request.request_method}#{' ' << request.script_name unless request.script_name.strip.empty? } #{request.path_info}#{'?' << request.query_string unless request.query_string.strip.empty?}" # #{(' | Body: ' << body) unless body.strip.empty?}"
     log message
-    @@wrapper_connection_log << "#{datetime} | #{message}"
+    @@wrapper_user_log.push "#{timestamp} | #{message}" if request.request_method != 'GET'
+    @@wrapper_connection_log.push "#{timestamp} | #{message} | Agent: #{request.user_agent}"
     nil
   end
 
@@ -376,7 +378,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     if user && password
       known_user = $config_handler.users.values.select { |u| u.name == user }.first
       if known_user && known_user.password == password # BCrypt::Password == string comparison
-        message = "IP: #{request.ip} | #{known_user.name} #{"[#{known_user.role}]".ljust(7)} logged in  (#{known_user.id})"
+        message = "IP: #{request.ip} | #{known_user.name} [#{known_user.role}] logged in (#{known_user.id})"
         log message, level: :info
         @@wrapper_user_log << "#{datetime} | #{message}"
         session[:user_id] = known_user.id
@@ -390,7 +392,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
   get '/logout' do
     user = $config_handler.users[session[:user_id]]
     halt 400, 'Not logged in' if user.nil?
-    message = "IP: #{request.ip} | #{user.name} #{"[#{user.role}]".ljust(7)} logged out (#{user.id})"
+    message = "IP: #{request.ip} | #{user.name} [#{user.role}] logged out (#{user.id})"
     log message, level: :info
     @@wrapper_user_log << "#{datetime} | #{message}"
     session[:user_id] = nil
