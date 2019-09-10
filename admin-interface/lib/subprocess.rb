@@ -34,6 +34,7 @@ class SubprocessRunner
       [pid, out.first, err.first]
     end
     yield(pid) if block_given?
+    captured_output = []
     [stdout, stderr].reject(&:nil?).each do |stream|
       Thread.new do
         loop do
@@ -44,7 +45,9 @@ class SubprocessRunner
             else
               no_prefix ? output.chomp : "#{datetime} | #{origin} | #{output.chomp}"
             end
-          unless buffer.nil?
+          if buffer.nil?
+            captured_output.push output
+          else
             buffer[:filters].each { |filter| filter.call(formatted_output) }
             buffer[:mutex].synchronize do # Synchronize with the reading thread to avoid mismatched indices when truncating, etc.
               buffer[:data].push formatted_output
@@ -72,7 +75,9 @@ class SubprocessRunner
 
     log "Exit status/message: #{status} - #{message}"
 
-    unless buffer.nil?
+    if buffer.nil?
+      captured_output.join("\n")
+    else
       buffer.synchronize do # Synchronize with the reading thread to avoid mismatched indices when truncating, etc.
         num_truncated = buffer.truncate
         log "Truncated #{num_truncated} lines from buffer"
