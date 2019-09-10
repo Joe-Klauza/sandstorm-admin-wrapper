@@ -332,12 +332,12 @@ class ConfigHandler
 
   def write_user_config
     log "Writing user config"
-    File.write(USERS_CONFIG_FILE, Oj.dump(@users))
+    File.write(USERS_CONFIG_FILE, Oj.dump(@users, indent: 2))
   end
 
   def write_monitor_configs
     log "Writing monitor configs"
-    File.write(MONITOR_CONFIGS_FILE, Oj.dump(@monitor_configs))
+    File.write(MONITOR_CONFIGS_FILE, Oj.dump(@monitor_configs, indent: 2))
   end
 
   def create_server_config(config_name, settings)
@@ -365,7 +365,7 @@ class ConfigHandler
 
   def write_server_configs
     log "Writing server configs"
-    File.write(SERVER_CONFIGS_FILE, Oj.dump(@server_configs))
+    File.write(SERVER_CONFIGS_FILE, Oj.dump(@server_configs, indent: 2))
     nil
   end
 
@@ -413,7 +413,7 @@ class ConfigHandler
       log "Applying new player bans"
       master_bans.concat(server_bans).uniq! { |ban| ban['playerId'] }
       master_bans.sort_by! { |ban| ban['banTime'] }
-      File.write(ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding), Oj.dump(master_bans))
+      File.write(ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding), Oj.dump(master_bans, indent: 2))
     end
     nil
   end
