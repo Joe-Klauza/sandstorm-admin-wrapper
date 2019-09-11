@@ -540,6 +540,7 @@ function updateServerControlStatus() {
 
 function addLogLines(target, lines) {
   var target = $(target);
+  var wasScrolled = target[0].clientHeight !== target[0].scrollHeight && target[0].scrollTop !== target[0].scrollHeight - target[0].clientHeight
 
   // Add log lines to a temporary non-visible element
   var temp = $("<div style='display: none'>");
@@ -561,7 +562,9 @@ function addLogLines(target, lines) {
     target.html(target.contents().slice(target.contents().length - log_buffer_size, target.contents().length));
   }
 
-  resetLogScroll(target);
+  if (!wasScrolled) {
+    resetLogScroll(target);
+  }
 }
 
 function addLogLine(target, text, colorful) {
