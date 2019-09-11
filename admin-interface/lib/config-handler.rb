@@ -109,7 +109,7 @@ MUTATORS = {
   'AllYouCanEat' => { 'name' => 'All You Can Eat', 'description' => 'Start with 100 supply points.' },
   'AntiMaterielRiflesOnly' => { 'name' => 'Anti-Materiel Only', 'description' => 'Only anti-materiel rifles are available along with normal equipment and explosives.' },
   'BoltActionsOnly' => { 'name' => 'Bolt-Actions Only', 'description' =>'Only bolt-action rifles are available along with normal equipment and explosives.' },
-  'Broke' => { 'name' => 'Broke', 'description' => 'Start with 0 supply poinys.' },
+  'Broke' => { 'name' => 'Broke', 'description' => 'Start with 0 supply points.' },
   'BulletSponge' => { 'name' => 'Bullet Sponge', 'description' => 'Health is increased.' },
   'Competitive' => { 'name' => 'Competitive', 'description' => 'Equipment is more expensive, rounds are shorter, and capturing objectives is faster.' },
   'CompetitiveLoadouts' => { 'name' => 'Competitive Loadouts', 'description' => 'Player classes are replaced with those from Competitive.' },
