@@ -42,15 +42,26 @@ class SandstormServerDaemon
     @buffer[:persistent] = true
     @rcon_buffer[:persistent] = true
     @buffer[:filters] = [
-      Proc.new { |line| line.gsub!(/\x1b\[[0-9;]*m/, '') } # Remove color codes
+      Proc.new do |line|
+        line.gsub!(/\x1b\[[0-9;]*m/, '') # Remove color codes
+        line.prepend "#{get_server_id} | "
+      end
+    ]
+    @rcon_buffer[:filters] = [
+      Proc.new { |line| line.prepend "#{get_server_id} | " }
     ]
     @log_file = nil
     start_daemon
     log "Daemon initialized"
   end
 
-  def log(message, exception=nil, level: :debug)
-    super("Server [PID #{@game_pid} Game Port #{@config['server_game_port']}] #{@buffer[:uuid]} | #{message}", exception, level: level) # Call the log function created by logger
+  def log(message, exception=nil, level: nil)
+    super("#{get_server_id} | #{message}", exception, level: level) # Call the log function created by logger
+  end
+
+  def get_server_id
+    conf = @frozen_config || @config
+    "[PID #{@game_pid || '(N/A)'} Ports #{[conf['server_game_port'], conf['server_query_port'], conf['server_rcon_port']].join(',')}]"
   end
 
   def server_running?
@@ -107,9 +118,10 @@ class SandstormServerDaemon
         end
         log "Starting server", level: :info
         @server_started = false
+        @server_failed = false
         @threads[:game_server] = get_game_server_thread
-        sleep 0.1 until @server_started
-        "Server is starting. PID: #{@game_pid}"
+        sleep 0.1 until @server_started || @server_failed
+        @server_started ? "Server is starting. PID: #{@game_pid}" : "Server failed to start!"
       end
     end
   end
@@ -132,8 +144,8 @@ class SandstormServerDaemon
       @threads.delete(:game_server)
       msg = kill_server_process
       log "Waiting for server thread to exit and clean up"
-      sleep 0.2 until @server_thread_exited
-      log "Server thread exited and cleaned up"
+      sleep 0.2 until @server_thread_exited || @server_failed
+      log "Server thread #{@server_failed ? "failed" : "exited and cleaned up"}"
       msg
     end
   end
@@ -223,7 +235,8 @@ class SandstormServerDaemon
               else
                 next
               end
-              @rcon_buffer[:data] << line.gsub(/\x1b\[[0-9;]*m/, '').chomp
+              buffer[:filters].each { |filter| filter.call(line) } # Remove color codes; add server ID
+              @rcon_buffer.synchronize { @rcon_buffer[:data].push line.chomp }
             end
           end
         rescue EOFError
@@ -245,7 +258,9 @@ class SandstormServerDaemon
     Thread.new do
       run_game_server
     rescue => e
+      @server_failed = true
       log "Game server failed", e
+      @threads.delete :game_server unless @server_started # If we can't even start the server, don't keep trying
     ensure
       begin
         @monitor.stop unless @monitor.nil?
@@ -263,7 +278,7 @@ class SandstormServerDaemon
     end
   end
 
-  def start_daemon(thread_check_interval: 1)
+  def start_daemon(thread_check_interval: 2)
     @daemon_thread = Thread.new do
       while true
         while @threads.empty? || @threads.values.all?(&:alive?)
@@ -272,8 +287,10 @@ class SandstormServerDaemon
         dead_threads = @threads.select { |_, t| !t.alive? }.keys
         log "Dead daemon thread(s) detected: #{dead_threads.join(' ')}"
         dead_threads.each do |key|
-          log "Starting #{key} thread", level: :info
-          @threads[key] = public_send("get_#{key.to_s}_thread")
+          if @threads[key]
+            log "Starting #{key} thread", level: :info
+            @threads[key] = public_send("get_#{key.to_s}_thread")
+          end
         end
         sleep thread_check_interval
       end

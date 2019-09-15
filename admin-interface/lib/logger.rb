@@ -80,8 +80,9 @@ end
 def log(message, exception=nil, level: nil)
   unless exception.nil?
     message = message + " | Exception occurred (#{exception.class}): #{exception.message}\n  #{exception.backtrace.to_a.map { |l| l.sub USER_HOME, '~'}.join("\n  ")}"
+    level ||= :error
   end
-  level = level.nil? ? (exception ? :error : :debug ) : level
+  level ||= :debug
   LOGGER.log level, message
 end
 

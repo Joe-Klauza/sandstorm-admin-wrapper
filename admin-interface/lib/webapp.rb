@@ -763,7 +763,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
     buffer = @@buffers[uuid]
     @bookmark_uuid = params['bookmark']
-    limit = 500
+    limit = buffer[:limit]
 
     buffer[:mutex].synchronize do # Synchronize with the writing thread to avoid mismatched indices when truncating, etc.
       buffer[:iterator] = buffer[:iterator].nil? ? 1 : buffer[:iterator] + 1

@@ -307,7 +307,11 @@ class RconClient
     socket = get_socket_for_host server_ip, port, password
     raise "Couldn't get socket for #{server_ip}:#{port}!" if socket.nil?
     packet = build_packet command
-    buffer.synchronize { buffer[:data] << "#{datetime} | RCON #{server_ip}:#{port} (TX >>) #{command}" } if buffer
+    if buffer
+      formatted_output = "#{datetime} | RCON #{server_ip}:#{port} (TX >>) #{command}"
+      buffer[:filters].each { |filter| filter.call(formatted_output) }
+      buffer.synchronize { buffer[:data].push formatted_output }
+    end
     response = send_receive_wrapper socket, packet, timeout, retries
     if command == 'exit'
       # The connection will be broken. Start fresh next time.
@@ -316,7 +320,7 @@ class RconClient
     end
     if buffer
       buffer.synchronize do
-        buffer[:data] << "#{datetime} | RCON #{server_ip}:#{port} (RX <<) #{response}"
+        buffer[:data].push "#{datetime} | RCON #{server_ip}:#{port} (RX <<) #{response}"
         num_truncated = buffer.truncate
         log "Truncated #{num_truncated} lines from buffer"
         buffer[:status] = true unless ignore_status
@@ -338,9 +342,9 @@ class RconClient
   def get_players_and_bots(server_ip, port, password, buffer: nil, ignore_status: false, ignore_message: false, timeout: 2, retries: 1)
     resp = send(server_ip, port, password, 'listplayers', buffer: buffer, ignore_status: ignore_status, ignore_message: ignore_message, timeout: timeout, retries: retries)
     raise "#{server_ip}:#{port} Response was nil!" if resp.nil?
-    players_text = resp.unpack('xxxxxxxxxxxxxxxxxxxxxxxxxxxxZ*').last.split("\n").last
+    players_text = resp.split("\n").last
     begin
-      players_and_bots = players_text.split(/\t+/).map { |s| s.start_with?(' | ') ? s.sub(' | ', '') : s }.each_slice(5).to_a.reject{ |a| a.length < 5}
+      players_and_bots = players_text.split(/\t+/).map { |s| s.sub(/^\s*\|/, '').strip }.each_slice(5).to_a.reject{ |a| a.length < 5}
     rescue
       raise "#{server_ip}:#{port} Failed to parse valid RCON response for listplayers. Response: #{players_text.inspect}"
     end
@@ -353,8 +357,8 @@ class RconClient
         'score' => entry[4].utf8
       }
     end
-    players = players_and_bots.reject { |entry| entry['steam_id'] == 'INVALID' }
-    bots = players_and_bots.select { |entry| entry['steam_id'] == 'INVALID' }
+    players = players_and_bots.reject { |entry| entry['steam_id'][/\d{17}/].nil? }
+    bots = players_and_bots.select { |entry| entry['steam_id'][/\d{17}/].nil? }
     return players, bots
   end
 end

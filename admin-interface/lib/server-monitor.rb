@@ -54,7 +54,7 @@ class ServerMonitor
     @info[thing]
   end
 
-  def log(message, exception=nil, level: :debug)
+  def log(message, exception=nil, level: nil)
     super("#{@host} Monitor | #{message}", exception, level: level) # Call the log function created by logger
   end
 
