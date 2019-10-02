@@ -181,8 +181,8 @@ class ConfigHandler
       'setter' => Proc.new { |engine_ini, players| engine_ini['SystemSettings']['net.MaxPlayersOverride'] = players }
     },
     'server_game_mode' => {
-      'default' => 'Checkpoint',
-      'validation' => Proc.new { |mode| GAME_MODES.include? mode }
+      'default' => 'None',
+      'validation' => Proc.new { |mode| ['None'].concat(GAME_MODES).include? mode }
     },
     'server_scenario_mode' => {
       'default' => 'Checkpoint',
@@ -198,7 +198,7 @@ class ConfigHandler
     },
     'server_cheats' => {
       'default' => 'false',
-      'validation' => Proc.new { |cheats| ['true', 'false'].include? cheats }
+      'validation' => Proc.new { |val| ['true', 'false'].include? val }
     },
     'server_hostname' => {
       'default' => 'Sandstorm Admin Wrapper',
@@ -259,6 +259,10 @@ class ConfigHandler
       'type' => :argument,
       'validation' => Proc.new { |token| token =~ /\A[ABCDEF0-9]+\Z/ || token.empty? },
       'sensitive' => true
+    },
+    'hang_recovery' => {
+      'default' => 'true',
+      'validation' => Proc.new { |val| ['true', 'false'].include? val }
     }
   }
 
@@ -471,8 +475,9 @@ class ConfigHandler
     max_players ||= config['server_max_players']
     password ||= config['server_password']
     scenario = get_scenario(map, scenario_mode, side)
-    query = "#{map}?Scenario=#{scenario}?MaxPlayers=#{max_players}?Game=#{game_mode}"
-    query << "?Password=#{password}" unless password.empty?
+    query = "#{map}?Scenario=#{scenario}?MaxPlayers=#{max_players}"
+    query.push("?Game=#{game_mode}") unless game_mode == 'None'
+    query.push("?Password=#{password}") unless password.empty?
     query
   end
 

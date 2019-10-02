@@ -979,3 +979,18 @@ function setMutatorCount() {
 function generatePassword(element) {
   $.get('/generate-password', (password) => { $(element).val(password); });
 }
+
+function download(url) {
+  var link = document.createElement("a");
+  link.download = name;
+  link.href = url;
+  link.style.display = "none";
+
+  document.body.appendChild(link);
+  if (typeof MouseEvent !== "undefined") {
+      link.dispatchEvent(new MouseEvent("click"));
+  } else {
+      link.click();
+  }
+  document.body.removeChild(link);
+}

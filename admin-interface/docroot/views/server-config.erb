@@ -123,20 +123,21 @@
     <!-- RCON Enabled -->
     <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">RCON Enabled</div>
-      <div class="p-2 col justify-content-end">
+      <div class="col-2 justify-content-end">
         <div class="custom-control custom-switch p-2 mr-2">
           <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_rcon_enabled"<%=' checked' if @config['server_rcon_enabled'].to_s.casecmp('True').zero? %>>
           <label class="custom-control-label" for="server_rcon_enabled">Enable RCON</label>
         </div>
       </div>
-      <div class="p-2 col-2 justify-content-end">
+      <div class="col-2 justify-content-end">
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_enabled', !$('#server_rcon_enabled')[0].checked); toggleChecked('#server_rcon_enabled');">Undo</button>
           <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_enabled', $('#server_rcon_enabled')[0].checked);">Save</button>
         </div>
       </div>
-      <div class="p-2 col-3 justify-content-end">
-        <div class="custom-control custom-switch p-2 mr-2">
+      <div class="p-2 col"></div>
+      <div class="p-2 col-3 justify-content-start">
+        <div class="custom-control custom-switch p-2 ml-5">
           <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_rcon_allow_console_commands"<%=' checked' if @config['server_rcon_allow_console_commands'].to_s.casecmp('True').zero? %>>
           <label class="custom-control-label" for="server_rcon_allow_console_commands">Allow Console Commands</label>
         </div>
@@ -145,6 +146,42 @@
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_allow_console_commands', !$('#server_rcon_allow_console_commands')[0].checked); toggleChecked('#server_rcon_allow_console_commands');">Undo</button>
           <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_allow_console_commands', $('#server_rcon_allow_console_commands')[0].checked);">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hang Recovery -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-3 d-inline-block">Hang Recovery <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Automatically hard-restart this server if it fails local RCON queries for over 30 seconds." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col"></div>
+      <div class="p-2 col-3 justify-content-start">
+          <div class="custom-control custom-switch p-2 ml-5">
+            <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="hang_recovery" <%= 'checked' if @config['hang_recovery'].to_s.casecmp('true').zero? %>>
+            <label class="custom-control-label" for="hang_recovery">Enable Automatic Hang Recovery</label>
+          </div>
+      </div>
+      <div class="p-2 col-2 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'hang_recovery', !$('#hang_recovery')[0].checked); toggleChecked('#hang_recovery');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'hang_recovery', $('#hang_recovery')[0].checked);">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cheats -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-3">Cheats (disabled if GSLT set)</div>
+      <div class="p-2 col"></div>
+      <div class="p-2 col-3 justify-content-start">
+          <div class="custom-control custom-switch p-2 ml-5">
+            <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_cheats" <%= 'checked' if @config['server_cheats'].to_s.casecmp('true').zero? %>>
+            <label class="custom-control-label" for="server_cheats">Enable Cheats</label>
+          </div>
+      </div>
+      <div class="p-2 col-2 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_cheats', !$('#server_cheats')[0].checked); toggleChecked('#server_cheats');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_cheats', $('#server_cheats')[0].checked);">Save</button>
         </div>
       </div>
     </div>
@@ -189,49 +226,6 @@
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_gslt');">Undo</button>
           <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_gslt', $('#server_gslt').val());">Save</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cheats -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
-      <div class="p-2 col-3">Cheats (disabled if GSLT set)</div>
-      <div class="p-2 col justify-content-end">
-          <div class="custom-control custom-switch p-2 ml-5">
-            <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_cheats" <%= 'checked' if @config['server_cheats'].to_s.casecmp('true').zero? %>>
-            <label class="custom-control-label" for="server_cheats">Enable Cheats</label>
-          </div>
-      </div>
-      <div class="p-2 col-2 justify-content-end">
-        <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_cheats', !$('#server_cheats')[0].checked); toggleChecked('#server_cheats');">Undo</button>
-          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_cheats', $('#server_cheats')[0].checked);">Save</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Game Mode -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
-      <div class="p-2 col-2">Game Mode</div>
-      <div class="p-2 col">
-        <input id="server_game_mode" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_game_mode'] %>">
-        <ul class="nav nav-pills col-6">
-          <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Game Modes</a>
-            <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
-              <% GAME_MODES.sort.each do |mode| %>
-              <a class="dropdown-item" onclick="$(`#server_game_mode`).val('<%= mode %>')"><%= mode %></a>
-              <% end %>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" onclick="$(`#server_game_mode`).val('Random')">Random</a>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <div class="p-2 col-4 justify-content-end">
-        <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_game_mode');">Undo</button>
-          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_game_mode', $('#server_game_mode').val());">Save</button>
         </div>
       </div>
     </div>
@@ -314,36 +308,9 @@
       </div>
     </div>
 
-    <!-- Ruleset -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
-      <div class="p-2 col-2 justify-content-between">Ruleset<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="This is deprecated as of Sandstorm version 1.4 (replaced by mutators)." style="font-size: 125%;font-weight: bold;">?</button></div>
-      <div class="p-2 col">
-        <input id="server_rule_set" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_rule_set'] %>">
-        <ul class="nav nav-pills col-6">
-          <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Rulesets</a>
-            <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
-              <% RULE_SETS.sort.each do |rule_set| %>
-              <a class="dropdown-item" onclick="$(`#server_rule_set`).val('<%= rule_set %>')"><%= rule_set %></a>
-              <% end %>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" onclick="$(`#server_rule_set`).val('None')">None</a>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <div class="p-2 col-4 justify-content-end">
-        <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rule_set');">Undo</button>
-          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rule_set', $('#server_rule_set').val());">Save</button>
-        </div>
-      </div>
-    </div>
-
-
     <!-- Mutators -->
     <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
-      <div class="p-2 col-2 justify-content-between"><div class="d-inline-block">Mutators (<span class="monospace-font"><span id="mutator-count"><%= @config['server_mutators'].length %></span>/<%= MUTATORS.length %></span>)</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="This only applies to Sandstorm version 1.4+ (intended to replace ruleset)." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col-2"><div class="d-inline-block">Mutators (<span class="monospace-font"><span id="mutator-count"><%= @config['server_mutators'].length %></span>/<%= MUTATORS.length %></span>)</div></div>
       <div class="p-2 col d-flex flex-wrap">
         <% MUTATORS.sort.each do |mutator, info| %>
           <div class="custom-control custom-switch col-4 justify-content-between my-1" onclick="setMutatorCount();" data-toggle="tooltip" data-placement="top" title="" data-original-title="<%= info['description'] %>">
@@ -403,6 +370,58 @@
         <div class="d-flex flex-column p-2 col-1 ml-1 justify-content-end">
           <button id="config_file_revealer" type="button" class="btn btn-success horizontal-expand mr-4 m-1" onclick="revealHide('#config-files-tab-content', '#config_file_revealer');">Reveal</button>
           <button type="button" class="btn btn-info horizontal-expand mr-4 m-1" onclick="writeConfigFile($('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ruleset -->
+    <div class="d-flex justify-content-between horizontal-expand my-1" style="background-color: #111;">
+      <div class="p-2 col-2 justify-content-between">Ruleset<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="This is deprecated as of Sandstorm version 1.4 (replaced by mutators)." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="server_rule_set" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_rule_set'] %>">
+        <ul class="nav nav-pills col-6">
+          <li class="nav-item dropdown horizontal-expand text-center">
+            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Rulesets</a>
+            <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
+              <% RULE_SETS.sort.each do |rule_set| %>
+              <a class="dropdown-item" onclick="$(`#server_rule_set`).val('<%= rule_set %>')"><%= rule_set %></a>
+              <% end %>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" onclick="$(`#server_rule_set`).val('None')">None</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rule_set');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rule_set', $('#server_rule_set').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Mode -->
+    <div class="d-flex justify-content-between horizontal-expand my-1" style="background-color: #111;">
+      <div class="p-2 col-2 justify-content-between">Game Mode<button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="This is deprecated as of Sandstorm version 1.4 (replaced by mutators)." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="server_game_mode" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_game_mode'] %>">
+        <ul class="nav nav-pills col-6">
+          <li class="nav-item dropdown horizontal-expand text-center">
+            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Game Modes</a>
+            <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
+              <% GAME_MODES.sort.each do |mode| %>
+              <a class="dropdown-item" onclick="$(`#server_game_mode`).val('<%= mode %>')"><%= mode %></a>
+              <% end %>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" onclick="$(`#server_game_mode`).val('None')">None</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_game_mode');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_game_mode', $('#server_game_mode').val());">Save</button>
         </div>
       </div>
     </div>

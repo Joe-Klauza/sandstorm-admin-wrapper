@@ -12,7 +12,7 @@ class ServerMonitor
   attr_reader :rcon_pass
   attr_reader :rcon_buffer
 
-  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0, rcon_fail_limit: 60, query_fail_limit: 30, name: '', rcon_buffer: nil)
+  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0, rcon_fail_limit: 30, query_fail_limit: 30, name: '', rcon_buffer: nil, daemon_handle: nil)
     @stop = false
     @ip = ip
     @query_port = query_port
@@ -24,6 +24,7 @@ class ServerMonitor
     @name = name
     @rcon_buffer = rcon_buffer
     @rcon_buffer[:persistent] = true
+    @daemon_handle = daemon_handle
 
     @rcon_client = RconClient.new
     @info = {
@@ -90,7 +91,16 @@ class ServerMonitor
     @info[:rcon_connection_problem] = true
     rcon_fail_time = Time.now.to_i - @info[:rcon_last_success]
     log "Time since last RCON success: #{rcon_fail_time.to_s << 's'}", level: rcon_fail_time > @rcon_fail_limit ? :error : :warn
-    @info[:server_down] = true if rcon_fail_time > @rcon_fail_limit || @info[:a2s_connection_problem]
+    if rcon_fail_time > @rcon_fail_limit
+      @info[:server_down] = true
+      if @daemon_handle.frozen_config['hang_recovery'].casecmp('true').zero?
+        Thread.new do
+          log "Restarting server due to repeated RCON failure", level: :warn
+          response = @daemon_handle.do_restart_server
+          log "Daemon response: #{response}"
+        end
+      end
+    end
   end
 
   def do_server_query
@@ -117,7 +127,7 @@ class ServerMonitor
     @info[:a2s_connection_problem] = true
     query_fail_time = Time.now.to_i - @info[:a2s_last_success]
     log "Time since last server query success: #{query_fail_time.to_s << 's'}", level: query_fail_time > @query_fail_limit ? :error : :warn
-    @info[:server_down] = true if query_fail_time > @query_fail_limit || @info[:rcon_connection_problem]
+    @info[:server_down] ||= (query_fail_time > @query_fail_limit) && @info[:rcon_connection_problem]
   end
 
   def stop

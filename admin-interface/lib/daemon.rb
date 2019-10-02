@@ -14,6 +14,7 @@ class SandstormServerDaemon
   attr_accessor :rcon_ip
   attr_accessor :rcon_port
   attr_accessor :rcon_pass
+  attr_reader :frozen_config
   attr_reader :name
   attr_reader :active_game_port
   attr_reader :active_rcon_port
@@ -75,6 +76,7 @@ class SandstormServerDaemon
   end
 
   def do_pre_update_warning(sleep_length: 5)
+    log "Sending restart warning to server"
     message = 'say This server is restarting in 5 seconds to apply a new server update.'
     message << ' This may take some time.' if WINDOWS # Since we have to stop the server before downloading the update
     do_blast_message(message)
@@ -130,7 +132,6 @@ class SandstormServerDaemon
     log "Restarting server", level: :info
     do_stop_server
     do_start_server
-    "Server restarting."
   end
 
   def do_stop_server
@@ -225,7 +226,7 @@ class SandstormServerDaemon
               if line.include? 'LogRcon'
                 last_line_was_rcon = true
                 if line.include?('LogRcon: Rcon listening') && @monitor.nil?
-                  Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5) }
+                  Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5, daemon_handle: self) }
                 end
               elsif last_line_was_rcon
                 if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/ || line =~ /^Log/

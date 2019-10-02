@@ -180,6 +180,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   def update_server(buffer=nil, validate: nil)
+    log "Updating server", level: :info
     was_running = []
     @@daemons_mutex.synchronize do
       if WINDOWS
@@ -246,10 +247,21 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
+  def zip_logs(zip_path, glob)
+    log "Zipping logs from #{glob} into #{zip_path.sub(USER_HOME, '~')}"
+    files_to_zip = Dir.glob(glob).map { |f| File.expand_path f }
+    Zip::File.open(zip_path, Zip::File::CREATE) do |zipfile|
+      files_to_zip.each do |f|
+        log "Zipping #{f.sub(USER_HOME, '~')}"
+        zipfile.add(File.basename(f), f)
+      end
+    end
+  end
+
   set_up
 
   configure do
-    working_directory = File.join File.dirname(__FILE__), '..', 'docroot'
+    working_directory = File.expand_path File.join File.dirname(__FILE__), '..', 'docroot'
     log "Setting webserver root dir to: #{working_directory.sub(USER_HOME, '~')}", level: :info
     set :root, working_directory
     enable :sessions, :dump_errors #, :raise_errors, :show_exceptions #, :logging
@@ -1189,6 +1201,27 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/generate-password', auth: :admin do
     ConfigHandler.generate_password
+  end
+
+  get '/download-server-logs(/:config_name)?', auth: :admin do
+    config_name = params['config_name']
+    zip_path = File.expand_path File.join SERVER_LOG_DIR, "#{ConfigHandler.sanitize_directory(config_name) + '-' if config_name}sandstorm-logs-#{DateTime.now.strftime('%Y-%m-%d_%H-%M-%S')}.zip"
+    zip_logs zip_path, File.join(SERVER_LOG_DIR, config_name ? "#{config_name}*.log" : '*.log')
+    begin
+      send_file zip_path, filename: File.basename(zip_path), disposition: :attachment
+    ensure
+      Thread.new { FileUtils.rm zip_path }
+    end
+  end
+
+  get '/download-wrapper-logs', auth: :host do
+    zip_path = File.expand_path File.join WEBAPP_ROOT, 'log', "saw-logs-#{DateTime.now.strftime('%Y-%m-%d_%H-%M-%S')}.zip"
+    zip_logs zip_path, File.join(WEBAPP_ROOT, 'log', '*.log*')
+    begin
+      send_file zip_path, filename: File.basename(zip_path), disposition: :attachment
+    ensure
+      Thread.new { FileUtils.rm zip_path }
+    end
   end
 end
 

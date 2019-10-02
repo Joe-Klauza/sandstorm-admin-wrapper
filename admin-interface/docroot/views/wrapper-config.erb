@@ -111,24 +111,33 @@
       </div>
     </div>
 
+    <!-- Download logs -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2 d-flex justify-content-between">
+        <button type="button" class="btn btn-success horizontal-expand m-1" onclick="download('/download-wrapper-logs')">Download Logs</button>
+        <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="I wouldn't recommend sending these to anyone if you value your security/privacy." style="font-size: 125%;font-weight: bold;">?</button>
+      </div>
+      <div class="p-2 col text-dark">Downloads SAW-specific logs</div>
+    </div>
+
     <!-- Update Wrapper -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
       <div class="p-2 col-2 d-flex justify-content-between">
-        <button type="button" class="btn btn-info m-1" onclick="updateWrapper();">Update Wrapper</button>
-        <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Downloads and extracts the latest release from GitHub." style="font-size: 125%;font-weight: bold;">?</button>
+        <button type="button" class="btn btn-info horizontal-expand m-1" onclick="updateWrapper();">Update Wrapper</button>
+        <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Downloads and extracts the latest release from GitHub. Restart required (wait for the toast to prompt you)." style="font-size: 125%;font-weight: bold;">?</button>
       </div>
       <div class="p-2 col text-dark d-inline-block">Updates to the latest release on <a target="_blank" href="https://github.com/Joe-Klauza/
-        sandstorm-admin-wrapper/releases">GitHub</a>.</div>
+        sandstorm-admin-wrapper/releases">GitHub</a></div>
       <div class="p-2 col text-dark">Installed version: <%= @wrapper_version || 'Unknown' %></div>
     </div>
 
     <!-- Restart Wrapper -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
       <div class="p-2 col-2 d-flex justify-content-between">
-        <button type="button" class="btn btn-danger m-1" onclick="restartWrapper();">Restart Wrapper</button>
+        <button type="button" class="btn btn-danger horizontal-expand m-1" onclick="restartWrapper();">Restart Wrapper</button>
         <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Restarts the wrapper (and any running servers). Use this to apply updates and changes saved on this page. Edit config/config.toml to change these settings if you lose access." style="font-size: 125%;font-weight: bold;">?</button>
       </div>
-      <div class="p-2 col text-dark">This also stops all Sandstorm servers.</div>
+      <div class="p-2 col text-dark">This also stops all Sandstorm servers</div>
     </div>
 
   </div>
