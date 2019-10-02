@@ -1,5 +1,7 @@
 @echo off
 cd %~dp0\admin-interface
+
+:bundle
 echo Bundling
 call bundle
 if ERRORLEVEL 1 goto bundle_error
@@ -8,7 +10,7 @@ echo Starting webapp
 :run_webapp
 call bundle exec ruby lib/webapp.rb %*
 echo Error level: %errorlevel%
-if errorlevel 2 goto run_webapp
+if errorlevel 2 goto :bundle
 if errorlevel 1 goto exit_error
 if errorlevel 0 goto exit_success
 

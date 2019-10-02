@@ -632,6 +632,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
       end
       Thread.new { sleep 0.2; log "Replacing the current process..."; exit }
     else
+      # If we changed gems in an update, try to install them
+      output = `bundle`
+      puts output
       Thread.new { sleep 0.2; log "Replacing the current process..."; exec 'bundle', 'exec', 'ruby', $PROGRAM_NAME, *ARGV }
     end
     ''
