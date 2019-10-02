@@ -35,7 +35,7 @@ class SelfUpdater
       SelfUpdater.download(zip_download_url, UPDATE_ZIP)
       log "Downloaded #{version} to update.zip"
       log "Extracting update.zip"
-      Zip::ZipFile.open(UPDATE_ZIP) do |zip_file|
+      Zip::File.open(UPDATE_ZIP) do |zip_file|
         zip_file.each do |f|
           filename = File.join Pathname(f.name).each_filename.to_a[1..] # Ignore project dir
           filepath = File.join(WRAPPER_ROOT, filename)
