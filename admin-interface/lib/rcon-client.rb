@@ -320,7 +320,9 @@ class RconClient
     end
     if buffer
       buffer.synchronize do
-        buffer[:data].push "#{datetime} | RCON #{server_ip}:#{port} (RX <<) #{response}"
+        formatted_output = "#{datetime} | RCON #{server_ip}:#{port} (RX <<) #{response}"
+        buffer[:filters].each { |filter| filter.call(formatted_output) }
+        buffer[:data].push
         num_truncated = buffer.truncate
         log "Truncated #{num_truncated} lines from buffer"
         buffer[:status] = true unless ignore_status
