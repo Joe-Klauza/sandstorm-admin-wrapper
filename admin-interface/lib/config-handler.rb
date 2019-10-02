@@ -476,8 +476,8 @@ class ConfigHandler
     password ||= config['server_password']
     scenario = get_scenario(map, scenario_mode, side)
     query = "#{map}?Scenario=#{scenario}?MaxPlayers=#{max_players}"
-    query.push("?Game=#{game_mode}") unless game_mode == 'None'
-    query.push("?Password=#{password}") unless password.empty?
+    query << "?Game=#{game_mode}" unless game_mode == 'None'
+    query << "?Password=#{password}" unless password.empty?
     query
   end
 
