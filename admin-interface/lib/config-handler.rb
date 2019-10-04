@@ -78,7 +78,9 @@ SIDES = [
 ]
 SCENARIO_MODES = [
   'Checkpoint',
-  'Firefight',
+  'Firefight_A', # Ministry... https://newworldinteractive.com/isl/uploads/2019/09/Sandstorm-Server-Admin-Guide-1.4.pdf
+  'Firefight_East',
+  'Firefight_West',
   'Push',
   'Skirmish',
   'Team_Deathmatch'
@@ -463,8 +465,8 @@ class ConfigHandler
   end
 
   def get_scenario(map, mode, side)
-    filtered_map = MAPMAP[map]
-    "Scenario_#{filtered_map}_#{mode}_#{side}"
+    filtered_map = MAPMAP[map] || map
+    "Scenario_#{filtered_map}_#{mode}#{'_' << side if ['Checkpoint', 'Push'].include?(mode)}"
   end
 
   def get_query_string(config, map: nil, side:nil, game_mode: nil, scenario_mode: nil, max_players: nil, password: nil)
