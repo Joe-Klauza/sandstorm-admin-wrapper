@@ -176,35 +176,34 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   def install_server(buffer=nil, validate: nil)
     log "Installing server..."
-    @@server_updater.update_server(buffer, validate: validate)
+    success, message = @@server_updater.update_server(buffer, validate: validate)
+    message
   end
 
   def update_server(buffer=nil, validate: nil)
-    log "Updating server", level: :info
     was_running = []
-    @@daemons_mutex.synchronize do
-      if WINDOWS
-        @@daemons.each do |key, daemon|
-          if daemon.server_running?
-            daemon.do_pre_update_warning
-            daemon.do_stop_server
-            was_running << key
-          end
-        end
-      end
-      success, message = @@server_updater.update_server(buffer, validate: validate)
-      @update_pending = false if success
+    if WINDOWS
       @@daemons.each do |key, daemon|
-        next unless was_running.include?(key)
-        if WINDOWS
-          daemon.do_start_server
-        else
+        if daemon.server_running?
           daemon.do_pre_update_warning
-          daemon.do_restart_server
+          daemon.do_stop_server
+          was_running << key
         end
       end
-      message
     end
+    success, message = @@server_updater.update_server(buffer, validate: validate)
+    @update_pending = !success
+    @@daemons.each do |key, daemon|
+      if WINDOWS
+        next unless was_running.include?(key)
+        daemon.do_start_server
+      else
+        next unless daemon.server_running?
+        daemon.do_pre_update_warning
+        daemon.do_restart_server
+      end
+    end
+    message
   end
 
   def run_steamcmd(command, buffer: nil)

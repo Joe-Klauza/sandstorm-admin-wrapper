@@ -76,7 +76,7 @@ class SandstormServerDaemon
   end
 
   def do_pre_update_warning(sleep_length: 5)
-    log "Sending restart warning to server"
+    log "Sending restart warning to server", level: :info
     message = 'say This server is restarting in 5 seconds to apply a new server update.'
     message << ' This may take some time.' if WINDOWS # Since we have to stop the server before downloading the update
     do_blast_message(message)

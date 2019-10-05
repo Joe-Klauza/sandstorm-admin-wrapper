@@ -117,7 +117,7 @@ class ServerUpdater
         buffer[:message] = response
       end
     end
-    response
+    [updated, response]
   end
 
   # Returns true if an update was performed, false if already up-to-date
@@ -129,9 +129,9 @@ class ServerUpdater
       "+app_update 581330#{' validate' if validate}",
       '+exit'
     ]
-    response = run_steamcmd(command, buffer: buffer, ignore_status: ignore_status, ignore_message: ignore_message)
+    updated, response = run_steamcmd(command, buffer: buffer, ignore_status: ignore_status, ignore_message: ignore_message)
     update_available?
-    response
+    [updated, response]
   end
 
   def monitor_update(minutes_between_checks: 3)
