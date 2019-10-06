@@ -786,7 +786,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
       if buffer[:bookmarks].length > 100
         log "Buffer has many bookmarks! Are that many clients connected? #{buffer[:uuid]} (#{buffer[:bookmarks].length} bookmarks)", level: :warn
         log "Purging first 20 bookmarks", level: :warn
-        buffer[:bookmarks].shift 20
+        20.times { buffer[:bookmarks].shift }
       end
       unless buffer[:bookmarks].keys.include?(@bookmark_uuid) || @bookmark_uuid.nil?
         status 400
@@ -805,12 +805,12 @@ class SandstormAdminWrapperSite < Sinatra::Base
       end
 
       start_index = buffer[:bookmarks][@bookmark_uuid] || 0
-      start_index = 0 if start_index > buffer[:data].length
+      start_index = 0 if start_index > buffer.size
       # log "Buffer [#{uuid}][#{buffer[:iterator]}] start_index unexpectedly negative" if start_index < 0
       new_bookmark_uuid = Sysrandom.uuid
-      new_bookmark = (buffer[:data].length - start_index > limit) ? (start_index + limit) : buffer[:data].length
+      new_bookmark = (buffer.size - start_index > limit) ? (start_index + limit) : buffer.size
       # log "Buffer - Calculated new_bookmark: #{new_bookmark}"
-      if new_bookmark == buffer[:data].length && !buffer[:status].nil?
+      if new_bookmark == buffer.size && !buffer[:status].nil?
         # Process is done. The next bookmark will be an indicator to send status and message next time
         # as well as slice to the end of the array below
         new_bookmark = -1

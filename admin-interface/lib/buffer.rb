@@ -1,7 +1,7 @@
 require_relative 'logger'
 
 class Buffer < Hash
-  def initialize(uuid)
+  def initialize(uuid, opts={})
     self.merge!({
       uuid: uuid,
       data: [],
@@ -13,6 +13,7 @@ class Buffer < Hash
       filters: [],
       persistent: false
     })
+    self.merge!(opts)
   end
 
   def synchronize
@@ -21,16 +22,18 @@ class Buffer < Hash
 
   def <<(string)
     self[:data] << string
+    truncate
+    self[:data]
   end
 
   def push(string)
-    self[:data] << string
+    self << string
   end
 
   def truncate(limit: self[:limit])
-    size = self[:data].size
-    return 0 unless size > limit
-    over_limit = size - limit
+    current_size = size
+    return 0 unless current_size > limit
+    over_limit = current_size - limit
     self[:data].shift over_limit # Remove the first (oldest) n elements
     self[:bookmarks].each do |uuid, value|
       next if value == -1
@@ -46,5 +49,9 @@ class Buffer < Hash
     end
     self[:status] = nil
     self[:message] = nil
+  end
+
+  def size
+    self[:data].size
   end
 end

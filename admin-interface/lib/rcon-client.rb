@@ -310,7 +310,7 @@ class RconClient
     if buffer
       formatted_output = "#{datetime} | RCON #{server_ip}:#{port} (TX >>) #{command}"
       buffer[:filters].each { |filter| filter.call(formatted_output) }
-      buffer.synchronize { buffer[:data].push formatted_output }
+      buffer.synchronize { buffer.push formatted_output }
     end
     response = send_receive_wrapper socket, packet, timeout, retries
     if command == 'exit'
@@ -322,9 +322,7 @@ class RconClient
       buffer.synchronize do
         formatted_output = "#{datetime} | RCON #{server_ip}:#{port} (RX <<) #{response}"
         buffer[:filters].each { |filter| filter.call(formatted_output) }
-        buffer[:data].push formatted_output
-        num_truncated = buffer.truncate
-        log "Truncated #{num_truncated} lines from buffer"
+        buffer.push formatted_output
         buffer[:status] = true unless ignore_status
         buffer[:message] = "RCON response received from [#{server_ip}:#{port}]." unless ignore_message
       end

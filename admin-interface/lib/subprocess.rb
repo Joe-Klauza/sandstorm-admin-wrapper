@@ -50,7 +50,7 @@ class SubprocessRunner
           else
             buffer[:filters].each { |filter| filter.call(formatted_output) }
             buffer[:mutex].synchronize do # Synchronize with the reading thread to avoid mismatched indices when truncating, etc.
-              buffer[:data].push formatted_output
+              buffer.push formatted_output
             end
           end
           log formatted_output # Ensure this is after filters to avoid NWI's lack of color code resets
@@ -78,9 +78,7 @@ class SubprocessRunner
     if buffer.nil?
       captured_output.join("\n")
     else
-      buffer.synchronize do # Synchronize with the reading thread to avoid mismatched indices when truncating, etc.
-        num_truncated = buffer.truncate
-        log "Truncated #{num_truncated} lines from buffer"
+      buffer.synchronize do
         buffer[:status] = status unless ignore_status
         buffer[:message] = message unless ignore_message
       end
