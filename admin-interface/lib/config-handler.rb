@@ -122,7 +122,6 @@ MUTATORS = {
   'HeadshotOnly' => { 'name' => 'Headshots Only', 'description' => 'Players only take damage when shot in the head.' },
   'HotPotato' => { 'name' => 'Hot Potato', 'description' => 'A live fragmentation grenade is dropped on death.' },
   'LockedAim' => { 'name' => 'Locked Aim', 'description' => 'Weapons always point to the center of the screen.' },
-  'LowGravity' => { 'name' => 'Low Gravity', 'description' => 'Float when jumping or falling, and shoot while midair.' },
   'NoAim' => { 'name' => 'No Aim Down Sights', 'description' => 'Aiming down sights is disabled.' },
   'PistolsOnly' => { 'name' => 'Pistols Only', 'description' => 'Only pistols are available along with normal equipment and explosives.' },
   'ShotgunsOnly' => { 'name' => 'Shotguns Only', 'description' => 'Only Shotguns are available along with normal equipment and explosives.' },
