@@ -29,7 +29,7 @@ class ServerMonitor
     @rcon_buffer = rcon_buffer
     @rcon_buffer[:persistent] = true
     @daemon_handle = daemon_handle
-    @steam_api_client = SteamApiClient.new(@daemon_handle.steam_api_key) unless @daemon_handle.steam_api_key.to_s.empty?
+    @steam_api_client = SteamApiClient.new(@daemon_handle.steam_api_key) unless @daemon_handle.nil? || @daemon_handle.steam_api_key.to_s.empty?
 
     @rcon_client = RconClient.new
     @info = {
@@ -132,7 +132,7 @@ class ServerMonitor
 
     now = Time.now.to_i
     # Look up players we haven't in the past 24 hours
-    if @steam_api_client || !@daemon_handle.steam_api_key.empty?
+    if @daemon_handle && (@steam_api_client || !@daemon_handle.steam_api_key.empty?)
       @steam_api_client = SteamApiClient.new(@daemon_handle.steam_api_key) if @steam_api_client.nil?
       ids_to_query = rcon_players.select { |p| now - $config_handler.players.dig(p['steam_id'], 'last_steam_lookup').to_i > 60 * 60 * 24 }.map { |p| p['steam_id'] }
       steam_users = @steam_api_client.get_info(ids_to_query)
