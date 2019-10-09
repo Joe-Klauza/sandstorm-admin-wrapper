@@ -60,6 +60,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     log "Loading wrapper config from #{File.basename WEBAPP_CONFIG}"
     config = TomlRB.load_file WEBAPP_CONFIG
     config['automatic_updates'] = true if config['automatic_updates'].nil?
+    config['steam_api_key'] = '' if config['steam_api_key'].nil?
     config
   rescue => e
     log "Couldn't load config from #{config_file}", e
@@ -113,7 +114,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
         @@daemons_mutex,
         @@rcon_client,
         create_buffer.last,
-        create_buffer.last
+        create_buffer.last,
+        steam_api_key: @@config['steam_api_key']
       )
     end
     @@daemons[key].do_start_server if start
@@ -470,11 +472,12 @@ class SandstormAdminWrapperSite < Sinatra::Base
     if params['action'] == 'set'
       begin
         if wrapper_config.keys.include?(variable)
-          old = variable == 'admin_interface_session_secret' ? '[REDACTED]' : wrapper_config[variable]
+          sensitive = ['admin_interface_session_secret', 'steam_api_key'].include? variable
+          old = sensitive ? '[REDACTED]' : wrapper_config[variable]
           wrapper_config[variable] = value
-          value = variable == 'admin_interface_session_secret' ? '[REDACTED]' : wrapper_config[variable]
-          log "Saving new wrapper config: #{wrapper_config}", level: :info
+          value = sensitive ? '[REDACTED]' : wrapper_config[variable]
           self.class.save_webapp_config(wrapper_config)
+          @@daemons.values.each { |d| d.steam_api_key = wrapper_config[variable] } if variable == 'steam_api_key'
           "Changed #{variable}: #{old} => #{value}"
         else
           status 400

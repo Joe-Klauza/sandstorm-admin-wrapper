@@ -15,14 +15,25 @@
   <% players.sort_by { |p| [p['score'].to_i, (p['duration'] || ''), p['name']] }.reverse.each_with_index do |player, i| %>
   <div class="row horizontal-expand m-1 p-1 align-items-center text-white" style="background-color:#<%= i.even? ? '393b44' : '535663'%>">
     <div class="col-3">
-      <%= ('<span class="flag-icon flag-icon-' << player['country_code'] << '"></span> ') if player['country_code'] %><a target="<%= !@use_steam_urls ? '_blank' : '' %>" href="<%= !@use_steam_urls ? 'https://steamcommunity.com/profiles/' : 'steam://url/SteamIDPage/' %><%= player['steam_id'] %>"><img src="<%= player['steam_info']['avatar'] || '/custom/missing.png' rescue '/custom/missing.png' %>" width="32" height="32"> <%= player['name'] %></a>
+      <% ip_info = player.dig('ip_info', player['ip']).to_h %>
+      <% country_code = ip_info['countryCode'] %>
+      <% region_name = ip_info['regionName'] %>
+      <% city = ip_info['city'] %>
+      <%= ('<span class="mr-1 flag-icon flag-icon-' << country_code << '"></span> ') if country_code %>
+      <a target="<%= !@use_steam_urls ? '_blank' : '' %>" href="<%= !@use_steam_urls ? 'https://steamcommunity.com/profiles/' : 'steam://url/SteamIDPage/' %><%= player['steam_id'] %>">
+        <img src="<%= player['steam_info']['avatar'] || '/custom/missing.png' rescue '/custom/missing.png' %>" width="32" height="32">
+        <%= player['name'] %>
+      </a>
     </div>
     <div class="col-2"><%= player['score'] %></div>
     <div class="col-2"><%= player['duration'] %></div>
     <div class="col-5">
       <% if is_admin? %>
-      <button class="btn btn-warning m-1" data-toggle="modal" data-target="#confirm_modal" onclick="confirmModal('Kick <%= "#{player['name']} (#{player['steam_id']})" %>', 'Are you sure you want to kick <%= "#{player['name']} (#{player['steam_id']})" %>?', 'playerKick(\'<%= @monitor.ip %>\', \'<%= @monitor.rcon_port %>\', \'<%= CGI.escape @monitor.rcon_pass %>\', \'<%= player['steam_id'] %>\')', 'failureToast(\'Failed to kick player.\'');">Kick</button>
-      <button class="btn btn-danger m-1" data-toggle="modal" data-target="#confirm_modal" onclick="confirmModal('Ban <%= "#{player['name']} (#{player['steam_id']})" %>', 'Are you sure you want to ban <%= "#{player['name']} (#{player['steam_id']})" %>?', 'playerBan(\'<%= @monitor.ip %>\', \'<%= @monitor.rcon_port %>\', \'<%= CGI.escape @monitor.rcon_pass %>\', \'<%= player['steam_id'] %>\')', 'failureToast(\'Failed to ban player.\'');">Ban</button>
+        <button class="btn btn-warning m-1" data-toggle="modal" data-target="#confirm_modal" onclick="confirmModal('Kick <%= "#{player['name']} (#{player['steam_id']})" %>', 'Are you sure you want to kick <%= "#{player['name']} (#{player['steam_id']})" %>?', 'playerKick(\'<%= @monitor.ip %>\', \'<%= @monitor.rcon_port %>\', \'<%= CGI.escape @monitor.rcon_pass %>\', \'<%= player['steam_id'] %>\')', 'failureToast(\'Failed to kick player.\'');">Kick</button>
+        <button class="btn btn-danger m-1" data-toggle="modal" data-target="#confirm_modal" onclick="confirmModal('Ban <%= "#{player['name']} (#{player['steam_id']})" %>', 'Are you sure you want to ban <%= "#{player['name']} (#{player['steam_id']})" %>?', 'playerBan(\'<%= @monitor.ip %>\', \'<%= @monitor.rcon_port %>\', \'<%= CGI.escape @monitor.rcon_pass %>\', \'<%= player['steam_id'] %>\')', 'failureToast(\'Failed to ban player.\'');">Ban</button>
+        <small class="ml-1">
+          <%= "#{country_code} ➤ #{region_name} ➤ #{city}" %>
+        </small>
       <% end %>
     </div>
   </div>

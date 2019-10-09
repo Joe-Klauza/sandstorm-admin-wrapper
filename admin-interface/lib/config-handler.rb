@@ -2,16 +2,21 @@ require 'bcrypt'
 require 'erb'
 require 'fileutils'
 require 'inifile'
+require 'net/http'
 require 'oj'
 require 'socket'
 require 'sysrandom'
 require_relative 'logger'
+
+LOCAL_IP_PREFIXES = ['10.', '0.', '127.','192.168.'] # https://en.wikipedia.org/wiki/Reserved_IP_addresses
+EXTERNAL_IP = Net::HTTP.get URI "https://api.ipify.org" rescue nil
 
 CONFIG_PATH = File.expand_path File.join File.dirname(__FILE__), '..', 'config'
 CONFIG_FILE = File.join CONFIG_PATH, 'config.json'
 USERS_CONFIG_FILE = File.join CONFIG_PATH, 'users.json'
 MONITOR_CONFIGS_FILE = File.join CONFIG_PATH, 'monitor-configs.json'
 SERVER_CONFIGS_FILE = File.join CONFIG_PATH, 'server-configs.json'
+PLAYER_INFO_FILE = File.join CONFIG_PATH, 'players.json'
 
 WRAPPER_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..', '..')).freeze
 WRAPPER_CONFIG = File.join WRAPPER_ROOT, 'config'
@@ -81,6 +86,7 @@ SCENARIO_MODES = [
   'Firefight_A', # Ministry... https://newworldinteractive.com/isl/uploads/2019/09/Sandstorm-Server-Admin-Guide-1.4.pdf
   'Firefight_East',
   'Firefight_West',
+  'Frontline',
   'Push',
   'Skirmish',
   'Team_Deathmatch'
@@ -140,6 +146,7 @@ class ConfigHandler
   attr_reader :monitor_configs
   attr_reader :server_configs
   attr_reader :users
+  attr_accessor :players
 
   def self.generate_password
     Sysrandom.base64(32 + Sysrandom.random_number(32)).gsub("\n", '')
@@ -264,6 +271,22 @@ class ConfigHandler
     'hang_recovery' => {
       'default' => 'true',
       'validation' => Proc.new { |val| ['true', 'false'].include? val }
+    },
+    'join_message' => {
+      'default' => 'Welcome, ${player_name}!',
+      'validation' => Proc.new { true }
+    },
+    'leave_message' => {
+      'default' => 'See you later, ${player_name}!',
+      'validation' => Proc.new { true }
+    },
+    'admin_join_message' => {
+      'default' => 'Welcome, ${player_name}! (admin)',
+      'validation' => Proc.new { true }
+    },
+    'admin_leave_message' => {
+      'default' => 'See you later, ${player_name}! (admin)',
+      'validation' => Proc.new { true }
     }
   }
 
@@ -271,6 +294,7 @@ class ConfigHandler
     @users = load_user_config
     @monitor_configs = load_monitor_configs
     @server_configs = load_server_configs
+    @players = load_player_config
     @bans_mutex = Mutex.new
   end
 
@@ -335,6 +359,15 @@ class ConfigHandler
     raise
   end
 
+  def load_player_config
+    Oj.load(File.read(PLAYER_INFO_FILE))
+  rescue Errno::ENOENT
+    {}
+  rescue => e
+    log "Failed to load user config from #{USERS_CONFIG_FILE}. Using default user config.", e
+    raise
+  end
+
   def write_user_config
     log "Writing user config"
     File.write(USERS_CONFIG_FILE, Oj.dump(@users, indent: 2))
@@ -374,10 +407,17 @@ class ConfigHandler
     nil
   end
 
+  def write_player_info
+    log "Writing player info"
+    File.write(PLAYER_INFO_FILE, Oj.dump(@players, indent: 2))
+    nil
+  end
+
   def write_config
     write_user_config
     write_monitor_configs
     write_server_configs
+    write_player_info
     true
   rescue => e
     log 'Failed to write config', e
@@ -408,6 +448,11 @@ class ConfigHandler
       FileUtils.cp local, it[:actual]
     end
     nil
+  end
+
+  def get_server_config_file_content(config_file, config_name)
+    local = ERB.new(CONFIG_FILES[config_file][:local_erb]).result(binding)
+    File.read(local)
   end
 
   def apply_server_bans

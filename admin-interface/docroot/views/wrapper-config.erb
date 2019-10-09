@@ -111,6 +111,23 @@
       </div>
     </div>
 
+    <!-- Steam API Key -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
+      <div class="p-2 col-2 d-flex justify-content-between">Steam API Key<a href="https://steamcommunity.com/dev/apikey" target="_blank" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Generate at steamcommunity.com/dev/apikey to automatically look up player info/bans (click to go there)." style="font-size: 125%;font-weight: bold;">?</a></div>
+      <div class="p-2 col-4">
+        <input id="steam_api_key" type="text" class="form-control blur" placeholder="<%= @config['steam_api_key'] %>">
+      </div>
+      <div class="p-2 col-2 d-flex justify-content-start">
+        <button id="steam_api_key_revealer" type="button" class="btn btn-sm btn-success horizontal-expand mr-4" onclick="revealHide('#steam_api_key', '#steam_api_key_revealer');">Reveal</button>
+      </div>
+      <div class="p-2 col-4">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoWrapperConfig('steam_api_key');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setWrapperConfig('steam_api_key', $('#steam_api_key').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Download logs -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
       <div class="p-2 col-2 d-flex justify-content-between">

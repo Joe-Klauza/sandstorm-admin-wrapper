@@ -120,39 +120,65 @@
       </div>
     </div>
 
-    <!-- RCON Enabled -->
+    <!-- Player join message -->
     <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
-      <div class="p-2 col-2">RCON Enabled</div>
-      <div class="col-2 justify-content-end">
-        <div class="custom-control custom-switch p-2 mr-2">
-          <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_rcon_enabled"<%=' checked' if @config['server_rcon_enabled'].to_s.casecmp('True').zero? %>>
-          <label class="custom-control-label" for="server_rcon_enabled">Enable RCON</label>
-        </div>
+      <div class="p-2 col-3 d-flex justify-content-between"><div>Player join message</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="<div class='d-inline-block'>Uses RCON say to send a welcome message 20 seconds after a player joins.<br>Variables: <span class='monospace-font'><b>${player_name}</b></span>, <span class='monospace-font'><b>${player_id}</b></span></div>" style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="join_message" type="text" class="form-control server-config-text-input" placeholder="<%= @config['join_message'] %>">
       </div>
-      <div class="col-2 justify-content-end">
+      <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_enabled', !$('#server_rcon_enabled')[0].checked); toggleChecked('#server_rcon_enabled');">Undo</button>
-          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_enabled', $('#server_rcon_enabled')[0].checked);">Save</button>
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'join_message');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'join_message', $('#join_message').val());">Save</button>
         </div>
       </div>
-      <div class="p-2 col"></div>
-      <div class="p-2 col-3 justify-content-start">
-        <div class="custom-control custom-switch p-2 ml-5">
-          <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_rcon_allow_console_commands"<%=' checked' if @config['server_rcon_allow_console_commands'].to_s.casecmp('True').zero? %>>
-          <label class="custom-control-label" for="server_rcon_allow_console_commands">Allow Console Commands</label>
-        </div>
+    </div>
+
+    <!-- Player leave message -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-3 d-flex justify-content-between"><div>Player leave message</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="<div class='d-inline-block'>Uses RCON say to send a notification message when a player leaves.<br>Variables: <span class='monospace-font'><b>${player_name}</b></span>, <span class='monospace-font'><b>${player_id}</b></span></div>" style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="leave_message" type="text" class="form-control server-config-text-input" placeholder="<%= @config['leave_message'] %>">
       </div>
-      <div class="p-2 col-2 justify-content-end">
+      <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_allow_console_commands', !$('#server_rcon_allow_console_commands')[0].checked); toggleChecked('#server_rcon_allow_console_commands');">Undo</button>
-          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_allow_console_commands', $('#server_rcon_allow_console_commands')[0].checked);">Save</button>
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'leave_message');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'leave_message', $('#leave_message').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin join message -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-3 d-flex justify-content-between"><div>Admin join message</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="<div class='d-inline-block'>Uses RCON say to send a welcome message 20 seconds after a player joins.<br>Variables: <span class='monospace-font'><b>${player_name}</b></span>, <span class='monospace-font'><b>${player_id}</b></span></div>" style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="admin_join_message" type="text" class="form-control server-config-text-input" placeholder="<%= @config['admin_join_message'] %>">
+      </div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'admin_join_message');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'admin_join_message', $('#admin_join_message').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin leave message -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-3 d-flex justify-content-between"><div>Admin leave message</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="<div class='d-inline-block'>Uses RCON say to send a notification message when a player leaves.<br>Variables: <span class='monospace-font'><b>${player_name}</b></span>, <span class='monospace-font'><b>${player_id}</b></span></div>" style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="admin_leave_message" type="text" class="form-control server-config-text-input" placeholder="<%= @config['admin_leave_message'] %>">
+      </div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'admin_leave_message');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'admin_leave_message', $('#admin_leave_message').val());">Save</button>
         </div>
       </div>
     </div>
 
     <!-- Hang Recovery -->
     <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
-      <div class="p-2 col-3 d-inline-block">Hang Recovery <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Automatically hard-restart this server if it fails local RCON queries for over 30 seconds." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col-3 d-flex justify-content-between"><div>Hang Recovery</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Automatically hard-restart this server if it fails local RCON queries for over 30 seconds." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col"></div>
       <div class="p-2 col-3 justify-content-start">
           <div class="custom-control custom-switch p-2 ml-5">
@@ -370,6 +396,36 @@
         <div class="d-flex flex-column p-2 col-1 ml-1 justify-content-end">
           <button id="config_file_revealer" type="button" class="btn btn-success horizontal-expand mr-4 m-1" onclick="revealHide('#config-files-tab-content', '#config_file_revealer');">Reveal</button>
           <button type="button" class="btn btn-info horizontal-expand mr-4 m-1" onclick="writeConfigFile($('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RCON Enabled -->
+    <div class="d-flex justify-content-between horizontal-expand my-1" style="background-color: #111;">
+      <div class="p-2 col-2 justify-content-between">RCON <button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="We need this to do most things; it's best left enabled." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="col-2 justify-content-end">
+        <div class="custom-control custom-switch p-2 mr-2">
+          <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_rcon_enabled"<%=' checked' if @config['server_rcon_enabled'].to_s.casecmp('True').zero? %>>
+          <label class="custom-control-label" for="server_rcon_enabled">Enable RCON</label>
+        </div>
+      </div>
+      <div class="col-2 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_enabled', !$('#server_rcon_enabled')[0].checked); toggleChecked('#server_rcon_enabled');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_enabled', $('#server_rcon_enabled')[0].checked);">Save</button>
+        </div>
+      </div>
+      <div class="p-2 col"></div>
+      <div class="p-2 col-3 justify-content-start">
+        <div class="custom-control custom-switch p-2 ml-5">
+          <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_rcon_allow_console_commands"<%=' checked' if @config['server_rcon_allow_console_commands'].to_s.casecmp('True').zero? %>>
+          <label class="custom-control-label" for="server_rcon_allow_console_commands">Allow Console Commands</label>
+        </div>
+      </div>
+      <div class="p-2 col-2 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_allow_console_commands', !$('#server_rcon_allow_console_commands')[0].checked); toggleChecked('#server_rcon_allow_console_commands');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_rcon_allow_console_commands', $('#server_rcon_allow_console_commands')[0].checked);">Save</button>
         </div>
       </div>
     </div>

@@ -6,11 +6,11 @@
 Thread.report_on_exception = false
 
 module ThreadExtensions
-  def initialize
+  def initialize(*args)
     begin
-      super do
+      super(*args) do |args|
         begin
-          yield
+          yield(args)
         rescue => e
           level = :error
           level = :debug if e.is_a?(IOError) && e.message == 'stream closed in another thread'

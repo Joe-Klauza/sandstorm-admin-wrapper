@@ -14,6 +14,8 @@ class SandstormServerDaemon
   attr_accessor :rcon_ip
   attr_accessor :rcon_port
   attr_accessor :rcon_pass
+  attr_accessor :player_feed
+  attr_accessor :steam_api_key
   attr_reader :frozen_config
   attr_reader :name
   attr_reader :active_game_port
@@ -28,7 +30,7 @@ class SandstormServerDaemon
   attr_reader :monitor
   attr_reader :log_file
 
-  def initialize(config, daemons, mutex, rcon_client, server_buffer, rcon_buffer)
+  def initialize(config, daemons, mutex, rcon_client, server_buffer, rcon_buffer, steam_api_key: '')
     @config = config
     @name = @config['server-config-name']
     @daemons = daemons
@@ -52,6 +54,9 @@ class SandstormServerDaemon
       Proc.new { |line| line.prepend "#{get_server_id} | " }
     ]
     @log_file = nil
+    @player_feed = []
+    @admin_ids = nil
+    @steam_api_key = steam_api_key
     start_daemon
     log "Daemon initialized"
   end
@@ -90,6 +95,10 @@ class SandstormServerDaemon
       do_send_rcon message
       sleep interval unless i + 1 == amount
     end
+  end
+
+  def is_sandstorm_admin?(steam_id)
+    @admin_ids.include?(steam_id.to_s)
   end
 
   def do_send_rcon(command, host: nil, port: nil, pass: nil, buffer: nil)
@@ -184,6 +193,7 @@ class SandstormServerDaemon
     log "Applying config"
     @frozen_config = @config.dup
     $config_handler.apply_server_config_files @frozen_config, @frozen_config['server-config-name']
+    @admin_ids = $config_handler.get_server_config_file_content(:admins_txt, @frozen_config['server-config-name']).split("\n").map { |l| l[/\d{17}/] }.compact
     executable = BINARY
     arguments = $config_handler.get_server_arguments(@frozen_config)
     @active_game_port = @frozen_config['server_game_port']

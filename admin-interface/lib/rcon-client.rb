@@ -342,6 +342,7 @@ class RconClient
   def get_players_and_bots(server_ip, port, password, buffer: nil, ignore_status: false, ignore_message: false, timeout: 2, retries: 1)
     resp = send(server_ip, port, password, 'listplayers', buffer: buffer, ignore_status: ignore_status, ignore_message: ignore_message, timeout: timeout, retries: retries)
     raise "#{server_ip}:#{port} Response was nil!" if resp.nil?
+    raise "#{server_ip}:#{port} Map is changing! (Invalid gamestate)" if resp.strip == "Invalid gamestate"
     players_text = resp.split("\n").last
     begin
       players_and_bots = players_text.split(/\t+/).map { |s| s.sub(/^\s*\|/, '').strip }.each_slice(5).to_a.reject{ |a| a.length < 5}
