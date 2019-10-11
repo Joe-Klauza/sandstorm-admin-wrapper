@@ -210,7 +210,8 @@ class ServerMonitor
     end
 
     players_gone.each do |player|
-      log "Player left: #{player['name']} (#{player['steam_id']})", level: :info
+      is_admin = @daemon_handle.is_sandstorm_admin?(player['steam_id'])
+      log "Player left: #{player['name']} (#{player['steam_id']})#{' (admin)' if is_admin}", level: :info
       unless @daemon_handle.config['leave_message'].empty?
         Thread.new do
           message = @daemon_handle.config['leave_message'].gsub('${player_name}', player['name']).gsub('${player_id}', player['steam_id'])

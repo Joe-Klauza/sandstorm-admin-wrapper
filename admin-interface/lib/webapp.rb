@@ -113,8 +113,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
         @@daemons,
         @@daemons_mutex,
         @@rcon_client,
-        create_buffer.last,
-        create_buffer.last,
+        create_buffer.last, # Server log
+        create_buffer.last, # RCON
+        create_buffer.last, # Chat
         steam_api_key: @@config['steam_api_key']
       )
     end
@@ -369,10 +370,11 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/confirm' do
-    @yes = params[:yes]
-    @no = params[:no]
-    @title = params[:title]
-    @body = params[:body]
+    @yes = CGI.unescape params[:yes]
+    @no = CGI.unescape params[:no]
+    @title = CGI.unescape params[:title]
+    @body = CGI.unescape params[:body]
+    @input_label = CGI.unescape params[:input_label]
     erb :confirm
   end
 
@@ -627,18 +629,11 @@ class SandstormAdminWrapperSite < Sinatra::Base
   post '/restart-wrapper', auth: :host do
     @@daemons.each { |_, daemon| daemon.do_stop_server }
     ENV['HOME'] = USER_HOME
-    # The below exec doesn't work on Windows (port conflict?), so we'll exit with a particular code instead, to be handled by the start script
-    if WINDOWS
-      at_exit do
-        exit 2
-      end
-      Thread.new { sleep 0.2; log "Replacing the current process..."; exit }
-    else
-      # If we changed gems in an update, try to install them
-      output = `bundle`
-      puts output
-      Thread.new { sleep 0.2; log "Replacing the current process..."; exec 'bundle', 'exec', 'ruby', $PROGRAM_NAME, *ARGV }
+    # Exit with a particular code, to be handled by the start script
+    at_exit do
+      exit 2
     end
+    Thread.new { sleep 0.2; log "Replacing the current process..."; exit }
     ''
   end
 
@@ -800,8 +795,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
           :status => buffer[:status].dup,
           :message => buffer[:message].dup
         }
-
         @@buffer_mutex.synchronize do
+          buffer[:bookmarks].delete @bookmark_uuid
           @@buffers[uuid][:persistent] ? @@buffers[uuid].reset : @@buffers.delete(uuid)
         end
         return Oj.dump(obj, mode: :compat)
@@ -818,11 +813,11 @@ class SandstormAdminWrapperSite < Sinatra::Base
         # as well as slice to the end of the array below
         new_bookmark = -1
       end
-      if new_bookmark == start_index
+      if new_bookmark == start_index && @bookmark_uuid # No data will be given; have them request the same bookmark if we were given one
         new_bookmark_uuid = @bookmark_uuid
       else
         buffer[:bookmarks][new_bookmark_uuid] = new_bookmark
-        buffer[:bookmarks].delete @bookmark_uuid
+        buffer[:bookmarks].delete @bookmark_uuid unless @bookmark_uuid.nil?
       end
       # log "Buffer - Command done. Moved to : #{new_bookmark}" if new_bookmark == -1
 
@@ -831,7 +826,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
         :bookmark => new_bookmark_uuid,
         :data => data_response
       }
-      # log "Buffer [#{uuid}][#{buffer[:iterator]}] Responding #{start_index}..#{new_bookmark}: #{data_response}"
+      # log "Buffer [#{uuid}][#{buffer[:iterator]}] Responding #{start_index}..#{new_bookmark}: #{response_object}"
       # log "Buffer [#{uuid}][#{buffer[:iterator]}] Bookmarks: #{buffer[:bookmarks]}"
       Oj.dump(response_object, mode: :compat)
     end
@@ -897,10 +892,26 @@ class SandstormAdminWrapperSite < Sinatra::Base
         end
       when 'rcon'
         begin
-          Thread.new { daemon.do_send_rcon(options[:command], host: options[:host], port: options[:port], pass: options[:pass], buffer: daemon.rcon_buffer) }
-          daemon.rcon_buffer[:uuid]
+          uuid, buffer = self.class.create_buffer
+
+          if options[:command].split(' ').first.start_with?('unban')
+            steam_id = options[:command][/\d{17}/]
+            $config_handler.unban_master(steam_id) if steam_id
+          end
+          Thread.new { daemon.do_send_rcon(options[:command], host: options[:host], port: options[:port], pass: options[:pass], buffer: daemon.rcon_buffer, outcome_buffer: buffer) }
+          uuid
         rescue => e
           log "Error while sending RCON", e
+          status 500
+          e.message
+        end
+      when 'chat'
+        begin
+          uuid, buffer = self.class.create_buffer
+          Thread.new { daemon.do_send_rcon("say #{options[:command]}", host: options[:host], port: options[:port], pass: options[:pass], buffer: daemon.chat_buffer, outcome_buffer: buffer, no_rx: true) }
+          uuid
+        rescue => e
+          log "Error while sending chat RCON", e
           status 500
           e.message
         end
@@ -1102,17 +1113,16 @@ class SandstormAdminWrapperSite < Sinatra::Base
   post '/admin/:action/:steam_id', auth: :admin do
     data = Oj.load(request.body.read)
     request.body.rewind
-    reason = data['reason']
+    reason = data['reason'].gsub('"', '\"')
     steam_id = params[:steam_id]
     case params[:action]
     when 'ban'
       uuid, buffer = self.class.create_buffer
-      # Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "banid #{steam_id}", buffer: buffer) }
-      Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "permban #{steam_id}", buffer: buffer) }
+      Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "permban #{steam_id} \"#{reason}\"", buffer: buffer) } # banid doesn't allow a reason yet...
       uuid
     when 'kick'
       uuid, buffer = self.class.create_buffer
-      Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "kick #{steam_id}", buffer: buffer) }
+      Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "kick #{steam_id} \"#{reason}\"", buffer: buffer) }
       uuid
     else
       status 400
@@ -1181,6 +1191,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
       daemon.buffer[:uuid]
     when 'rcon'
       daemon.rcon_buffer[:uuid]
+    when 'chat'
+      daemon.chat_buffer[:uuid]
     else
       status 400
       "Unknown buffer type: #{type}"

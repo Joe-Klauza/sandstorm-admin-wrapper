@@ -146,11 +146,14 @@ div {
 
 /* Log */
 .log {
-  background: lightgray;
   width: 96%;
   height: 300px;
   overflow-y: scroll;
   overflow-x: scroll;
+}
+
+.log-sm {
+  height: 150px;
 }
 
 .log-lg {
@@ -182,3 +185,107 @@ html, body{
     height: 100%;
     -webkit-overflow-scrolling: touch;
 }
+
+/* Transparency for toasts */
+#toast-container {
+  opacity: .8;
+}
+
+/* --- Dark theme improvements --- */
+/* Less-bright font */
+* {
+  color: #bcbcbc !important;
+}
+/* Less-bright input background */
+input, textarea, .logspan, .log {
+  background-color: #405151 !important;
+  color: #bdae9f !important;
+}
+
+input {
+  border: 1px !important;
+  border-color: #99A !important;
+  border-style: solid !important;
+}
+::-webkit-input-placeholder { /* WebKit browsers */
+  color: #BBB !important;
+}
+:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+  color: #BBB !important;
+}
+::-moz-placeholder { /* Mozilla Firefox 19+ */
+  color: #BBB !important;
+}
+:-ms-input-placeholder { /* Internet Explorer 10+ */
+  color: #BBB !important;
+}
+
+/* Less-bright scrollbars */
+::-webkit-scrollbar-track-piece, ::-webkit-scrollbar, ::-webkit-scrollbar-corner {
+  background: #777;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #444;
+}
+
+.bg-dark, .bg-success, .badge-success, .btn-outline-success:hover, .btn-success:not(:hover) {
+  background-color: #13765d !important;
+}
+
+.badge-warning, .btn-outline-warning:hover, .btn-warning:not(:hover) {
+  background-color: #976920 !important;
+}
+
+.bg-danger, .badge-danger, .btn-danger:not(:hover) {
+  background-color: #ac3529 !important;
+}
+
+.bg-info, .badge-info, .btn-outline-info:hover, .btn-info:not(:hover) {
+  background-color: #0b5c93 !important;
+}
+
+.bg-primary, .badge-primary, .btn-outline-primary:hover, .btn-primary:not(:hover) {
+  background-color: #203348 !important;
+}
+
+.btn-primary {
+  border-color: #8d8d8d !important;
+}
+
+.btn-secondary {
+  border-color: #8d8d8d !important;
+}
+
+/* Toggle switch */
+.custom-control-label::before {
+  background-color: #555;
+  border-color: #555;
+}
+
+.custom-control-label::after {
+  background-color: #19191a !important;
+  border-color: #19191a !important;
+}
+
+/* Link text */
+/* unvisited link */
+:not(li) > a:link {
+  color: #0d88c2 !important;
+}
+
+/* visited link */
+:not(li) > a:visited {
+  color: #635eba !important;
+}
+
+/* mouse over link */
+:not(li) > a:hover {
+  color: #2ea8e1 !important;
+}
+
+/* selected link */
+:not(li) > a:active {
+  color: #1f7ba5 !important;
+}
+
+/* --- End dark theme improvements --- */

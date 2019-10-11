@@ -303,7 +303,7 @@ class RconClient
   end
 
   # User interface
-  def send(server_ip, port, password, command, buffer: nil, ignore_status: false, ignore_message: false, timeout: 2, retries: 1)
+  def send(server_ip, port, password, command, buffer: nil, outcome_buffer: nil, no_rx: false, ignore_status: false, ignore_message: false, timeout: 2, retries: 1)
     socket = get_socket_for_host server_ip, port, password
     raise "Couldn't get socket for #{server_ip}:#{port}!" if socket.nil?
     packet = build_packet command
@@ -318,20 +318,24 @@ class RconClient
       log "#{socket.remote_host.ljust(21)} Exit command detected. Deleting socket."
       delete_socket socket
     end
-    if buffer
+    if buffer && !no_rx
       buffer.synchronize do
         formatted_output = "#{datetime} | RCON #{server_ip}:#{port} (RX <<) #{response}"
         buffer[:filters].each { |filter| filter.call(formatted_output) }
         buffer.push formatted_output
-        buffer[:status] = true unless ignore_status
-        buffer[:message] = "RCON response received from [#{server_ip}:#{port}]." unless ignore_message
+      end
+    end
+    if outcome_buffer
+      outcome_buffer.synchronize do
+        outcome_buffer[:status] = true unless ignore_status
+        outcome_buffer[:message] = "RCON response received from [#{server_ip}:#{port}]." unless ignore_message
       end
     end
     response
   rescue => e
     log "Error while sending RCON", e
-    if buffer
-      buffer.synchronize do
+    if outcome_buffer
+      outcome_buffer.synchronize do
         buffer[:status] = false unless ignore_status
         buffer[:message] = e.message unless ignore_message
       end

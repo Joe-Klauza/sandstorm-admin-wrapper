@@ -11,7 +11,7 @@
         <input id="server-config-name" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server-config-name'] || 'Default' %>">
         <ul class="nav nav-pills col-6">
           <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true" onclick="loadServerConfigs();">Configs</a>
+            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true" onclick="loadServerConfigs();">Configs</a>
             <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
               <div id='server-configs' class="horizontal-expand d-flex flex-column">
               </div>
@@ -263,7 +263,7 @@
         <input id="server_scenario_mode" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_scenario_mode'] %>">
         <ul class="nav nav-pills col-6">
           <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Scenario Mode</a>
+            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Scenario Mode</a>
             <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
               <% SCENARIO_MODES.sort.each do |mode| %>
               <a class="dropdown-item" onclick="$(`#server_scenario_mode`).val('<%= mode %>')"><%= mode %></a>
@@ -289,7 +289,7 @@
         <input id="server_default_map" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_default_map'] %>">
         <ul class="nav nav-pills col-6">
           <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Maps</a>
+            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Maps</a>
             <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
               <% MAPMAP.values.sort.each do |map| %>
               <a class="dropdown-item" onclick="$(`#server_default_map`).val('<%= MAPMAP_INVERTED[map] %>')"><%= map %></a>
@@ -315,7 +315,7 @@
         <input id="server_default_side" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_default_side'] %>">
         <ul class="nav nav-pills col-6">
           <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Sides</a>
+            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Sides</a>
             <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
               <% SIDES.sort.each do |side| %>
               <a class="dropdown-item" onclick="$(`#server_default_side`).val('<%= side %>')"><%= side %></a>
@@ -437,7 +437,7 @@
         <input id="server_rule_set" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_rule_set'] %>">
         <ul class="nav nav-pills col-6">
           <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Rulesets</a>
+            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Rulesets</a>
             <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
               <% RULE_SETS.sort.each do |rule_set| %>
               <a class="dropdown-item" onclick="$(`#server_rule_set`).val('<%= rule_set %>')"><%= rule_set %></a>
@@ -463,7 +463,7 @@
         <input id="server_game_mode" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_game_mode'] %>">
         <ul class="nav nav-pills col-6">
           <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Game Modes</a>
+            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Game Modes</a>
             <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
               <% GAME_MODES.sort.each do |mode| %>
               <a class="dropdown-item" onclick="$(`#server_game_mode`).val('<%= mode %>')"><%= mode %></a>

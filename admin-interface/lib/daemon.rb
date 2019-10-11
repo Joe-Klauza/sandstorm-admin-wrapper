@@ -24,13 +24,14 @@ class SandstormServerDaemon
   attr_reader :active_rcon_pass
   attr_reader :buffer
   attr_reader :rcon_buffer
+  attr_reader :chat_buffer
   attr_reader :rcon_client
   attr_reader :game_pid
   attr_reader :threads
   attr_reader :monitor
   attr_reader :log_file
 
-  def initialize(config, daemons, mutex, rcon_client, server_buffer, rcon_buffer, steam_api_key: '')
+  def initialize(config, daemons, mutex, rcon_client, server_buffer, rcon_buffer, chat_buffer, steam_api_key: '')
     @config = config
     @name = @config['server-config-name']
     @daemons = daemons
@@ -38,12 +39,21 @@ class SandstormServerDaemon
     @rcon_ip = '127.0.0.1'
     @buffer = server_buffer
     @rcon_buffer = rcon_buffer
+    @chat_buffer = chat_buffer
     @rcon_client = rcon_client
     @game_pid = nil
     @monitor = nil
     @threads = {}
     @buffer[:persistent] = true
     @rcon_buffer[:persistent] = true
+    @chat_buffer[:persistent] = true
+    @chat_buffer[:filters] = [
+      Proc.new do |line|
+        line.gsub!(/\x1b\[[0-9;]*m/, '') # Remove color codes
+        line.gsub!(/^\d{4}\/\d{2}\/\d{2} (\d{2}:\d{2}:\d{2}).*TX >>\) say/, '\1 ADMIN:') # Cut down RCON messages (TX)
+        line.gsub!(/^\[\d{4}\.\d{2}\.\d{2}-(\d{2}).(\d{2}).(\d{2}).*LogChat: Display: /, '\1:\2:\3 ') # Cut down server log messages (RX)
+      end
+    ]
     @buffer[:filters] = [
       Proc.new do |line|
         line.gsub!(/\x1b\[[0-9;]*m/, '') # Remove color codes
@@ -101,14 +111,15 @@ class SandstormServerDaemon
     @admin_ids.include?(steam_id.to_s)
   end
 
-  def do_send_rcon(command, host: nil, port: nil, pass: nil, buffer: nil)
+  def do_send_rcon(command, host: nil, port: nil, pass: nil, buffer: nil, outcome_buffer: nil, no_rx: false)
     host ||= @rcon_ip
     port ||= @active_rcon_port || @config['server_rcon_port']
     port ||= @active_rcon_pass
     pass ||= @active_rcon_pass || @config['server_rcon_password']
     buffer ||= @rcon_buffer
+    outcome_buffer ||= buffer
     log "Calling RCON client for command: #{command}"
-    @rcon_client.send(host, port, pass, command, buffer: buffer)
+    @rcon_client.send(host, port, pass, command, buffer: buffer, outcome_buffer: outcome_buffer, no_rx: no_rx)
   end
 
   def do_start_server
@@ -228,7 +239,7 @@ class SandstormServerDaemon
         begin
           File.open(@log_file) do |log|
             log.extend(File::Tail)
-            log.interval = 0.5
+            log.interval = 0.1
             log.backward(0)
             last_line_was_rcon = false
             log.tail do |line|
@@ -241,13 +252,15 @@ class SandstormServerDaemon
               elsif last_line_was_rcon
                 if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/ || line =~ /^Log/
                   last_line_was_rcon = false
-                  next
                 end
-              else
-                next
               end
-              buffer[:filters].each { |filter| filter.call(line) } # Remove color codes; add server ID
-              @rcon_buffer.synchronize { @rcon_buffer[:data].push line.chomp }
+              if line.include? 'LogChat'
+                @chat_buffer[:filters].each { |filter| filter.call(line) } # Remove color codes; add server ID
+                @chat_buffer.synchronize { @chat_buffer.push line.chomp }
+              elsif last_line_was_rcon
+                @buffer[:filters].each { |filter| filter.call(line) } # Remove color codes; add server ID
+                @rcon_buffer.synchronize { @rcon_buffer.push line.chomp }
+              end
             end
           end
         rescue EOFError

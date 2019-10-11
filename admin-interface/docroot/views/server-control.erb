@@ -10,16 +10,16 @@
       <div class="p-2 col-9">
         <ul class="nav nav-pills col-5">
           <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true" onclick="loadServerConfigs();">Configs</a>
+            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true" onclick="loadServerConfigs();">Configs</a>
             <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
               <div id='server-configs' class="horizontal-expand d-flex flex-column">
               </div>
             </div>
           </li>
         </ul>
-        <ul class="nav nav-pills col-7 flex-column bg-secondary m-1 p-2">
+        <ul class="nav nav-pills col-7 flex-column m-1 p-2">
           <li class="nav-item dropdown horizontal-expand d-flex justify-content-end">
-            <a id='active-servers-label' class="horizontal-expand nav-link dropdown-toggle active text-center" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false" onclick="loadActiveServers();">Active Servers</a>
+            <a id='active-servers-label' class="nav-link dropdown-toggle btn btn-sm btn-primary horizontal-expand" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false" onclick="loadActiveServers();">Active Servers</a>
             <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
               <div id='active-servers' class="horizontal-expand d-flex flex-column">
               </div>
@@ -39,47 +39,66 @@
       <%= erb :'server-control-status' %>
     </div>
 
-    <!-- Server Log -->
-    <div id='server-log-container' class="d-flex flex-column justify-content-start horizontal-expand m-1 ml-2 bg-light">
-      <div class="d-flex justify-content-between horizontal-expand">
-        <div class="ml-4 p-2 col-6 horizontal-expand">Server Log</div>
-        <div class="p-2 col justify-content-end">
-          <button type="button" class="btn btn-success horizontal-expand m-1" onclick="download('/download-server-logs')">Download All Logs</button>
-          <button type="button" class="btn btn-success horizontal-expand m-1" onclick="download(`/download-server-logs/${$('#server-config-name').val() || $('#server-config-name').attr('placeholder')}`)">Download Logs</button>
-        </div>
-        <div class="col-2 d-flex justify-content-end">
-          <button type="button" class="btn btn-secondary m-1" onclick="$('#server-log').html('');">Clear</button>
-          <button type="button" class="font-weight-bold btn btn-info m-1" onclick="resetLogScroll('#server-log', true);">Tail</button>
-        </div>
-      </div>
-      <pre id='server-log' class="log log-lg colorful"></pre>
-    </div>
-
     <!-- RCON -->
     <div class="d-flex justify-content-between horizontal-expand bg-light m-1">
-      <div class="ml-4 p-2 col-4">Server RCON</div>
-      <div class="ml-4 p-2 col horizontal-expand">
-        <input id="rcon_input" type="text" class="form-control horizontal-expand" placeholder="listplayers">
+      <div class="ml-4 p-2 col horizontal-expand justify-content-end">
+        <div class="ml-4 p-2 col-2">Server RCON</div>
+        <input id="rcon_input" type="text" class="form-control horizontal-expand m-1" placeholder="listplayers">
+        <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#rcon_input').val('');">Clear</button>
+          <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon`, 1000, {game_port: '<%= @game_port %>', command: $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
       </div>
-      <div class="p-2 col-2 justify-content-end">
-        <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-secondary m-1" onclick="$('#rcon_input').val('');">Clear</button>
-          <button type="button" class="btn btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon`, 1000, {game_port: '<%= @game_port %>', command: $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
+    </div>
+
+    <!-- Monitoring Details (Connection status, players) -->
+    <div id="monitoring-details" class="horizontal-expand">
+      <%= erb :'monitoring-details' %>
+    </div>
+
+    <!-- Chat -->
+    <div class="d-flex flex-column justify-content-start horizontal-expand m-1 bg-light">
+      <div class="d-flex justify-content-between horizontal-expand">
+        <div class="ml-4 p-2 col-1 horizontal-expand">Chat</div>
+        <div class="ml-4 p-2 col horizontal-expand">
+          <input id="chat_input" type="text" class="form-control horizontal-expand" placeholder="">
+        </div>
+        <div class="p-2 col-2 justify-content-end">
+          <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#chat_input').val('');">Clear</button>
+            <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#chat_input').val() || $('#chat_input').attr('placeholder')) { tailProcess('#chat-log',  `/control/server/chat`, 1000, {game_port: '<%= @game_port %>', command: `${$('#chat_input').val() || $('#chat_input').attr('placeholder')}`}); }">Send</button>
+          </div>
+        </div>
+        <div class="p-2 col-2 justify-content-end">
+            <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#chat-log').html('');">Clear Log</button>
+            <button type="button" class="font-weight-bold btn btn-sm btn-info m-1" onclick="resetLogScroll('#chat-log', true);">Tail Log</button>
         </div>
       </div>
+      <pre id='chat-log' class="log"></pre>
     </div>
 
     <!-- RCON Log -->
     <div class="d-flex flex-column justify-content-start horizontal-expand m-1 bg-light">
       <div class="d-flex justify-content-between horizontal-expand">
         <div class="ml-4 p-2 col-2 horizontal-expand">RCON Log</div>
-        <div class="p-2 col-4 justify-content-end">
-            <button type="button" class="btn btn-secondary m-1" onclick="$('#rcon-log').html('');">Clear</button>
-            <button type="button" class="font-weight-bold btn btn-info m-1" onclick="resetLogScroll('#rcon-log', true);">Tail</button>
+        <div class="col d-flex justify-content-end">
+            <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#rcon-log').html('');">Clear Log</button>
+            <button type="button" class="font-weight-bold btn btn-sm btn-info m-1" onclick="resetLogScroll('#rcon-log', true);">Tail Log</button>
         </div>
       </div>
-      <pre id='rcon-log' class="log log-lg"></pre>
+      <pre id='rcon-log' class="log"></pre>
     </div>
 
+    <!-- Server Log -->
+    <div id='server-log-container' class="d-flex flex-column justify-content-start horizontal-expand m-1 ml-2 bg-light">
+      <div class="d-flex justify-content-between horizontal-expand">
+        <div class="ml-4 p-2 col-2 horizontal-expand">Server Log</div>
+        <div class="col d-flex justify-content-end">
+          <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download('/download-server-logs')">Download All Logs</button>
+          <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download(`/download-server-logs/${$('#server-config-name').val() || $('#server-config-name').attr('placeholder')}`)">Download Logs</button>
+          <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#server-log').html('');">Clear Log</button>
+          <button type="button" class="font-weight-bold btn btn-sm btn-info m-1" onclick="resetLogScroll('#server-log', true);">Tail Log</button>
+        </div>
+      </div>
+      <pre id='server-log' class="log log-lg colorful"></pre>
+    </div>
   </div>
 </div>

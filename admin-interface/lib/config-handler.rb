@@ -9,7 +9,7 @@ require 'sysrandom'
 require_relative 'logger'
 
 LOCAL_IP_PREFIXES = ['10.', '0.', '127.','192.168.'] # https://en.wikipedia.org/wiki/Reserved_IP_addresses
-EXTERNAL_IP = Net::HTTP.get URI "https://api.ipify.org" rescue nil
+Thread.new { EXTERNAL_IP = Net::HTTP.get URI "https://api.ipify.org" rescue nil }
 
 CONFIG_PATH = File.expand_path File.join File.dirname(__FILE__), '..', 'config'
 CONFIG_FILE = File.join CONFIG_PATH, 'config.json'
@@ -453,6 +453,16 @@ class ConfigHandler
   def get_server_config_file_content(config_file, config_name)
     local = ERB.new(CONFIG_FILES[config_file][:local_erb]).result(binding)
     File.read(local)
+  end
+
+  def unban_master(steam_id)
+    @bans_mutex.synchronize do
+      master_bans_file = ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)
+      master_bans = Oj.load(File.read master_bans_file) || []
+      log "Unbanning #{steam_id} from master bans", level: :info
+      master_bans.reject! { |ban| ban['playerId'].to_s == steam_id.to_s }
+      File.write(master_bans_file, Oj.dump(master_bans, indent: 2))
+    end
   end
 
   def apply_server_bans

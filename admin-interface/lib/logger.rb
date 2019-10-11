@@ -74,7 +74,7 @@ LOGGER_STDOUT = Logger.new($stdout)
 LOGGER = MultiTargetLogger.new({stdout: LOGGER_STDOUT, file: LOGGER_FILE})
 
 def datetime # Helper function used elsewhere
-  Time.now.strftime(DATETIME_FORMAT)
+  Time.now.utc.strftime(DATETIME_FORMAT)
 end
 
 def log(message, exception=nil, level: nil)

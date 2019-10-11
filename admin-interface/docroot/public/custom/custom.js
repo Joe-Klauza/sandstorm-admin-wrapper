@@ -5,11 +5,13 @@ if (touchDevice) {
   var tooltipTrigger = 'hover'
 }
 
-// var user_scrolled_tailing_log = false;
 var server_log_active = false;
-var server_log_uuid = null;
 var server_rcon_log_active = false;
+var server_chat_log_active = false;
+
+var server_log_uuid = null;
 var rcon_log_uuid = null;
+var chat_log_uuid = null;
 
 var log_buffer_size = 500;
 var server_log_tail_interval = 1000;
@@ -26,16 +28,6 @@ $(document).ready(function() {
   $(() => {
     $('[data-toggle="tooltip"]').tooltip({ trigger : tooltipTrigger, container : 'body' })
   });
-
-  // TO DO - abstract to all log elements; use element attribute to track scrolled state
-  // if ($('#tailing-log').length) {
-  //   target = $('#tailing-log');
-  //   target[0].scrollTop = target[0].scrollHeight;
-  //   $('#tailing-log').animate({ scrollTop: "300px" });
-  //   $('#tailing-log').bind('mousedown wheel DOMMouseScroll mousewheel keyup', function(e){
-  //       window.user_scrolled_tailing_log = true;
-  //   });
-  // }
 
   if ($('#server-control-status').length) {
     setTimeout(()=>{ updateServerControlStatus(); }, 0); // Recursive
@@ -437,6 +429,23 @@ function updateServerUpdateInfo() {
   });
 }
 
+function startServerChatTail(element, game_port, interval) {
+  if (!server_chat_log_active) {
+    server_chat_log_active = true;
+     $.ajax({
+      url: `/get-buffer/${game_port}/chat`,
+      type: 'GET',
+      success: (buffer_uuid)=>{ chat_log_uuid = buffer_uuid; setTimeout(()=>{ tailBuffer(element, interval, buffer_uuid) }, 0);},
+      error: function(request,msg,error) {
+        console.log(`Failed to start chat log for port ${game_port}.`);
+        server_chat_log_active = false;
+      }
+    });
+  } else {
+    console.error("Server chat log tail already running");
+  }
+}
+
 function startServerLogTail(element, game_port, interval) {
   if (!server_log_active) {
     server_log_active = true;
@@ -528,6 +537,9 @@ function updateServerControlStatus() {
   game_port = $('#game-port').html();
   rcon_port = $('#rcon-port').html();
   if ($('#server-status').html() == 'ON') {
+    if (!server_chat_log_active && $('#chat-log').length) {
+      setTimeout(()=>{startServerChatTail('#chat-log', game_port, server_log_tail_interval);}, 0);
+    }
     if (!server_log_active && $('#server-log').length) {
       setTimeout(()=>{startServerLogTail('#server-log', game_port, server_log_tail_interval);}, 0);
     }
@@ -536,11 +548,12 @@ function updateServerControlStatus() {
     }
   }
   setTimeout(()=>{updateServerControlStatus();}, 1000);
+  setTimeout(()=>{updateMonitoringDetails('127.0.0.1', rcon_port);}, 1000);
 }
 
 function addLogLines(target, lines) {
   var target = $(target);
-  var wasScrolled = target[0].clientHeight !== target[0].scrollHeight && target[0].scrollTop !== target[0].scrollHeight - target[0].clientHeight
+  var wasScrolled = target[0].clientHeight <= target[0].scrollHeight && Math.floor(target[0].scrollTop) !== target[0].scrollHeight - target[0].clientHeight
 
   // Add log lines to a temporary non-visible element
   var temp = $("<div style='display: none'>");
@@ -571,9 +584,9 @@ function addLogLine(target, text, colorful) {
   text = _.escape(text)
   if (colorful !== false) {
     if (~text.indexOf('Error')) {
-      text = `<span class="logspan" style="background-color: #FFE1E0;">${text}</span>\n`;
+      text = `<span class="logspan" style="background-color: #553333 !important;">${text}</span>\n`;
     } else if (~text.indexOf('Warning')) {
-      text = `<span class="logspan" style="background-color: #F2EFCD;">${text}</span>\n`;
+      text = `<span class="logspan" style="background-color: #55523b !important;">${text}</span>\n`;
     } else {
       text = `<span class="logspan">${text}</span>\n`;
     }
@@ -587,7 +600,6 @@ function addLogLine(target, text, colorful) {
 
 function resetLogScroll(target)
 {
-  // console.log("Resetting log pane for " + target);
   var el = $(target)
   el[0].scrollTop = el[0].scrollHeight;
 }
@@ -651,9 +663,9 @@ function launchSandstorm() {
   window.location.replace('steam://run/581320')
 }
 
-function confirmModal(title, body, yes_func, no_func) {
+function confirmModal(title, body, yes_func, no_func, input_label) {
   modal_content = $('#confirm_modal_content')
-  $.get(`/confirm?title=${title}&body=${body}&yes=${yes_func}&no=${no_func}`, function(data) {
+  $.get(`/confirm?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}&yes=${encodeURIComponent(yes_func)}&no=${encodeURIComponent(no_func)}&input_label=${encodeURIComponent(input_label)}`, function(data) {
     modal_content.html(data);
   });
 }
@@ -850,7 +862,7 @@ function tailProcess(logElement, url, interval, data) {
 function tailBuffer(logElement, interval, uuid, bookmark) {
   if (tailBufferStopUuids.length > 0 && tailBufferStopUuids.includes(uuid)) {
     tailBufferStopUuids.splice(tailBufferStopUuids.indexOf(uuid), 1);
-    console.log("Stopping buffer for UUID " + uuid);
+    console.log(`${uuid} Stopping buffer`);
     return;
   }
   if (!interval) {
@@ -872,29 +884,39 @@ function tailBuffer(logElement, interval, uuid, bookmark) {
         // Command is finished (status and message received)
 
         // Indicate that we're stopping tailing of server log if buffer uuid matches
+        console.log(`${logElement} ${url} Command finished for ${logElement}`)
         if (uuid == server_log_uuid) {
           server_log_active = false;
         } else if (uuid == rcon_log_uuid) {
           server_rcon_log_active = false;
+        } else if (uuid == chat_log_uuid) {
+          server_chat_log_active = false;
         }
 
         if (response.status) {
-          successToast(response.message);
+          successToast(response.message || '');
         } else {
-          failureToast(response.message);
+          failureToast(response.message || '');
         }
       } else {
         if (uuid == server_log_uuid) {
-          server_log_active = true;
+          if (!server_log_active) { return }
         } else if (uuid == rcon_log_uuid) {
-          server_rcon_log_active = true;
+          if (!server_rcon_log_active) { return }
+        } else if (uuid == chat_log_uuid) {
+          if (!server_chat_log_active) { return }
         }
-        // console.log(`Adding ${response.data.length} log lines`)
-        if(response.data.length > 0) {
+
+        if(logElement && response.data.length > 0) {
           addLogLines(logElement, response.data);
+          console.log(`${logElement} ${url} Finished adding ${response.data.length} log lines to ${logElement}`)
         }
-        // console.log(`Finished adding ${response.data.length} log lines`)
-        // console.log("Bookmark: " + response.bookmark)
+
+        if (!response.bookmark) {
+          console.log(`${logElement} ${url} Bookmark is null! Response: ${JSON.stringify(response)}`)
+        } else {
+          console.log(`${logElement} ${url} Bookmark: ${response.bookmark}`)
+        }
         setTimeout(function() { tailBuffer(logElement, interval, uuid, response.bookmark); }, interval);
       }
     },
@@ -903,6 +925,8 @@ function tailBuffer(logElement, interval, uuid, bookmark) {
         server_log_active = false;
       } else if (uuid == rcon_log_uuid) {
         server_rcon_log_active = false;
+      } else if (uuid == chat_log_uuid) {
+        server_chat_log_active = false;
       }
       console.log(request.responseText);
     }
@@ -915,6 +939,7 @@ function playerBan(ip, port, pass, steam_id, reason, log_element) {
   }
   $.ajax({
     url: `/admin/ban/${steam_id}`,
+    contentType: "application/json",
     data: JSON.stringify({reason: reason, ip: ip, port: port, pass: pass}),
     type: 'POST',
     success: function(response) {
@@ -933,6 +958,7 @@ function playerKick(ip, port, pass, steam_id, reason, log_element) {
   }
   $.ajax({
     url: `/admin/kick/${steam_id}`,
+    contentType: "application/json",
     data: JSON.stringify({reason: reason, ip: ip, port: port, pass: pass}),
     type: 'POST',
     success: function(response) {
