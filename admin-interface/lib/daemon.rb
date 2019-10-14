@@ -50,8 +50,8 @@ class SandstormServerDaemon
     @chat_buffer[:filters] = [
       Proc.new do |line|
         line.gsub!(/\x1b\[[0-9;]*m/, '') # Remove color codes
-        line.gsub!(/^\d{4}\/\d{2}\/\d{2} (\d{2}:\d{2}:\d{2}).*TX >>\) say/, '\1 ADMIN:') # Cut down RCON messages (TX)
-        line.gsub!(/^\[\d{4}\.\d{2}\.\d{2}-(\d{2}).(\d{2}).(\d{2}).*LogChat: Display: /, '\1:\2:\3 ') # Cut down server log messages (RX)
+        line.gsub!(/^(\d{4}\/\d{2}\/\d{2}) (\d{2}:\d{2}:\d{2}).*TX >>\) say/, '\1 \2 ADMIN:') # Cut down RCON messages (TX)
+        line.gsub!(/^\[(\d{4})\.(\d{2})\.(\d{2})-(\d{2}).(\d{2}).(\d{2}).*LogChat: Display: /, '\1/\2/\3 \4:\5:\6 ') # Cut down server log messages (RX)
       end
     ]
     @buffer[:filters] = [
