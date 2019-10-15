@@ -2,90 +2,95 @@
 
 ### About
 
-Sandstorm Admin Wrapper is a set of tools designed to ease the burden of hosting one or more servers for the `New World Interactive` video game [Insurgency: Sandstorm](https://store.steampowered.com/app/581320/Insurgency_Sandstorm/). It is comprised of a Ruby webserver (Sinatra) and associated tools which provide an easy-to-use browser front-end for configuring and managing a server on either Linux or Windows.
+Sandstorm Admin Wrapper (SAW) is a set of tools designed to ease the burden of hosting one or more servers for the `New World Interactive` video game [Insurgency: Sandstorm](https://store.steampowered.com/app/581320/Insurgency_Sandstorm/). It is comprised of a Ruby webserver (Sinatra) and associated tools which provide an easy-to-use browser front-end for configuring and managing a server on either Linux or Windows.
 
 It can also be used to remotely monitor and administer servers via RCON.
 
-### Demo
-
-<img src="https://user-images.githubusercontent.com/13367199/62821937-a7e09c80-bb4a-11e9-95f7-b181fa1129c4.gif" width="800">
+### Screenshot
+<img src="https://user-images.githubusercontent.com/13367199/66793491-a4132280-eecb-11e9-9c83-c4688f183a7e.png" width="800">
 
 ### Features
 
-- An easy-to-use webserver with configurable parameters via TOML file (and web interface):
+An easy-to-use webserver with configurable parameters via TOML file (and web interface):
   - Bind IP/Port
   - SSL Enabled
   - Verify SSL Enabled
   - Cert/Key Paths
   - Session secret
-- Pop-out sidebar navigation
-- Local server interface
-  - **Server Setup page**
-    - Guides you through installing SteamCMD manually
-    - Detects SteamCMD installation and server installation
-    - Shows available server update
-    - Provides a simple interface to install and manually update/verify the server files
-    - SteamCMD log (see known issue below for Windows)
-  - **Server Config page**
-    - Supports multiple server configurations
-    - Easy-to-use configuration options for your servers
-    - Blurring/redaction of sensitive information
-    - Dropdowns for enumerated settings
-    - Editable config files (Paste your current settings here! Matching settings above will override what was entered.)
-      - `Game.ini`
-      - `Engine.ini`
-      - `Admins.txt`
-      - `MapCycle.txt`
-      - `Bans.json`
-      - Local copies of these files are stored in `sandstorm-admin-wrapper/server-config`. Before launching the server, the manual config is applied to the `server-config` files, then those files are copied into the appropriate places in order for the server to use them. This prevents the server from overwriting our changes. After the server closes, any new bans are added to the local copy.
-  - **Server Control page**
-    - Selectable server configuration
-    - Server status
-    - Start/Restart/Stop buttons
-    - Detailed PID and process exit toasts
-    - Thread, player, and bot counts
-    - Player list (with kick/ban buttons)
-    - Server log
-    - RCON console
-    - RCON log
-  - **Server Status page**
-    - Read-only listing of running servers with their metadata and players
-- Extra tools
-  - **Remote Monitor Tool**
-    - Allows monitoring and administration of servers when provided with valid IP, Query Port, RCON Port, and RCON Password
-    - Shows server, query, and RCON status, player list with admin functionality, and RCON console.
-    - Can spawn multiple server monitors and switch between them at will
-    - Can save configurations for easy monitoring later
-    - If a third party hosts your server(s) for you, this is probably what you're looking for
-  - **RCON Tool**
-    - Allows remote RCON commands (with the given IP, port, and password).
-  - **SteamCMD Tool**
-    - This tool allows passthrough to the SteamCMD installation. This could be useful for installing/updating other games, etc.
-- Wrapper Webserver
-  - **Config page**
-    - Easy configuration for all webserver parameters
-    - Button to restart the webserver (to apply changes)
-  - **Users page**
-    - Easy addition/modification of users to allow access to server admin features.
-    - Protections to prevent removing the last Host (and therefore losing access to webserver self-configuration and user configuration)
-    - User roles:
-      - `Host`: Server host; can configure webserver, users, and everything else
-      - `Admin`: Server admin; can do everything except configure the webserver and users
-      - `User`: Read-only role which can access basic account features and the server status page
-    - New users have a random password automatically generated; this (along with the user name) is given to the user by the host. Upon first login, users are asked to change their password. This helps keep passwords private.
-  - **Log page**
-    - Shows live user authentication and incoming request information
-- User features
-  - **Change password**
-  - **Log out**
-- Command-line parameters
-  - `admin-interface/lib/webapp.rb` supports the following command-line parameter(s)
-    - `--start/-s [server_config]`
-      - Example: `-s 'My Server'`
-      - Starts a server on boot with the `My Server` configuration. This can be used in combination with system startup scripts (e.g. systemd unit example in `extras/systemd`) to run your server(s) on boot. Use multiple `--start`/`-s` parameters to start multiple servers.
-    - `--log-level/-l [log_level]`
-      - Example: `-l debug`
-      - Sets the log level. Only messages at or above the set level are printed to STDOUT; all logs are still written to `admin-interface/log/sandstorm-admin-wrapper.log`. One of: `debug`, `info`, `warn`, `error`, `fatal`
+
+Local server features:
+- **Server Setup page**
+  - Guides you through installing SteamCMD manually
+  - Detects SteamCMD installation and server installation
+  - Shows available server update
+  - Provides a simple interface to install and manually update/verify the server files as well as enable automatic update
+  - SteamCMD log (see known issue below for Windows)
+- **Server Config page**
+  - Supports multiple server configurations
+  - Easy-to-use configuration options for your servers
+  - Blurring/redaction of sensitive information
+  - Dropdowns for enumerated settings
+  - Editable config files (Paste your current settings here! Matching settings above will override what was entered.)
+    - `Game.ini`
+    - `Engine.ini`
+    - `Admins.txt`
+    - `MapCycle.txt`
+    - `Bans.json`
+    - Local copies of these files are stored in `sandstorm-admin-wrapper/server-config`. Before launching the server, the manual config is applied to the `server-config` files, then those files are copied into the appropriate places in order for the server to use them. This prevents the server from overwriting our changes. After the server closes, any new bans are added to the local copy.
+- **Server Control page**
+  - Select from saved configs or running servers
+  - Server status
+  - Start/Restart/Stop buttons
+  - Detailed PID and process exit toasts
+  - Thread, player, and bot counts
+  - Player list (with kick/ban buttons and editable reason)
+  - Chat log with chat input (RCON say)
+  - RCON log with RCON input
+  - Server log with download options
+- **Server Status page**
+  - List of all running servers with their metadata and players
+
+Extra tools:
+- **Remote Monitor Tool**
+  - Allows monitoring and administration of servers when provided with valid IP, Query Port, RCON Port, and RCON Password
+  - Shows server, query, and RCON status, player list with admin functionality, and RCON console.
+  - Can spawn multiple server monitors and switch between them at will
+  - Can save configurations for easy monitoring later
+  - If a third party hosts your server(s) for you, this is probably what you're looking for
+- **RCON Tool**
+  - Allows remote RCON commands (with the given IP, port, and password).
+- **SteamCMD Tool**
+  - This tool allows passthrough to the SteamCMD installation. This could be useful for installing/updating other games, etc.
+
+Wrapper webserver features:
+- **Config page**
+  - Easy configuration for all webserver parameters
+  - Button to download SAW logs
+  - Button to update SAW to the latest version (restart required)
+  - Button to restart the webserver (to apply changes)
+- **Users page**
+  - Easy addition/modification of users to allow access to server admin features.
+  - Protections to prevent removing the last Host (and therefore losing access to webserver self-configuration and user configuration)
+  - User roles:
+    - `Host`: Server host; can configure webserver, users, and everything else
+    - `Admin`: Server admin; can do everything except configure the webserver and users
+    - `User`: Read-only role which can access basic account features and the server status page
+  - New users have a random password automatically generated; this (along with the user name) is given to the user by the host. Upon first login, users are asked to change their password. This helps keep passwords private.
+- **Log page**
+  - Shows live user authentication and incoming request information
+
+User features:
+- **Change password**
+- **Log out**
+
+Command-line parameters:
+- `admin-interface/lib/webapp.rb` supports the following command-line parameter(s)
+  - `--start/-s [server_config]`
+    - Example: `-s 'My Server'`
+    - Starts a server on boot with the `My Server` configuration. This can be used in combination with system startup scripts (e.g. systemd unit example in `extras/systemd`) to run your server(s) on boot. Use multiple `--start`/`-s` parameters to start multiple servers.
+  - `--log-level/-l [log_level]`
+    - Example: `-l debug`
+    - Sets the log level. Only messages at or above the set level are printed to STDOUT; all logs are still written to `admin-interface/log/sandstorm-admin-wrapper.log`. One of: `debug`, `info`, `warn`, `error`, `fatal`
 
 ### Prerequisites
 
@@ -108,7 +113,7 @@ It can also be used to remotely monitor and administer servers via RCON.
 - Navigate to the web interface in your browser (e.g. https://localhost:51422/)
 - Log in with the default admin credentials (`admin`/`password`). You will be prompted to set a new password for the `admin` account. If you ever forget this password, just delete `admin-interface/config/users.json` and restart the webserver to regenerate the default `admin`/`password` account.
 - If running a server
-  - Follow the instructions to install (or locate) the Sandstorm server you'd like to run
+  - Follow the instructions on the `Server -> Setup` to install the Sandstorm server (refresh may be required to show installed status)
   - Configure the server via the `Server -> Config` page
   - Run the server via the `Server -> Control` page
 - If administrating remote server(s)
@@ -136,7 +141,7 @@ These are the currently known issues. If you can fix any of these or know what t
 
 ### Donate
 
-If you'd like to show your appreciation of `Sandstorm Admin Wrapper` (or buy me some beer), please [donate via PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=QZDY3PPUMH5TU&item_name=Sandstorm%20Admin%20Wrapper&currency_code=USD) (or suggest other methods).  
+If you'd like to show your appreciation of `Sandstorm Admin Wrapper`, please [donate via PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=QZDY3PPUMH5TU&item_name=Sandstorm%20Admin%20Wrapper&currency_code=USD) (or suggest other methods).  
 [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=QZDY3PPUMH5TU&item_name=Sandstorm%20Admin%20Wrapper&currency_code=USD)
 
 ### Contact
