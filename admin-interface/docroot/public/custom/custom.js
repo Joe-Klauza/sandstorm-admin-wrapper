@@ -63,6 +63,11 @@ $(document).ready(function() {
     $("#sortable").disableSelection();
   });
 
+  // Keep logs selectable for copy/paste
+  $("pre, .logspan").bind('mousedown.ui-disableSelection selectstart.ui-disableSelection', function(e){
+    e.stopImmediatePropagation();
+  });
+
   if ($('#chat-log').length) $('#chat-log').css("resize", "vertical");
   if ($('#server-log').length) $('#server-log').css("resize", "vertical");
   if ($('#rcon-log').length) $('#rcon-log').css("resize", "vertical");
@@ -567,21 +572,9 @@ function addLogLines(target, lines) {
   var target = $(target);
   var wasScrolled = target[0].clientHeight <= target[0].scrollHeight && Math.floor(target[0].scrollTop) !== target[0].scrollHeight - target[0].clientHeight
 
-  // Add log lines to a temporary non-visible element
-  var temp = $("<div style='display: none'>");
-  $("body").append(temp);
   $.each(lines, function(index, text) {
-    addLogLine(temp, text);
+    addLogLine(target, text);
   });
-
-  // Trim the temp element before applying
-  if(temp.contents().length > log_buffer_size) {
-    temp.html(temp.contents().slice(temp.contents().length - log_buffer_size, temp.contents().length));
-  }
-
-  // Apply
-  target.append(temp.html());
-  temp.remove();
   // Trim the final element after applying
   if(target.contents().length > log_buffer_size) {
     target.html(target.contents().slice(target.contents().length - log_buffer_size, target.contents().length));
