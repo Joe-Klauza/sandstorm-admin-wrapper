@@ -256,6 +256,10 @@ input {
   border-color: #8d8d8d !important;
 }
 
+.btn-dark {
+  background-color: #121314 !important;
+}
+
 /* Toggle switch */
 .custom-control-label::before {
   background-color: #555;
