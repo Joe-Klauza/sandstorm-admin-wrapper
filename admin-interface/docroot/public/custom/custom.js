@@ -572,13 +572,18 @@ function addLogLines(target, lines) {
   var target = $(target);
   var wasScrolled = target[0].clientHeight <= target[0].scrollHeight && Math.floor(target[0].scrollTop) !== target[0].scrollHeight - target[0].clientHeight
 
+  // Remove excess log messages first
+  if(target.contents().length + lines.length > log_buffer_size) {
+    amount = lines.length
+    // console.log(`Removing ${amount} oldest elements from ${target[0].id}`)
+    target.contents().slice(0, amount).remove() // Once to remove the span
+    target.contents().slice(0, amount).remove() // Again to remove the leftover text creating whitespace...
+  }
+
+  // console.log(`Adding ${lines.length} elements to ${target[0].id}`)
   $.each(lines, function(index, text) {
     addLogLine(target, text);
   });
-  // Trim the final element after applying
-  if(target.contents().length > log_buffer_size) {
-    target.html(target.contents().slice(target.contents().length - log_buffer_size, target.contents().length));
-  }
 
   if (!wasScrolled) {
     resetLogScroll(target);
