@@ -547,6 +547,7 @@ class ConfigHandler
       "-QueryPort=#{config['server_query_port']}",
       "-log=#{config['server-config-name']}.log",
       "-LogCmds=LogGameplayEvents Log",
+      "-LOCALLOGTIMES",
       "-AdminList=Admins",
       "-MapCycle=MapCycle"
     )

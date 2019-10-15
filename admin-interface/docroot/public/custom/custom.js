@@ -14,8 +14,8 @@ var rcon_log_uuid = null;
 var chat_log_uuid = null;
 
 var log_buffer_size = 500;
-var server_log_tail_interval = 1000;
-var server_status_interval = 1000;
+var server_log_tail_interval = 2000;
+var server_status_interval = 2000;
 
 var updatePlayersInterval = null;
 var updateThreadsInterval = null;
@@ -54,6 +54,18 @@ $(document).ready(function() {
     $(modalParent).css('opacity', 1);
   });
 
+  $(function() {
+    $("#sortable").sortable({
+      handle: ".drag-handle",
+      distance: 10,
+      update: (event, ui)=>{  }
+    });
+    $("#sortable").disableSelection();
+  });
+
+  if ($('#chat-log').length) $('#chat-log').css("resize", "vertical");
+  if ($('#server-log').length) $('#server-log').css("resize", "vertical");
+  if ($('#rcon-log').length) $('#rcon-log').css("resize", "vertical");
 });
 
 function deleteMonitorConfig(name) {
