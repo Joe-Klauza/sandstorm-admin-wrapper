@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
-  <div class="ml-4 p-2 col-4 badge badge-info"><%= @config['server-config-name'] %></div>
+  <small class="ml-4 p-2 col-4 bg-info text-center"><%= @config['server-config-name'] %> (<%= @config['server_hostname'] %>)</small>
   <div class="ml-4 p-2 col-1"><span id="server-status" class="monospace-font horizontal-expand text-center badge badge-<%= @server_status == 'OFF' ? 'danger' : 'success' %>"><%= @server_status %></span></div>
   <div class="ml-4 p-2 col">
     <div class="p-2 col-3 d-flex flex-column" style="font-size: 80%">
