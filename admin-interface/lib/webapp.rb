@@ -941,7 +941,11 @@ class SandstormAdminWrapperSite < Sinatra::Base
     file = params['file']
     content = params['content']
     content << "\n" unless content.end_with? "\n"
-    file = File.join(CONFIG_FILES_DIR, config_name, file)
+    file = if file == 'Bans.json'
+      File.join(CONFIG_FILES_DIR, file)
+    else
+      File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), file)
+    end
     FileUtils.mkdir_p(File.dirname(file))
     File.write(file, content)
     "Wrote #{file.sub(USER_HOME, '~')}."

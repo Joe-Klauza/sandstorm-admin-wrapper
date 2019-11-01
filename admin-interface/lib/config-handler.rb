@@ -306,7 +306,7 @@ class ConfigHandler
   end
 
   def self.sanitize_directory(directory_name)
-    directory_name.gsub(/[^ 0-9A-Za-z.\-]/, '')
+    directory_name.gsub(/[^ 0-9A-Za-z.\-'"]/, '')
   end
 
   def get_default_config
