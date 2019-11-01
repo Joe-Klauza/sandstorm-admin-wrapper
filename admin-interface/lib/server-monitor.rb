@@ -268,7 +268,7 @@ class ServerMonitor
     log "Time since last RCON success: #{rcon_fail_time.to_s << 's'}", level: rcon_fail_time > @rcon_fail_limit ? :error : :warn
     if rcon_fail_time > @rcon_fail_limit
       @info[:server_down] = true
-      if @daemon_handle.frozen_config['hang_recovery'].casecmp('true').zero?
+      if @daemon_handle.frozen_config['hang_recovery'].to_s.casecmp('true').zero?
         Thread.new do
           log "Restarting server due to repeated RCON failure", level: :warn
           response = @daemon_handle.do_restart_server
