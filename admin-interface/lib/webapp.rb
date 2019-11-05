@@ -671,7 +671,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     redirect '/setup' unless @@prereqs_complete
     config = get_active_config
     config_name = config['server-config-name']
-    @config = $config_handler.server_configs[config_name] || $config_handler.server_configs.first
+    @config = $config_handler.server_configs[config_name] || $config_handler.server_configs.first.last
     if config_name.to_s.empty?
       status 400
       return "Unknown config"
@@ -795,6 +795,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
           :status => buffer[:status].dup,
           :message => buffer[:message].dup
         }
+        log "Responding status/message: #{obj[:status]} - #{obj[:message]}"
         @@buffer_mutex.synchronize do
           buffer[:bookmarks].delete @bookmark_uuid
           @@buffers[uuid][:persistent] ? @@buffers[uuid].reset : @@buffers.delete(uuid)

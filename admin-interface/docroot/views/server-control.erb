@@ -6,7 +6,7 @@
 
     <!-- Server Config Selection -->
     <div class="d-flex justify-content-between horizontal-expand bg-secondary m-1">
-      <input id="server-config-name" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server-config-name'] %>" readonly style="display: none;">
+      <input id="server-config-name" type="text" class="form-control server-config-text-input" placeholder="<%= CGI.escapeHTML(@config['server-config-name']) %>" readonly style="display: none;">
       <div class="p-2 col-9">
         <ul class="nav nav-pills col-5">
           <li class="nav-item dropdown horizontal-expand text-center">

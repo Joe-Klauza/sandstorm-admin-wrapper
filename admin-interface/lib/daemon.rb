@@ -199,8 +199,6 @@ class SandstormServerDaemon
   end
 
   def run_game_server
-    @buffer.reset
-    @rcon_buffer.reset
     log "Applying config"
     @frozen_config = @config.dup
     $config_handler.apply_server_config_files @frozen_config, @frozen_config['server-config-name']

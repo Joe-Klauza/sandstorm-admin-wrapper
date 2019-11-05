@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between horizontal-expand bg-secondary my-1">
       <div class="p-2 col-2">Config Name</div>
       <div class="p-2 col">
-        <input id="server-config-name" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server-config-name'] || 'Default' %>">
+        <input id="server-config-name" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server-config-name'] || 'Default' rescue binding.pry %>">
         <ul class="nav nav-pills col-6">
           <li class="nav-item dropdown horizontal-expand text-center">
             <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true" onclick="loadServerConfigs();">Configs</a>
