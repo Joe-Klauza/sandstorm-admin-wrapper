@@ -74,6 +74,7 @@ Wrapper webserver features:
   - User roles:
     - `Host`: Server host; can configure webserver, users, and everything else
     - `Admin`: Server admin; can do everything except configure the webserver and users
+    - `Moderator`: Server moderator; can kick and ban users via the status page
     - `User`: Read-only role which can access basic account features and the server status page
   - New users have a random password automatically generated; this (along with the user name) is given to the user by the host. Upon first login, users are asked to change their password. This helps keep passwords private.
 - **Log page**
