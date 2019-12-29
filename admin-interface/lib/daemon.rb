@@ -208,7 +208,7 @@ class SandstormServerDaemon
     @active_game_port = @frozen_config['server_game_port']
     @active_query_port = @frozen_config['server_query_port']
     @active_rcon_port = @frozen_config['server_rcon_port']
-    @active_rcon_password = @frozen_config['server_rcon_password']
+    @active_rcon_pass = @frozen_config['server_rcon_password']
     @log_file = $config_handler.get_log_file(@frozen_config['server-config-name'])
     log "Spawning game process: #{[executable, *arguments].inspect}", level: :info
     SubprocessRunner.run(
@@ -245,7 +245,7 @@ class SandstormServerDaemon
               if line.include? 'LogRcon'
                 last_line_was_rcon = true
                 if line.include?('LogRcon: Rcon listening') && @monitor.nil?
-                  Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_password, name: @name, rcon_buffer: @rcon_buffer, interval: 5, daemon_handle: self) }
+                  Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_pass, name: @name, rcon_buffer: @rcon_buffer, interval: 5, daemon_handle: self) }
                 end
               elsif last_line_was_rcon
                 if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/ || line =~ /^Log/

@@ -8,8 +8,9 @@ class User
   attr_reader :initial_password
 
   ROLES = {
-    host: 3,
-    admin: 2,
+    host: 4,
+    admin: 3,
+    moderator: 2,
     user: 1
   }
 

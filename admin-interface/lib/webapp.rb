@@ -260,6 +260,16 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
+  def get_rcon_password(ip, rcon_port)
+    if ip == '127.0.0.1' && @@daemons.any? { |_, daemon| daemon.active_rcon_port == rcon_port }
+      @@daemons.select { |_, daemon| daemon.active_rcon_port == rcon_port }.first.last.active_rcon_pass
+    elsif @@monitors["#{ip}:#{rcon_port}"]
+      @@monitors["#{ip}:#{rcon_port}"].rcon_pass
+    else
+      nil
+    end
+  end
+
   set_up
 
   configure do
@@ -316,6 +326,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
     def is_admin?
       has_role?(:admin)
+    end
+
+    def is_moderator?
+      has_role?(:moderator)
     end
 
     def is_user?
@@ -1115,19 +1129,23 @@ class SandstormAdminWrapperSite < Sinatra::Base
     erb :'monitoring-details'
   end
 
-  post '/admin/:action/:steam_id', auth: :admin do
+  post '/moderator/:action/:steam_id', auth: :moderator do
     data = Oj.load(request.body.read)
     request.body.rewind
     reason = data['reason'].gsub('"', '\"')
     steam_id = params[:steam_id]
+    password = get_rcon_password(data['ip'], data['port'])
+    unless password
+      halt 400, "Could not find an RCON password for #{data['ip']}:#{data['port']}"
+    end
     case params[:action]
     when 'ban'
       uuid, buffer = self.class.create_buffer
-      Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "permban #{steam_id} \"#{reason}\"", buffer: buffer) } # banid doesn't allow a reason yet...
+      Thread.new { @@rcon_client.send(data['ip'], data['port'], password, "banid #{steam_id} 0 \"#{reason}\"", buffer: buffer) }
       uuid
     when 'kick'
       uuid, buffer = self.class.create_buffer
-      Thread.new { @@rcon_client.send(data['ip'], data['port'], data['pass'], "kick #{steam_id} \"#{reason}\"", buffer: buffer) }
+      Thread.new { @@rcon_client.send(data['ip'], data['port'], password, "kick #{steam_id} \"#{reason}\"", buffer: buffer) }
       uuid
     else
       status 400

@@ -943,14 +943,14 @@ function tailBuffer(logElement, interval, uuid, bookmark) {
   });
 }
 
-function playerBan(ip, port, pass, steam_id, reason, log_element) {
+function playerBan(ip, port, steam_id, reason, log_element) {
   if (typeof log_element === 'undefined') {
     log_element = '#rcon-log'
   }
   $.ajax({
-    url: `/admin/ban/${steam_id}`,
+    url: `/moderator/ban/${steam_id}`,
     contentType: "application/json",
-    data: JSON.stringify({reason: reason, ip: ip, port: port, pass: pass}),
+    data: JSON.stringify({reason: reason, ip: ip, port: port}),
     type: 'POST',
     success: function(response) {
       successToast(`Banning ${steam_id}`);
@@ -962,14 +962,14 @@ function playerBan(ip, port, pass, steam_id, reason, log_element) {
   });
 }
 
-function playerKick(ip, port, pass, steam_id, reason, log_element) {
+function playerKick(ip, port, steam_id, reason, log_element) {
   if (typeof log_element === 'undefined') {
     log_element = '#rcon-log'
   }
   $.ajax({
-    url: `/admin/kick/${steam_id}`,
+    url: `/moderator/kick/${steam_id}`,
     contentType: "application/json",
-    data: JSON.stringify({reason: reason, ip: ip, port: port, pass: pass}),
+    data: JSON.stringify({reason: reason, ip: ip, port: port}),
     type: 'POST',
     success: function(response) {
       successToast(`Kicking ${steam_id}`);
