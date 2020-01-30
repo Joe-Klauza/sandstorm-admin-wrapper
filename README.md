@@ -85,10 +85,11 @@ User features:
 - **Log out**
 
 Command-line parameters:
-- `admin-interface/lib/webapp.rb` supports the following command-line parameter(s)
-  - `--start/-s [server_config]`
-    - Example: `-s 'My Server'`
-    - Starts a server on boot with the `My Server` configuration. This can be used in combination with system startup scripts (e.g. systemd unit example in `extras/systemd`) to run your server(s) on boot. Use multiple `--start`/`-s` parameters to start multiple servers.
+- CLI parameters are passed from the start script (`linux_start.sh`/`windows_start.bat`) to `admin-interface/lib/webapp.rb`
+- SAW supports the following command-line parameter(s)
+  - `--start/-s [server_config_name]`
+    - Example: `-s 'My Server 1' -s 'My Server 2'`
+    - Start one or more servers automatically with the named configuration (matched based on `Config Name`). This can be used in combination with system startup scripts (e.g. systemd unit example in `extras/systemd`) or Windows Task Scheduler to run your server(s) on boot.
   - `--log-level/-l [log_level]`
     - Example: `-l debug`
     - Sets the log level. Only messages at or above the set level are printed to STDOUT; all logs are still written to `admin-interface/log/sandstorm-admin-wrapper.log`. One of: `debug`, `info`, `warn`, `error`, `fatal`
