@@ -3,7 +3,7 @@
 <%   matches = (@info[:a2s_player] || []).select{ |p| p['name'] == player['name'] || player['name'].start_with?(p['name']) } %>
 <%   next if matches.empty? %>
 <%   player['duration'] = matches.first['duration'] if matches.size == 1 %>
-<%   player['name'] = CGI.escapeHTML((player['steam_info']['name'] || player['name'] rescue player['name'])) %>
+<%   player['name'] = player.dig('steam_info', 'name') || player['name'] %>
 <% end %>
 <div class="d-flex flex-column horizontal-expand my-2 mx-4" style="background-color:#43454f">
   <div class="row horizontal-expand m-1 p-1 align-items-center" style="background-color:#232323">
@@ -22,7 +22,7 @@
       <%= ('<span class="mr-1 flag-icon flag-icon-' << country_code << '"></span> ') if country_code %>
       <a target="<%= !@use_steam_urls ? '_blank' : '' %>" href="<%= !@use_steam_urls ? 'https://steamcommunity.com/profiles/' : 'steam://url/SteamIDPage/' %><%= player['steam_id'] %>">
         <img src="<%= player['steam_info']['avatar'] || '/custom/missing.png' rescue '/custom/missing.png' %>" width="32" height="32">
-        <%= player['name'] %>
+        <%= CGI.escapeHTML player['name'] %>
       </a>
     </div>
     <div class="col-2"><%= player['score'] %></div>

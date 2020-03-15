@@ -83,6 +83,7 @@ SIDES = [
 ]
 SCENARIO_MODES = [
   'Checkpoint',
+  'Domination',
   'Firefight_A', # Ministry... https://newworldinteractive.com/isl/uploads/2019/09/Sandstorm-Server-Admin-Guide-1.4.pdf
   'Firefight_East',
   'Firefight_West',
@@ -92,6 +93,7 @@ SCENARIO_MODES = [
   'Team_Deathmatch'
 ]
 GAME_MODES = [
+  'Domination',
   'Firefight',
   'Frontline',
   'Occupy',
