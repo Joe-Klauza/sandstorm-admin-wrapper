@@ -66,15 +66,16 @@ CONFIG_FILES = {
 }
 
 MAPMAP = {
-  'Canyon'    => 'Crossing',
-  'Compound'  => 'Outskirts',
-  'Farmhouse' => 'Farmhouse',
-  'Sinjar'    => 'Hillside',
-  'Ministry'  => 'Ministry',
-  'Mountain'  => 'Summit',
-  'Oilfield'  => 'Refinery',
-  'Precinct'  => 'Precinct',
-  'Town'      => 'Hideout'
+  'Canyon'     => 'Crossing',
+  'Compound'   => 'Outskirts',
+  'Farmhouse'  => 'Farmhouse',
+  'Sinjar'     => 'Hillside',
+  'Ministry'   => 'Ministry',
+  'Mountain'   => 'Summit',
+  'Oilfield'   => 'Refinery',
+  'PowerPlant' => 'PowerPlant',
+  'Precinct'   => 'Precinct',
+  'Town'       => 'Hideout'
 }
 MAPMAP_INVERTED = MAPMAP.invert
 SIDES = [
