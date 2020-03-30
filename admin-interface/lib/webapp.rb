@@ -681,6 +681,19 @@ class SandstormAdminWrapperSite < Sinatra::Base
     erb(:'server-setup', layout: :'layout-main')
   end
 
+  get '/maplist', auth: :admin do
+    config = get_active_config
+    config_name = config['server-config-name']
+    @config = $config_handler.server_configs[config_name] || $config_handler.server_configs.first.last
+    if config_name.to_s.empty?
+      status 400
+      return "Unknown config"
+    end
+    @mod_scenarios_txt = File.read ERB.new(CONFIG_FILES[:mod_scenarios_txt][:local_erb]).result(binding)
+    @modScenarios = @mod_scenarios_txt.split("\n").reject(&:empty?)
+    erb(:maplist)
+  end
+
   get '/config', auth: :admin do
     redirect '/setup' unless @@prereqs_complete
     config = get_active_config
@@ -691,11 +704,14 @@ class SandstormAdminWrapperSite < Sinatra::Base
       return "Unknown config"
     end
     $config_handler.init_server_config_files config_name
-    @game_ini = ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding)
-    @engine_ini = ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding)
-    @admins_txt = ERB.new(CONFIG_FILES[:admins_txt][:local_erb]).result(binding)
-    @mapcycle_txt = ERB.new(CONFIG_FILES[:mapcycle_txt][:local_erb]).result(binding)
-    @bans_json = ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)
+    @game_ini = File.read ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding)
+    @engine_ini = File.read ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding)
+    @admins_txt = File.read ERB.new(CONFIG_FILES[:admins_txt][:local_erb]).result(binding)
+    @mapcycle_txt = File.read ERB.new(CONFIG_FILES[:mapcycle_txt][:local_erb]).result(binding)
+    @mods_txt = File.read ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)
+    @mod_scenarios_txt = File.read ERB.new(CONFIG_FILES[:mod_scenarios_txt][:local_erb]).result(binding)
+    @modScenarios = @mod_scenarios_txt.split("\n").reject(&:empty?)
+    @bans_json = File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)
     erb(:'server-config', layout: :'layout-main')
   end
 

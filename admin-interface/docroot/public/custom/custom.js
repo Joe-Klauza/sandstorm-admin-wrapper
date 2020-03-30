@@ -24,6 +24,18 @@ var updateMonitoringDetailsInterval = null;
 var tailBufferUuids = [];
 var tailBufferStopUuids = [];
 
+(function ($) {
+  var originalVal = $.fn.val;
+  $.fn.val = function(value) {
+    let returnedElement = originalVal.apply(this, arguments);
+    if (arguments.length >= 1) {
+      // setter invoked
+      returnedElement.trigger('change');
+    }
+    return returnedElement;
+  };
+})(jQuery);
+
 $(document).ready(function() {
   $(() => {
     $('[data-toggle="tooltip"]').tooltip({ trigger : tooltipTrigger, container : 'body' })
@@ -71,7 +83,40 @@ $(document).ready(function() {
   if ($('#chat-log').length) $('#chat-log').css("resize", "vertical");
   if ($('#server-log').length) $('#server-log').css("resize", "vertical");
   if ($('#rcon-log').length) $('#rcon-log').css("resize", "vertical");
+
+  // Server config changes
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(event) {
+      if (event.type === 'attributes' && event.attributeName === 'placeholder') {
+        setConfigChangeBorderColor(event);
+      }
+    });
+  });
+
+  $(".server-config-text-input").each((i, element) => {
+    observer.observe(element, {
+      attributes: true
+    });
+  });
+
+  // Server config change indicators
+  $(".server-config-text-input").on({
+    'input': $.debounce(100, setConfigChangeBorderColor),
+    'change': $.debounce(100, setConfigChangeBorderColor)
+  }, $(".server-config-text-input"));
 });
+
+function setConfigChangeBorderColor(event) {
+  let e = event.target;
+  let $e = $(e);
+  let placeholder = $e.attr('placeholder');
+  let val = $e.val();
+  if (val.length === 0 || placeholder === val) {
+    e.classList.remove('config-changed');
+  } else {
+    e.classList.add('config-changed');
+  }
+}
 
 function deleteMonitorConfig(name) {
   $.ajax({
@@ -287,6 +332,7 @@ function saveServerConfig() {
   });
   config['server_mutators'] = mutators
   var name = $('#server-config-name').val() || $('#server-config-name').attr('placeholder');
+  name = filterConfigName(name);
   writeConfigFiles(name);
   $.ajax({
     url: `/server-config/${encodeURIComponent(name)}`,
@@ -664,6 +710,12 @@ function copyToClipboard(element, sensitive) {
   $temp.remove();
 }
 
+function fillFromPlaceholder(element) {
+  let $element = $(element)
+  $element.val($element.attr('placeholder'));
+  $element.focus();
+}
+
 function capitalize(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -715,6 +767,7 @@ function toggleChecked(identifier) {
 }
 
 function undoServerConfig(config_name, variable) {
+  config_name = filterConfigName(config_name);
   var previous = $(`#${variable}`).attr('previous');
   if (previous) {
     setServerConfig(config_name, variable, previous);
@@ -726,6 +779,7 @@ function undoServerConfig(config_name, variable) {
 function loadPreviousServerConfig() {
   var previous = $(`#server-config-name`).attr('previous');
   if (previous) {
+    previous = filterConfigName(previous);
     loadServerConfig(previous);
   } else {
     failureToast("No previous value to reinstate.");
@@ -734,15 +788,24 @@ function loadPreviousServerConfig() {
 
 function loadServerConfigFileContent(config_name) {
   if ($('#config-files-tab-content').length) {
-    setTimeout(()=>{getConfigFileContent(config_name, '#game-ini')}, 0);
-    setTimeout(()=>{getConfigFileContent(config_name, '#engine-ini')}, 10);
-    setTimeout(()=>{getConfigFileContent(config_name, '#admins-txt')}, 20);
-    setTimeout(()=>{getConfigFileContent(config_name, '#mapcycle-txt')}, 30);
-    setTimeout(()=>{getConfigFileContent(config_name, '#bans-json')}, 40);
+    let timeout = 0;
+    $('#config-files-tab-content').children().each((i, e)=>{
+      var textareaId = $(e).children().first().attr('id');
+      setTimeout(()=>{getConfigFileContent(config_name, textareaId);}, timeout);
+      timeout += 10;
+    });
   }
 }
 
+function filterConfigName(config_name) {
+  let new_name = config_name.replace(/[^\w\s.&-]+/g, '');
+  if (new_name !== config_name) $('#server-config-name').val(new_name);
+  return new_name;
+}
+
+
 function setServerConfig(config_name, variable, value) {
+  config_name = filterConfigName(config_name);
   $.ajax({
       url: `/config/set?config=${encodeURIComponent(config_name)}&variable=${encodeURIComponent(variable)}&value=${encodeURIComponent(value)}`,
       type: 'PUT',
@@ -814,29 +877,26 @@ function serverControl(action, game_port, config_name) {
 }
 
 function writeConfigFiles(config_name) {
-  setTimeout(
-    ()=>{
-      $('#config-files-tab-content').children().each((i, e)=>{
-        var textarea = $(e).children().first().attr('id');
-        writeConfigFile(config_name, textarea, true);
-      });
-    }
-  ,0);
+  $('#config-files-tab-content').children().each((i, e)=>{
+    var textareaId = $(e).children().first().attr('id');
+    setTimeout(()=>{
+      writeConfigFile(config_name, textareaId, true);
+    }, 0);
+  });
+
 }
 
-function writeConfigFile(config_name, textarea, suppress_toasts) {
-  if (textarea) {
-    var textarea = $(`#${textarea}`);
-  } else {
-    var textarea = $('#config-files-tab-content').children('.active').first().children('textarea').first();
-  }
-  var file = textarea.attr('file');
-  var content = textarea.val();
+function writeConfigFile(config_name, textareaId, suppress_toasts) {
+  let textarea = textareaId ? $(`#${textareaId}`) : $('#config-files-tab-content').children('.active').first().children('textarea').first();
+  textareaId = textareaId || textarea.attr('id')
+  let file = textarea.attr('file');
+  let content = textarea.val();
   $.ajax({
     url: `/config/file/${file}?config=${config_name}`,
     type: 'POST',
     data: {'content': content},
     success: function(response) {
+      if (textareaId === "mod-scenarios-txt") reloadMapList();
       if (!suppress_toasts) {
         successToast(response);
       }
@@ -846,6 +906,12 @@ function writeConfigFile(config_name, textarea, suppress_toasts) {
         failureToast(request.responseText);
       }
     }
+  });
+}
+
+function reloadMapList() {
+  $.get('/maplist', (mapListHtml) => {
+    $('#maplist').html(mapListHtml);
   });
 }
 

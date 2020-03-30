@@ -260,6 +260,11 @@ input {
   background-color: #121314 !important;
 }
 
+/* Config changes */
+.config-changed {
+  border-color: #f2a600 !important;
+}
+
 /* Toggle switch */
 .custom-control-label::before {
   background-color: #555;

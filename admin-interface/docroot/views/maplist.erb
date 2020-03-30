@@ -1,0 +1,9 @@
+<% MAPMAP.values.sort.each do |map| %>
+<a class="dropdown-item" onclick="$(`#server_default_map`).val('<%= MAPMAP_INVERTED[map] %>')"><%= map %></a>
+<% end %>
+<div class="dropdown-divider"></div>
+<% @modScenarios.each do |modScenario| %>
+<a class="dropdown-item" onclick="$(`#server_default_map`).val('<%= modScenario %>')"><%= modScenario %></a>
+<% end %>
+<div class="dropdown-divider"></div>
+<a class="dropdown-item" onclick="$(`#server_default_map`).val('Random')">Random</a>

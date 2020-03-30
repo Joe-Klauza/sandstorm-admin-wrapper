@@ -244,7 +244,10 @@ class SandstormServerDaemon
               next if line.nil?
               if line.include? 'LogRcon'
                 last_line_was_rcon = true
-                if line.include?('LogRcon: Rcon listening') && @monitor.nil?
+                if line[/LogRcon: Error: Failed to create TcpListener at .* for rcon support/]
+                  log "RCON failed to initialize: #{line}", level: :warn
+                  kill_server_process
+                elsif line.include?('LogRcon: Rcon listening') && @monitor.nil?
                   Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_pass, name: @name, rcon_buffer: @rcon_buffer, interval: 5, daemon_handle: self) }
                 end
               elsif last_line_was_rcon

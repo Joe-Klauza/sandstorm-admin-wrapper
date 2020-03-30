@@ -32,6 +32,10 @@
       <div class="p-2 col">
         <input id="server_hostname" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_hostname'] %>">
       </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_hostname');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_hostname');">Copy</button>
+      </div>
       <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_hostname');">Undo</button>
@@ -48,6 +52,7 @@
       </div>
       <div class="p-2 col-3 d-flex justify-content-start">
         <button type="button" class="btn btn-sm btn-outline-warning horizontal-expand mx-1" onclick="generatePassword('#server_password');">Generate</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_password');">Fill</button>
         <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_password', true);">Copy</button>
         <button id="server_password_revealer" type="button" class="btn btn-sm btn-success horizontal-expand mr-4" onclick="revealHide('#server_password', '#server_password_revealer');">Reveal</button>
       </div>
@@ -65,6 +70,10 @@
       <div class="p-2 col">
         <input id="server_game_port" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_game_port'] %>">
       </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_game_port');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_game_port');">Copy</button>
+      </div>
       <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_game_port');">Undo</button>
@@ -79,6 +88,10 @@
       <div class="p-2 col">
         <input id="server_query_port" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_query_port'] %>">
       </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_query_port');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_query_port');">Copy</button>
+      </div>
       <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_query_port');">Undo</button>
@@ -92,6 +105,10 @@
       <div class="p-2 col-2">RCON Port</div>
       <div class="p-2 col">
         <input id="server_rcon_port" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_rcon_port'] %>">
+      </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_rcon_port');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_rcon_port');">Copy</button>
       </div>
       <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
@@ -109,6 +126,7 @@
       </div>
       <div class="p-2 col-3 d-flex justify-content-start">
         <button type="button" class="btn btn-sm btn-outline-warning horizontal-expand mx-1" onclick="generatePassword('#server_rcon_password');">Generate</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_rcon_password');">Fill</button>
         <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_rcon_password', true);">Copy</button>
         <button id="server_rcon_password_revealer" type="button" class="btn btn-sm btn-success horizontal-expand mr-4" onclick="revealHide('#server_rcon_password', '#server_rcon_password_revealer');">Reveal</button>
       </div>
@@ -126,6 +144,10 @@
       <div class="p-2 col">
         <input id="join_message" type="text" class="form-control server-config-text-input" placeholder="<%= @config['join_message'] %>">
       </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#join_message');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#join_message');">Copy</button>
+      </div>
       <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'join_message');">Undo</button>
@@ -139,6 +161,10 @@
       <div class="p-2 col-3 d-flex justify-content-between"><div>Player leave message</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="<div class='d-inline-block'>Uses RCON say to send a notification message when a player leaves.<br>Variables: <span class='monospace-font'><b>${player_name}</b></span>, <span class='monospace-font'><b>${player_id}</b></span></div>" style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col">
         <input id="leave_message" type="text" class="form-control server-config-text-input" placeholder="<%= @config['leave_message'] %>">
+      </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#leave_message');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#leave_message');">Copy</button>
       </div>
       <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
@@ -154,6 +180,10 @@
       <div class="p-2 col">
         <input id="admin_join_message" type="text" class="form-control server-config-text-input" placeholder="<%= @config['admin_join_message'] %>">
       </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#admin_join_message');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#admin_join_message');">Copy</button>
+      </div>
       <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'admin_join_message');">Undo</button>
@@ -167,6 +197,10 @@
       <div class="p-2 col-3 d-flex justify-content-between"><div>Admin leave message</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="<div class='d-inline-block'>Uses RCON say to send a notification message when a player leaves.<br>Variables: <span class='monospace-font'><b>${player_name}</b></span>, <span class='monospace-font'><b>${player_id}</b></span></div>" style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col">
         <input id="admin_leave_message" type="text" class="form-control server-config-text-input" placeholder="<%= @config['admin_leave_message'] %>">
+      </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#admin_leave_message');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#admin_leave_message');">Copy</button>
       </div>
       <div class="p-2 col-4 justify-content-end">
         <div class="d-flex justify-content-between">
@@ -290,12 +324,8 @@
         <ul class="nav nav-pills col-6">
           <li class="nav-item dropdown horizontal-expand text-center">
             <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Maps</a>
-            <div class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
-              <% MAPMAP.values.sort.each do |map| %>
-              <a class="dropdown-item" onclick="$(`#server_default_map`).val('<%= MAPMAP_INVERTED[map] %>')"><%= map %></a>
-              <% end %>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" onclick="$(`#server_default_map`).val('Random')">Random</a>
+            <div id="maplist" class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
+              <%= erb :maplist %>
             </div>
           </li>
         </ul>
@@ -321,6 +351,7 @@
               <a class="dropdown-item" onclick="$(`#server_default_side`).val('<%= side %>')"><%= side %></a>
               <% end %>
               <div class="dropdown-divider"></div>
+              <a class="dropdown-item" onclick="$(`#server_default_side`).val('None')">None</a>
               <a class="dropdown-item" onclick="$(`#server_default_side`).val('Random')">Random</a>
             </div>
           </li>
@@ -368,7 +399,13 @@
             <a class="nav-link" data-toggle="tab" href="#admins-txt-tab">Admins.txt</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#mapcycle-txt-tab">MapCycle.txt</a>
+            <a class="nav-link" data-toggle="tab" href="#mapcycle-txt-tab"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="Place scenarios here, one per line. These scenarios appear in the in-game map vote.">MapCycle.txt</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#mods-txt-tab"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="Place mod IDs here, one per line.">Mods.txt</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#mod-scenarios-txt-tab"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="Place mod scenario names here, one per line. Once saved, choose the starting scenario in the Default Map dropdown above.">ModScenarios.txt</a>
           </li>
           <li class="nav-item">
               <a class="nav-link" data-toggle="tab" href="#bans-json-tab"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="We use one master Bans.json. Changing this will overwrite all your bans.">Bans.json</span></a>
@@ -378,19 +415,25 @@
       <div class="d-flex justify-content-between horizontal-expand align-items-start">
         <div id="config-files-tab-content" class="tab-content col-11 blur">
           <div class="tab-pane fade horizontal-expand active show" id="game-ini-tab">
-            <textarea id="game-ini" class="m-2 config-file" file="Game.ini"><%= File.read(@game_ini) %></textarea>
+            <textarea id="game-ini" class="m-2 config-file" file="Game.ini"><%= @game_ini %></textarea>
           </div>
           <div class="tab-pane fade horizontal-expand" id="engine-ini-tab">
-            <textarea id="engine-ini" class="m-2 config-file" file="Engine.ini"><%= File.read(@engine_ini) %></textarea>
+            <textarea id="engine-ini" class="m-2 config-file" file="Engine.ini"><%= @engine_ini %></textarea>
           </div>
           <div class="tab-pane fade horizontal-expand" id="admins-txt-tab">
-            <textarea id="admins-txt" class="m-2 config-file" file="Admins.txt"><%= File.read(@admins_txt) %></textarea>
+            <textarea id="admins-txt" class="m-2 config-file" file="Admins.txt"><%= @admins_txt %></textarea>
           </div>
           <div class="tab-pane fade horizontal-expand" id="mapcycle-txt-tab">
-            <textarea id="mapcycle-txt" class="m-2 config-file" file="MapCycle.txt"><%= File.read(@mapcycle_txt) %></textarea>
+            <textarea id="mapcycle-txt" class="m-2 config-file" file="MapCycle.txt"><%= @mapcycle_txt %></textarea>
+          </div>
+          <div class="tab-pane fade horizontal-expand" id="mods-txt-tab">
+            <textarea id="mods-txt" class="m-2 config-file" file="Mods.txt"><%= @mods_txt %></textarea>
+          </div>
+          <div class="tab-pane fade horizontal-expand" id="mod-scenarios-txt-tab">
+            <textarea id="mod-scenarios-txt" class="m-2 config-file" file="ModScenarios.txt"><%= @mod_scenarios_txt %></textarea>
           </div>
           <div class="tab-pane fade horizontal-expand" id="bans-json-tab">
-            <textarea id="bans-json" class="m-2 config-file" file="Bans.json"><%= File.read(@bans_json) %></textarea>
+            <textarea id="bans-json" class="m-2 config-file" file="Bans.json"><%= @bans_json %></textarea>
           </div>
         </div>
         <div class="d-flex flex-column p-2 col-1 ml-1 justify-content-end">

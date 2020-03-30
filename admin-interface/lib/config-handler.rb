@@ -58,6 +58,16 @@ CONFIG_FILES = {
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'MapCycle.txt'),
     local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'MapCycle.txt')%>"
   },
+  mods_txt: {
+    type: :txt,
+    actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Mods.txt'),
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Mods.txt')%>"
+  },
+  mod_scenarios_txt: {
+    type: :txt,
+    actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'ModScenarios.txt'),
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'ModScenarios.txt')%>"
+  },
   bans_json: {
     type: :json,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Bans.json'),
@@ -163,7 +173,7 @@ class ConfigHandler
     'server_default_map' => {
       'default' => MAPMAP.keys.sample,
       'random' => false,
-      'validation' => Proc.new { |map| MAPMAP.keys.include?(map) || map == 'Random' },
+      'validation' => Proc.new { true },
       'type' => :map
     },
     'server_default_side' => {
@@ -444,6 +454,7 @@ class ConfigHandler
     # Apply values in case any in memory aren't in the file
     apply_game_ini_local config, config_name
     apply_engine_ini_local config, config_name
+    apply_server_bans # Ensure we don't overwrite a new ban
 
     CONFIG_FILES.values.each do |it|
       local = ERB.new(it[:local_erb]).result(binding) # relies on config_name
@@ -540,6 +551,12 @@ class ConfigHandler
     query
   end
 
+  def get_mod_travel_string(config)
+    scenario = config['server_default_map']
+    map = scenario.gsub(/(^Scenario_|_[A-Za-z]+$)/,'')
+    "-ModDownloadTravelTo=#{map}?Scenario=#{scenario}"
+  end
+
   def get_server_arguments(config)
     arguments = []
     arguments.push(
@@ -556,6 +573,13 @@ class ConfigHandler
     )
     arguments.push("-ruleset=#{config['server_rule_set']}") unless config['server_rule_set'] == 'None'
     arguments.push("-mutators=#{config['server_mutators'].join(',')}") unless config['server_mutators'].empty?
+    config_name = config['server-config-name']
+    unless File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip.empty?
+      arguments.push("-Mods -ModList=Mods.txt")
+      map = config['server_default_map']
+      # Start on the modded map if we don't have a known map set
+      arguments.push(get_mod_travel_string(config)) unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
+    end
     if config['server_gslt'].to_s.empty?
       arguments.push("-EnableCheats") if config['server_cheats'].to_s.casecmp('true').zero?
     else

@@ -288,7 +288,7 @@ class ServerMonitor
 
     prev_map = @info.dig(:a2s_info, 'map')
     if prev_map && a2s_info['map'] != prev_map
-      log "Map changed: #{prev_map} => #{MAPMAP[a2s_info['map']]}", level: :info
+      log "Map changed: #{prev_map} => #{a2s_info['map']}", level: :info
     end
 
     # Sometimes the server can be in a zombie state where server query succeeds

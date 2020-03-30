@@ -223,7 +223,10 @@ class RconClient
     header, _ = if IO.select([socket], nil, nil, timeout)
       socket.recv 12
     end
-    raise "#{socket.remote_host.ljust(21)} Nil response for RCON" if header.to_s.empty?
+    if header.to_s.empty?
+      delete_socket socket
+      raise "#{socket.remote_host.ljust(21)} Nil response for RCON."
+    end
     log "#{socket.remote_host.ljust(21)} Header: #{header.inspect}"
     size, id, type = header.unpack('l<l<l<')
     if type == 2 # Authentication
