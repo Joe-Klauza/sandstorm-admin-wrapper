@@ -213,6 +213,10 @@ class ConfigHandler
       'default' => 'None',
       'validation' => Proc.new { |rule_set| RULE_SETS.include?(rule_set) || rule_set = 'None' }
     },
+    'server_mutators_custom' => {
+      'default' => '',
+      'validation' => Proc.new { true }
+    },
     'server_mutators' => {
       'default' => [],
       'validation' => Proc.new { |mutators| mutators.all? { |mutator| MUTATORS.keys.include?(mutator) } }
@@ -537,24 +541,29 @@ class ConfigHandler
     "Scenario_#{filtered_map}_#{mode}#{'_' << side if ['Checkpoint', 'Push'].include?(mode)}"
   end
 
-  def get_query_string(config, map: nil, side:nil, game_mode: nil, scenario_mode: nil, max_players: nil, password: nil)
-    map = config['server_default_map'] == 'Random' ? MAPMAP.keys.sample : config['server_default_map'] if map.nil?
-    side = config['server_default_side'] == 'Random' ? SIDES.sample : config['server_default_side'] if side.nil?
-    game_mode = config['server_game_mode'] == 'Random' ? GAME_MODES.sample : config['server_game_mode'] if game_mode.nil?
-    scenario_mode = config['server_scenario_mode'] == 'Random' ? SCENARIO_MODES.sample : config['server_scenario_mode'] if scenario_mode.nil?
-    max_players ||= config['server_max_players']
-    password ||= config['server_password']
-    scenario = get_scenario(map, scenario_mode, side)
-    query = "#{map}?Scenario=#{scenario}?MaxPlayers=#{max_players}"
+  def get_query_string(config, map: nil, side: nil, game_mode: nil, scenario_mode: nil, max_players: nil, password: nil, scenario: nil)
+    map = config['server_default_map'].dup == 'Random' ? MAPMAP.keys.sample : config['server_default_map'] if map.nil?
+    side = config['server_default_side'].dup == 'Random' ? SIDES.sample : config['server_default_side'] if side.nil?
+    game_mode = config['server_game_mode'].dup == 'Random' ? GAME_MODES.sample : config['server_game_mode'] if game_mode.nil?
+    scenario_mode = config['server_scenario_mode'].dup == 'Random' ? SCENARIO_MODES.sample : config['server_scenario_mode'] if scenario_mode.nil?
+    max_players ||= config['server_max_players'].dup
+    password ||= config['server_password'].dup
+    query = if scenario.nil?
+      scenario = get_scenario(map, scenario_mode, side)
+      "#{map}?Scenario=#{scenario}"
+    else
+      scenario # Mod scenario; allow users to customize since the map name and scenario name are needed
+    end
+    query << "?MaxPlayers=#{max_players}"
     query << "?Game=#{game_mode}" unless game_mode == 'None'
     query << "?Password=#{password}" unless password.empty?
     query
   end
 
   def get_mod_travel_string(config)
-    scenario = config['server_default_map']
+    scenario = config['server_default_map'].dup
     map = scenario.gsub(/(^Scenario_|_[A-Za-z]+$)/,'')
-    "-ModDownloadTravelTo=#{map}?Scenario=#{scenario}"
+    "-ModDownloadTravelTo=#{get_query_string(config, map: map, scenario: scenario)}"
   end
 
   def get_server_arguments(config)
@@ -572,7 +581,7 @@ class ConfigHandler
       "-MapCycle=MapCycle"
     )
     arguments.push("-ruleset=#{config['server_rule_set']}") unless config['server_rule_set'] == 'None'
-    arguments.push("-mutators=#{config['server_mutators'].join(',')}") unless config['server_mutators'].empty?
+    arguments.push("-mutators=#{(config['server_mutators'] + config['server_mutators_custom'].split(',')).join(',')}") unless config['server_mutators'].empty? && config['server_mutators_custom'].empty?
     config_name = config['server-config-name']
     unless File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip.empty?
       arguments.push("-Mods -ModList=Mods.txt")

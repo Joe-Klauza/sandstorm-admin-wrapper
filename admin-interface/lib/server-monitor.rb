@@ -16,7 +16,7 @@ class ServerMonitor
   attr_reader :rcon_pass
   attr_reader :rcon_buffer
 
-  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 0, rcon_fail_limit: 30, query_fail_limit: 30, name: '', rcon_buffer: nil, daemon_handle: nil, welcome_message_delay: 20)
+  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 3, rcon_fail_limit: 30, query_fail_limit: 30, name: '', rcon_buffer: nil, daemon_handle: nil, welcome_message_delay: 20)
     @stop = false
     @ip = ip
     @query_port = query_port
@@ -287,7 +287,7 @@ class ServerMonitor
     log "Got A2S_RULES: #{a2s_rules}"
 
     prev_map = @info.dig(:a2s_info, 'map')
-    if prev_map && a2s_info['map'] != prev_map
+    if a2s_info['map'] != prev_map
       log "Map changed: #{prev_map} => #{a2s_info['map']}", level: :info
     end
 

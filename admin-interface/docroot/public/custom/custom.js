@@ -791,7 +791,7 @@ function loadServerConfigFileContent(config_name) {
     let timeout = 0;
     $('#config-files-tab-content').children().each((i, e)=>{
       var textareaId = $(e).children().first().attr('id');
-      setTimeout(()=>{getConfigFileContent(config_name, textareaId);}, timeout);
+      setTimeout(()=>{getConfigFileContent(config_name, `#${textareaId}`);}, timeout);
       timeout += 10;
     });
   }
@@ -802,7 +802,6 @@ function filterConfigName(config_name) {
   if (new_name !== config_name) $('#server-config-name').val(new_name);
   return new_name;
 }
-
 
 function setServerConfig(config_name, variable, value) {
   config_name = filterConfigName(config_name);

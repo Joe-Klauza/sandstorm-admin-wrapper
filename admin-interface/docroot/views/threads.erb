@@ -1,6 +1,49 @@
-<% if is_admin? %>
-  <div style="white-space: pre;">PID: <span id="pid"><%= @pid %></span></div>
-  <div style="white-space: pre;">Threads: <span id="threads"><%= @threads %></span></div>
-<% end %>
-<div style="white-space: pre;">Players: <span id="players"><%= @info[:rcon_players].size rescue 0 %></span></div>
-<div style="white-space: pre;">Bots: <span id="bots"><%= @info[:rcon_bots].size rescue 0 %></span></div>
+<div class="d-flex justify-content-end horizontal-expand">
+  <div class="d-flex flex-column align-items-start col">
+    <% if is_admin? %>
+      <div class="justify-content-between horizontal-expand">
+        <div class="col-6">PID:</div>
+        <div class="col-6"><span id="pid"><%= @pid %></span></div>
+      </div>
+      <div class="justify-content-between horizontal-expand">
+        <div class="col-6">Threads:</div>
+        <div class="col-6"><span id="threads"><%= @threads %></span></div>
+      </div>
+    <% end %>
+    <div class="justify-content-between horizontal-expand">
+      <div class="col-6">Players:</div>
+      <div class="col-6"><span id="players"><%= @info[:rcon_players].size rescue 0 %></span> / <span id="players-max"><%= @info.dig(:a2s_rules, 'PlrM_i') rescue '?' %></span></div>
+    </div>
+    <div class="justify-content-between horizontal-expand">
+      <div class="col-6">Bots:</div>
+      <div class="col-6"><span id="bots"><%= @info[:rcon_bots].size rescue 0 %></span></div>
+    </div>
+    <div class="justify-content-between horizontal-expand">
+      <div class="col-4">Password:</div>
+      <div class="col-6"><span id="password"><%= @info.dig(:a2s_rules, 'Pwd_b') == 'true' ? 'Yes' : 'No' rescue 'Unknown' %></span></div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-column align-items-start col-7">
+    <div class="justify-content-between horizontal-expand">
+      <div class="col-4">Ranked:</div>
+      <div class="col"><span id="mods"><%= @info.dig(:a2s_rules, 'RankedServer_b') == 'false' ? 'No' : 'Yes' rescue 'Unknown' %></span></div>
+    </div>
+    <div class="justify-content-between horizontal-expand">
+      <div class="col-4">Mods:</div>
+      <div class="col"><span id="mods"><%= @info.dig(:a2s_rules, 'Mods_b') == 'true' ? @info.dig(:a2s_rules, 'ModList_s') : 'No' rescue 'Unknown' %></span></div>
+    </div>
+    <div class="justify-content-between horizontal-expand">
+      <div class="col-4">Mutators:</div>
+      <div class="col"><span id="mutators"><%= @info.dig(:a2s_rules, 'Mutated_b') == 'true' ? 'Yes' : 'No' rescue 'Unknown' %></span></div>
+    </div>
+    <div class="justify-content-between horizontal-expand">
+      <div class="col-4">Map:</div>
+      <div class="col"><span id="map"><%= @info.dig(:a2s_info, 'map') rescue 'Unknown' %></span></div>
+    </div>
+    <div class="justify-content-between horizontal-expand">
+      <div class="col-4">Mode:</div>
+      <div class="col"><span id="mode"><%= @info.dig(:a2s_rules, 'GameMode_s') rescue 'Unknown' %> (<%= @info.dig(:a2s_rules, 'Versus_b') == 'true' ? 'PvP' : 'Co-op' rescue 'Unknown'%>)</span></div>
+    </div>
+  </div>
+</div>

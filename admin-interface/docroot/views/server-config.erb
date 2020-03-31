@@ -290,6 +290,28 @@
       </div>
     </div>
 
+    <!-- Default Map -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-2">Default Map</div>
+      <div class="p-2 col horizontal-expand">
+        <input id="server_default_map" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_default_map'] %>">
+        <ul class="nav nav-pills col-6">
+          <li class="nav-item dropdown horizontal-expand text-center">
+            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Maps</a>
+            <div id="maplist" class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
+              <%= erb :maplist %>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div class="p-2 col-2 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_default_map');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_default_map', $('#server_default_map').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Scenario Mode -->
     <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Scenario Mode</div>
@@ -312,28 +334,6 @@
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_scenario_mode');">Undo</button>
           <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_scenario_mode', $('#server_scenario_mode').val());">Save</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Default Map -->
-    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
-      <div class="p-2 col-2">Default Map</div>
-      <div class="p-2 col">
-        <input id="server_default_map" type="text" class="form-control server-config-text-input col-6" placeholder="<%= @config['server_default_map'] %>">
-        <ul class="nav nav-pills col-6">
-          <li class="nav-item dropdown horizontal-expand text-center">
-            <a class="nav-link dropdown-toggle btn btn-sm btn-primary" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="true">Maps</a>
-            <div id="maplist" class="dropdown-menu horizontal-expand" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 38px, 0px);">
-              <%= erb :maplist %>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <div class="p-2 col-4 justify-content-end">
-        <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_default_map');">Undo</button>
-          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_default_map', $('#server_default_map').val());">Save</button>
         </div>
       </div>
     </div>
@@ -361,6 +361,24 @@
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_default_side');">Undo</button>
           <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_default_side', $('#server_default_side').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Mutators -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-2 justify-content-between"><div>Custom Mutators</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Set this to use downloaded mutators or skip the toggles below, e.g.: NoRestrictedArea" style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="server_mutators_custom" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_mutators_custom'] %>">
+      </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_mutators_custom');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_mutators_custom');">Copy</button>
+      </div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_mutators_custom');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_mutators_custom', $('#server_mutators_custom').val());">Save</button>
         </div>
       </div>
     </div>
@@ -405,7 +423,7 @@
             <a class="nav-link" data-toggle="tab" href="#mods-txt-tab"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="Place mod IDs here, one per line.">Mods.txt</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#mod-scenarios-txt-tab"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="Place mod scenario names here, one per line. Once saved, choose the starting scenario in the Default Map dropdown above.">ModScenarios.txt</a>
+            <a class="nav-link" data-toggle="tab" href="#mod-scenarios-txt-tab"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="Place desired ModDownloadTravelTo values here, one per line. Once saved, choose the starting scenario in the Default Map dropdown above.">ModScenarios.txt</a>
           </li>
           <li class="nav-item">
               <a class="nav-link" data-toggle="tab" href="#bans-json-tab"><span data-toggle="tooltip" data-placement="left" title="" data-original-title="We use one master Bans.json. Changing this will overwrite all your bans.">Bans.json</span></a>
