@@ -44,7 +44,6 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @@prereqs_complete = false
     @@lan_access_bind_ip = Socket.ip_address_list.detect{ |intf| intf.ipv4_private? }.ip_address rescue '?'
     @@loaded_wrapper_version = @@config['wrapper_version']
-    handle_arguments unless ARGV.empty?
     trap 'EXIT' do
       Thread.new do
         if @@daemons.any?
@@ -53,6 +52,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
         end
       end.join
     end
+    handle_arguments unless ARGV.empty?
   end
 
   def self.load_webapp_config
@@ -79,15 +79,18 @@ class SandstormAdminWrapperSite < Sinatra::Base
       break if arg.nil?
       case arg
       when '--start', '-s'
-        val = args.shift
-        break if val.nil?
+        config_name = args.shift
+        break if config_name.nil?
         @@daemons_mutex.synchronize do
-          config = $config_handler.server_configs[val]
-          if config
-            log "Starting daemon for #{val}", level: :info
-            Thread.new { init_daemon(config.dup, start: true) }
-          else
-            log "Unknown server config: #{val}", level: :warn
+          Thread.new(config_name) do |config_name|
+            config = $config_handler.server_configs[config_name].dup
+            sleep 2 # Allow webrick SSL cert to be logged before starting servers
+            if config
+              log "Starting daemon for #{config_name}", level: :info
+              init_daemon(config, start: true)
+            else
+              log "Unknown server config: #{config_name}", level: :warn
+            end
           end
         end
       when '--log-level', '-l'

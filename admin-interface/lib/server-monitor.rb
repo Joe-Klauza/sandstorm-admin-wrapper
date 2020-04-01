@@ -16,7 +16,7 @@ class ServerMonitor
   attr_reader :rcon_pass
   attr_reader :rcon_buffer
 
-  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 3, rcon_fail_limit: 30, query_fail_limit: 30, name: '', rcon_buffer: nil, daemon_handle: nil, welcome_message_delay: 20)
+  def initialize(ip, query_port, rcon_port, rcon_pass, interval: 15.0, delay: 5, rcon_fail_limit: 30, query_fail_limit: 30, name: '', rcon_buffer: nil, daemon_handle: nil, welcome_message_delay: 20)
     @stop = false
     @ip = ip
     @query_port = query_port

@@ -60,12 +60,12 @@ CONFIG_FILES = {
   },
   mods_txt: {
     type: :txt,
-    actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Mods.txt'),
+    actual: nil, #File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Mods.txt'),
     local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Mods.txt')%>"
   },
   mod_scenarios_txt: {
     type: :txt,
-    actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'ModScenarios.txt'),
+    actual: nil, #File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'ModScenarios.txt'),
     local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'ModScenarios.txt')%>"
   },
   bans_json: {
@@ -446,6 +446,7 @@ class ConfigHandler
     configs.map {|name| ConfigHandler.sanitize_directory name }.each do |config_name|
       CONFIG_FILES.values.each do |it|
         [ERB.new(it[:local_erb]).result(binding), it[:actual]].each do |path|
+          next if path.nil?
           FileUtils.mkdir_p File.dirname path
           FileUtils.touch path
         end
@@ -460,7 +461,7 @@ class ConfigHandler
     apply_engine_ini_local config, config_name
     apply_server_bans # Ensure we don't overwrite a new ban
 
-    CONFIG_FILES.values.each do |it|
+    CONFIG_FILES.reject {|_,i| i[:actual].nil? }.values.each do |it|
       local = ERB.new(it[:local_erb]).result(binding) # relies on config_name
       log "Applying #{local} -> #{it[:actual]}"
       FileUtils.cp local, it[:actual]
@@ -541,7 +542,7 @@ class ConfigHandler
     "Scenario_#{filtered_map}_#{mode}#{'_' << side if ['Checkpoint', 'Push'].include?(mode)}"
   end
 
-  def get_query_string(config, map: nil, side: nil, game_mode: nil, scenario_mode: nil, max_players: nil, password: nil, scenario: nil)
+  def get_query_string(config, map: nil, side: nil, game_mode: nil, scenario_mode: nil, max_players: nil, mutators: nil, password: nil, scenario: nil)
     map = config['server_default_map'].dup == 'Random' ? MAPMAP.keys.sample : config['server_default_map'] if map.nil?
     side = config['server_default_side'].dup == 'Random' ? SIDES.sample : config['server_default_side'] if side.nil?
     game_mode = config['server_game_mode'].dup == 'Random' ? GAME_MODES.sample : config['server_game_mode'] if game_mode.nil?
@@ -557,19 +558,23 @@ class ConfigHandler
     query << "?MaxPlayers=#{max_players}"
     query << "?Game=#{game_mode}" unless game_mode == 'None'
     query << "?Password=#{password}" unless password.empty?
+    query << "?Mutators=#{mutators}" unless mutators.to_s.empty?
     query
   end
 
-  def get_mod_travel_string(config)
-    scenario = config['server_default_map'].dup
-    map = scenario.gsub(/(^Scenario_|_[A-Za-z]+$)/,'')
-    "-ModDownloadTravelTo=#{get_query_string(config, map: map, scenario: scenario)}"
+  def get_mod_travel_string(config, map, scenario, mutators)
+    "-ModDownloadTravelTo=#{get_query_string(config, map: map, mutators: mutators, scenario: scenario)}"
   end
 
   def get_server_arguments(config)
     arguments = []
+    map = config['server_default_map'].dup
+    starting_map = MAPMAP.values.include?(map) ? map : MAPMAP[map]
+    starting_map = starting_map == 'Random' || MAPMAP.values.include?(starting_map) ? starting_map : 'Farmhouse'
+    mutators = (config['server_mutators'] + config['server_mutators_custom'].split(',')).join(',')
+    log "Mutators: #{mutators}", level: :warn
     arguments.push(
-      get_query_string(config),
+      get_query_string(config, map: starting_map, mutators: mutators),
       "-Hostname=#{config['server_hostname']}",
       "-MaxPlayers=#{config['server_max_players']}",
       "-Port=#{config['server_game_port']}",
@@ -581,13 +586,14 @@ class ConfigHandler
       "-MapCycle=MapCycle"
     )
     arguments.push("-ruleset=#{config['server_rule_set']}") unless config['server_rule_set'] == 'None'
-    arguments.push("-mutators=#{(config['server_mutators'] + config['server_mutators_custom'].split(',')).join(',')}") unless config['server_mutators'].empty? && config['server_mutators_custom'].empty?
+    arguments.push("-mutators=#{mutators}") unless mutators.empty?
     config_name = config['server-config-name']
-    unless File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip.empty?
-      arguments.push("-Mods -ModList=Mods.txt")
-      map = config['server_default_map']
+    mods_txt_content = File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip
+    unless mods_txt_content.empty?
+      arguments.push("-Mods")
+      arguments.push("-CmdModList=\"#{mods_txt_content.split("\n").map {|modId| modId[/^\d+/] }.reject(&:nil?).join(',')}\"")
       # Start on the modded map if we don't have a known map set
-      arguments.push(get_mod_travel_string(config)) unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
+      arguments.push(get_mod_travel_string(config, starting_map, map, mutators)) unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
     end
     if config['server_gslt'].to_s.empty?
       arguments.push("-EnableCheats") if config['server_cheats'].to_s.casecmp('true').zero?

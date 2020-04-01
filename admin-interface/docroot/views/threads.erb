@@ -27,11 +27,11 @@
   <div class="d-flex flex-column align-items-start col-7">
     <div class="justify-content-between horizontal-expand">
       <div class="col-4">Ranked:</div>
-      <div class="col"><span id="mods"><%= @info.dig(:a2s_rules, 'RankedServer_b') == 'false' ? 'No' : 'Yes' rescue 'Unknown' %></span></div>
+      <div class="col"><span id="ranked"><%= @info.dig(:a2s_rules, 'RankedServer_b') == 'false' ? 'No' : 'Yes' rescue 'Unknown' %></span></div>
     </div>
     <div class="justify-content-between horizontal-expand">
       <div class="col-4">Mods:</div>
-      <div class="col"><span id="mods"><%= @info.dig(:a2s_rules, 'Mods_b') == 'true' ? @info.dig(:a2s_rules, 'ModList_s') : 'No' rescue 'Unknown' %></span></div>
+      <div class="col"><span id="mods"><%= @info.dig(:a2s_rules, 'Mods_b') == 'true' ? (@info.dig(:a2s_rules, 'ModList_s').to_s.strip.empty? ? 'Yes (no IDs reported)' : @info.dig(:a2s_rules, 'ModList_s')) : 'No' rescue 'Unknown' %></span></div>
     </div>
     <div class="justify-content-between horizontal-expand">
       <div class="col-4">Mutators:</div>

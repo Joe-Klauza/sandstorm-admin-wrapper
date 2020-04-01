@@ -232,8 +232,8 @@ class SandstormServerDaemon
           sleep 0.5
         end
         log "Log file is in use. Proceeding with log tailing."
+        log "Server is ready. Server start lock ending.", level: :info
         @server_started = true
-        # @rcon_buffer[:data] << "[PID: #{@game_pid} Game Port: #{@active_game_port}] RCON log file detected: #{log_file.sub(USER_HOME, '~')}"
         begin
           File.open(@log_file) do |log|
             log.extend(File::Tail)
