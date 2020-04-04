@@ -650,7 +650,12 @@ class SandstormAdminWrapperSite < Sinatra::Base
     at_exit do
       exit 2
     end
-    Thread.new { sleep 0.2; log "Replacing the current process..."; exit }
+    log "Restart invoked", level: :info
+    Thread.new do
+      log "Replacing the current process...", level: :info
+      sleep 0.2
+      exit
+    end
     ''
   end
 
@@ -1329,19 +1334,17 @@ begin
   config = SandstormAdminWrapperSite.load_webapp_config
   options = get_webrick_options(config)
   log "Starting webserver with options: #{options}"
-  begin
-    $server = Rack::Server.new(options)
-    Thread.new { sleep 1; log "Webserver initialized! Visit: http#{'s' if config['admin_interface_use_ssl']}://#{config['admin_interface_bind_ip'] == '0.0.0.0' ? '127.0.0.1' : config['admin_interface_bind_ip']}:#{config['admin_interface_bind_port']}", level: :info }
-    $server.start
-  rescue Exception => e
-    raise if e.is_a? StandardError
-    log "Exception caused webserver exit", e
-  end
+  $server = Rack::Server.new(options)
+  Thread.new { sleep 1; log "Webserver initialized! Visit: http#{'s' if config['admin_interface_use_ssl']}://#{config['admin_interface_bind_ip'] == '0.0.0.0' ? '127.0.0.1' : config['admin_interface_bind_ip']}:#{config['admin_interface_bind_port']}", level: :info }
+  $server.start
 rescue => e
-  log "Error caused webserver exit", e
-  exit 1
+  unless e.is_a? SystemExit
+    log "Exception caused webserver exit", e
+    at_exit { exit 1 }
+  end
 ensure
-  log "Webserver stopped"
+  log "Webserver stopped", level: :info
   $config_handler.write_config
+  log "Config written", level: :info
   `stty echo` unless WINDOWS || !$stdout.isatty
 end

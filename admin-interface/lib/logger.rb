@@ -26,6 +26,10 @@ class MultiTargetLogger
   Logger::Severity.constants.each do |severity|
     severity = severity.downcase
     define_method(severity) do |*args|
+      # Suppress FATAL error log on intentional exit
+      if severity == :fatal
+        severity = :debug if args.first.is_a? SystemExit
+      end
       # Suppress SSL error for self-generated certificate
       if args.first.to_s.end_with? ': sslv3 alert certificate unknown'
         severity = :debug
@@ -46,7 +50,6 @@ class MultiTargetLogger
   def puts(*args)
     log(:debug, *args)
   end
-
 
   def log(severity, *args)
     severity = severity.downcase
