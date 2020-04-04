@@ -39,7 +39,7 @@
     </div>
     <div class="justify-content-between horizontal-expand">
       <div class="col-4">Map:</div>
-      <div class="col"><span id="map"><%= @info.dig(:a2s_info, 'map') rescue 'Unknown' %></span></div>
+      <div class="col"><span id="map"><%= "#{@info.dig(:a2s_info, 'map')}#{' (' << MAPMAP[@info.dig(:a2s_info, 'map')] <<')' if MAPMAP[@info.dig(:a2s_info, 'map')] && MAPMAP[@info.dig(:a2s_info, 'map')] != @info.dig(:a2s_info, 'map')}" rescue 'Unknown' %></span></div>
     </div>
     <div class="justify-content-between horizontal-expand">
       <div class="col-4">Mode:</div>

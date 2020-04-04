@@ -117,16 +117,20 @@ class ServerMonitor
 
     # Welcome joined players
     players_joined.each do |player|
-      is_admin = @daemon_handle.is_sandstorm_admin?(player['steam_id'])
-      message_option = is_admin ? 'admin_join_message' : 'join_message'
-      log "Player joined: #{player['name']} (#{player['steam_id']})#{' (admin)' if is_admin}", level: :info
-      unless @daemon_handle.config[message_option].empty?
-        Thread.new(message_option) do |message_option|
-          message = @daemon_handle.config[message_option]
-          message = message.gsub('${player_name}', player['name']).gsub('${player_id}', player['steam_id'])
-          sleep @welcome_message_delay # Allow time to select a loadout and see the chat
-          @rcon_client.send(@ip, @rcon_port, @rcon_pass, "say #{message}")
+      if @daemon_handle
+        is_admin = @daemon_handle.is_sandstorm_admin?(player['steam_id'])
+        message_option = is_admin ? 'admin_join_message' : 'join_message'
+        unless @daemon_handle.config[message_option].empty?
+          Thread.new(message_option) do |message_option|
+            message = @daemon_handle.config[message_option]
+            message = message.gsub('${player_name}', player['name']).gsub('${player_id}', player['steam_id'])
+            sleep @welcome_message_delay # Allow time to select a loadout and see the chat
+            @rcon_client.send(@ip, @rcon_port, @rcon_pass, "say #{message}")
+          end
         end
+        log "Player joined: #{player['name']} (#{player['steam_id']})#{' (admin)' if is_admin}", level: :info
+      else
+        log "Player joined: #{player['name']} (#{player['steam_id']})", level: :info
       end
     end
 
@@ -210,12 +214,14 @@ class ServerMonitor
     end
 
     players_gone.each do |player|
-      is_admin = @daemon_handle.is_sandstorm_admin?(player['steam_id'])
-      log "Player left: #{player['name']} (#{player['steam_id']})#{' (admin)' if is_admin}", level: :info
-      unless @daemon_handle.config['leave_message'].empty?
-        Thread.new do
-          message = @daemon_handle.config['leave_message'].gsub('${player_name}', player['name']).gsub('${player_id}', player['steam_id'])
-          @rcon_client.send(@ip, @rcon_port, @rcon_pass, "say #{message}")
+      if @daemon_handle
+        is_admin = @daemon_handle.is_sandstorm_admin?(player['steam_id'])
+        log "Player left: #{player['name']} (#{player['steam_id']})#{' (admin)' if is_admin}", level: :info
+        unless @daemon_handle.config['leave_message'].empty?
+          Thread.new do
+            message = @daemon_handle.config['leave_message'].gsub('${player_name}', player['name']).gsub('${player_id}', player['steam_id'])
+            @rcon_client.send(@ip, @rcon_port, @rcon_pass, "say #{message}")
+          end
         end
       end
       saved_player = $config_handler.players[player['steam_id']]
@@ -223,7 +229,7 @@ class ServerMonitor
       saved_player['total_score'] = saved_player['total_score'].to_i + score
       saved_player['high_score'] = score if saved_player['high_score'].to_i <= score
       saved_player['last_seen'] = now
-      saved_player['last_server'] = @info.dig(:a2s_info, 'name') || @daemon_handle.name
+      saved_player['last_server'] = @info.dig(:a2s_info, 'name') || (@daemon_handle && @daemon_handle.name)
       begin
         matching_a2s_player = @info[:a2s_player].select { |p| p['name'] == player['name'] }.first
         if matching_a2s_player.nil? && @info[:a2s_player].map { |p| p['name'].empty? }.size == 1
@@ -268,7 +274,7 @@ class ServerMonitor
     log "Time since last RCON success: #{rcon_fail_time.to_s << 's'}", level: rcon_fail_time > @rcon_fail_limit ? :error : :warn
     if rcon_fail_time > @rcon_fail_limit
       @info[:server_down] = true
-      if @daemon_handle.frozen_config['hang_recovery'].to_s.casecmp('true').zero?
+      if @daemon_handle && @daemon_handle.frozen_config['hang_recovery'].to_s.casecmp('true').zero?
         Thread.new do
           log "Restarting server due to repeated RCON failure", level: :warn
           response = @daemon_handle.do_restart_server

@@ -60,12 +60,13 @@ CONFIG_FILES = {
   },
   mods_txt: {
     type: :txt,
-    actual: nil, #File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Mods.txt'),
+    actual: nil,
+    delete: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Mods.txt'),
     local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Mods.txt')%>"
   },
   mod_scenarios_txt: {
     type: :txt,
-    actual: nil, #File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'ModScenarios.txt'),
+    actual: nil,
     local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'ModScenarios.txt')%>"
   },
   bans_json: {
@@ -461,6 +462,13 @@ class ConfigHandler
     apply_engine_ini_local config, config_name
     apply_server_bans # Ensure we don't overwrite a new ban
 
+    # Remove Mods.txt so that the server doesn't use any the user may have manually set outside of SAW
+    CONFIG_FILES.reject {|_,i| i[:delete].nil? }.values.each do |it|
+      local = ERB.new(it[:delete]).result(binding)
+      log "Deleting #{local}"
+      FileUtils.rm local rescue nil
+    end
+
     CONFIG_FILES.reject {|_,i| i[:actual].nil? }.values.each do |it|
       local = ERB.new(it[:local_erb]).result(binding) # relies on config_name
       log "Applying #{local} -> #{it[:actual]}"
@@ -543,10 +551,10 @@ class ConfigHandler
   end
 
   def get_query_string(config, map: nil, side: nil, game_mode: nil, scenario_mode: nil, max_players: nil, mutators: nil, password: nil, scenario: nil)
-    map = config['server_default_map'].dup == 'Random' ? MAPMAP.keys.sample : config['server_default_map'] if map.nil?
-    side = config['server_default_side'].dup == 'Random' ? SIDES.sample : config['server_default_side'] if side.nil?
-    game_mode = config['server_game_mode'].dup == 'Random' ? GAME_MODES.sample : config['server_game_mode'] if game_mode.nil?
-    scenario_mode = config['server_scenario_mode'].dup == 'Random' ? SCENARIO_MODES.sample : config['server_scenario_mode'] if scenario_mode.nil?
+    map = config['server_default_map'] == 'Random' ? MAPMAP.keys.sample : config['server_default_map'].dup if map.nil?
+    side = config['server_default_side'] == 'Random' ? SIDES.sample : config['server_default_side'].dup if side.nil?
+    game_mode = config['server_game_mode'] == 'Random' ? GAME_MODES.sample : config['server_game_mode'].dup if game_mode.nil?
+    scenario_mode = config['server_scenario_mode'] == 'Random' ? SCENARIO_MODES.sample : config['server_scenario_mode'].dup if scenario_mode.nil?
     max_players ||= config['server_max_players'].dup
     password ||= config['server_password'].dup
     query = if scenario.nil?
@@ -569,8 +577,8 @@ class ConfigHandler
   def get_server_arguments(config)
     arguments = []
     map = config['server_default_map'].dup
-    starting_map = MAPMAP.values.include?(map) ? map : MAPMAP[map]
-    starting_map = starting_map == 'Random' || MAPMAP.values.include?(starting_map) ? starting_map : 'Farmhouse'
+    starting_map = map == 'Random' ? MAPMAP.keys.sample : map
+    starting_map = MAPMAP.keys.include?(starting_map) ? starting_map : (MAPMAP.keys.include?(MAPMAP.key(starting_map)) ? MAPMAP.key(starting_map) : 'Farmhouse' )
     mutators = (config['server_mutators'] + config['server_mutators_custom'].split(',')).join(',')
     log "Mutators: #{mutators}", level: :warn
     arguments.push(

@@ -28,13 +28,14 @@
 <% end %>
 
 <% @monitors.values.each do |monitor| %>
-  <% @info = monitor.info rescue nil %>
+  <% @monitor = monitor %>
+  <% @info = @monitor.info rescue nil %>
   <!-- Remote Server List -->
   <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
-    <div class="ml-4 p-2 col-4 badge badge-primary"><%= @info[:a2s_info]['name'] rescue "Unknown Name (#{monitor.name})" %></div>
+    <div class="ml-4 p-2 col-4 badge badge-primary"><%= @info[:a2s_info]['name'] rescue "Unknown Name (#{@monitor.name})" %></div>
     <div class="p-2 col-2 d-flex flex-column" style="font-size: 80%">
-      <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= monitor.query_port %></span></div>
-      <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= monitor.rcon_port %></span></div>
+      <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= @monitor.query_port %></span></div>
+      <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= @monitor.rcon_port %></span></div>
     </div>
     <div class="col"></div>
     <div class="ml-4 p-2 col-1"><span class="monospace-font horizontal-expand text-center badge badge-<%= !@info[:server_down] ? 'success' : 'danger' %>"><%= !@info[:server_down] ? 'ON' : 'OFF' %></span></div>
