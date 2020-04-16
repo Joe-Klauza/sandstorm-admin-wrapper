@@ -571,6 +571,10 @@ class ConfigHandler
   end
 
   def get_mod_travel_string(config, map, scenario, mutators)
+    if MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map)
+      map = nil
+      scenario = nil
+    end
     "-ModDownloadTravelTo=#{get_query_string(config, map: map, mutators: mutators, scenario: scenario)}"
   end
 
@@ -580,7 +584,6 @@ class ConfigHandler
     starting_map = map == 'Random' ? MAPMAP.keys.sample : map
     starting_map = MAPMAP.keys.include?(starting_map) ? starting_map : (MAPMAP.keys.include?(MAPMAP.key(starting_map)) ? MAPMAP.key(starting_map) : 'Farmhouse' )
     mutators = (config['server_mutators'] + config['server_mutators_custom'].split(',')).join(',')
-    log "Mutators: #{mutators}", level: :warn
     arguments.push(
       get_query_string(config, map: starting_map, mutators: mutators),
       "-Hostname=#{config['server_hostname']}",
@@ -600,8 +603,8 @@ class ConfigHandler
     unless mods_txt_content.empty?
       arguments.push("-Mods")
       arguments.push("-CmdModList=\"#{mods_txt_content.split("\n").map {|modId| modId[/^\d+/] }.reject(&:nil?).join(',')}\"")
-      # Start on the modded map if we don't have a known map set
-      arguments.push(get_mod_travel_string(config, starting_map, map, mutators)) unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
+      # Use mod travel string regardless, otherwise mutators don't work on the first map
+      arguments.push(get_mod_travel_string(config, starting_map, map, mutators)) # unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
     end
     if config['server_gslt'].to_s.empty?
       arguments.push("-EnableCheats") if config['server_cheats'].to_s.casecmp('true').zero?
