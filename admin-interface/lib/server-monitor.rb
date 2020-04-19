@@ -115,25 +115,6 @@ class ServerMonitor
     players_gone = prev_rcon_players.reject { |prev| rcon_players.map { |current| current['steam_id'] }.include?(prev['steam_id']) }
     players_joined = rcon_players.reject { |current| prev_rcon_players.map { |prev| prev['steam_id'] }.include?(current['steam_id']) }
 
-    # Welcome joined players
-    players_joined.each do |player|
-      if @daemon_handle
-        is_admin = @daemon_handle.is_sandstorm_admin?(player['steam_id'])
-        message_option = is_admin ? 'admin_join_message' : 'join_message'
-        unless @daemon_handle.config[message_option].empty?
-          Thread.new(message_option) do |message_option|
-            message = @daemon_handle.config[message_option]
-            message = message.gsub('${player_name}', player.dig('steam_info', 'name') || player['name']).gsub('${player_id}', player['steam_id'])
-            sleep @welcome_message_delay # Allow time to select a loadout and see the chat
-            @rcon_client.send(@ip, @rcon_port, @rcon_pass, "say #{message}")
-          end
-        end
-        log "Player joined: #{player['name']} (#{player['steam_id']})#{' (admin)' if is_admin}", level: :info
-      else
-        log "Player joined: #{player['name']} (#{player['steam_id']})", level: :info
-      end
-    end
-
     now = Time.now.to_i
     # Look up players we haven't in the past 24 hours
     if @daemon_handle && (@steam_api_client || !@daemon_handle.steam_api_key.empty?)
@@ -174,6 +155,25 @@ class ServerMonitor
           'economy' => ban_info['EconomyBan'] # String
         }
         matching_player['last_steam_lookup'] = now
+      end
+    end
+
+    # Welcome joined players
+    players_joined.each do |player|
+      if @daemon_handle
+        is_admin = @daemon_handle.is_sandstorm_admin?(player['steam_id'])
+        message_option = is_admin ? 'admin_join_message' : 'join_message'
+        unless @daemon_handle.config[message_option].empty?
+          Thread.new(message_option) do |message_option|
+            message = @daemon_handle.config[message_option]
+            message = message.gsub('${player_name}', player.dig('steam_info', 'name') || player['name']).gsub('${player_id}', player['steam_id'])
+            sleep @welcome_message_delay # Allow time to select a loadout and see the chat
+            @rcon_client.send(@ip, @rcon_port, @rcon_pass, "say #{message}")
+          end
+        end
+        log "Player joined: #{player['name']} (#{player['steam_id']})#{' (admin)' if is_admin}", level: :info
+      else
+        log "Player joined: #{player['name']} (#{player['steam_id']})", level: :info
       end
     end
 
