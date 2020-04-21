@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-end horizontal-expand">
   <div class="d-flex flex-column align-items-start col">
-    <% if is_admin? %>
+    <% if is_admin? && @pid %>
       <div class="justify-content-between horizontal-expand">
         <div class="col-6">PID:</div>
         <div class="col-6"><span id="pid"><%= @pid %></span></div>

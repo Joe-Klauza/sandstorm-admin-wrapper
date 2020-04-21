@@ -28,9 +28,9 @@
         </ul>
       </div>
       <div class="p-2 col-3 d-flex justify-content-end">
-        <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Start</button>
-        <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Restart</button>
-        <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @game_port %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Stop</button>
+        <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Start</button>
+        <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Restart</button>
+        <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Stop</button>
       </div>
     </div>
 
@@ -108,8 +108,11 @@
             <b class="drag-handle ml-2">⮁</b>
             <div class="ml-4 p-2 col-2 horizontal-expand">Server Log</div>
             <div class="col d-flex justify-content-end">
-              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download('/download-server-logs')">Download All Logs</button>
-              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download(`/download-server-logs/${$('#server-config-name').val() || $('#server-config-name').attr('placeholder')}`)">Download Logs</button>
+              <span>Download Logs:<span>
+              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download('/download-server-logs')">All Servers</button>
+              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download(`/download-server-logs/${$('#server-config-name').val() || $('#server-config-name').attr('placeholder')}`)">This Server</button>
+              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download(`/download-server-log/${$('#server-config-name').val() || $('#server-config-name').attr('placeholder')}`)">Current Run</button>
+              <span>|<span>
               <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#server-log').html('');">Clear Log</button>
               <button type="button" class="font-weight-bold btn btn-sm btn-info m-1" onclick="resetLogScroll('#server-log', true);">Tail Log</button>
             </div>

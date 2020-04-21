@@ -1,6 +1,7 @@
 <% at_least_one_server = false %>
 <% at_least_one_server = true unless @daemons.values.empty? && @monitors.empty? %>
-<% @daemons.values.sort_by{ |d| d.config['server_hostname'] }.each do |daemon| %>
+<% @daemons.sort_by{ |_, d| d.config['server_hostname'] }.each do |id, daemon| %>
+  <% @id = id %>
   <% server_running = daemon.server_running? %>
   <% @monitor = daemon.monitor rescue nil %>
   <% @info = @monitor.info rescue nil %>
@@ -27,7 +28,8 @@
   </div>
 <% end %>
 
-<% @monitors.values.each do |monitor| %>
+<% @monitors.each do |id, monitor| %>
+  <% @id = id %>
   <% @monitor = monitor %>
   <% @info = @monitor.info rescue nil %>
   <!-- Remote Server List -->
@@ -37,9 +39,11 @@
       <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= @monitor.query_port %></span></div>
       <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= @monitor.rcon_port %></span></div>
     </div>
-    <div class="col"></div>
+    <div class="p-2 col justify-content-center d-flex flex-column" style="font-size: 75%">
+      <% @pid = nil %>
+      <%= erb :threads %>
+    </div>
     <div class="ml-4 p-2 col-1"><span class="monospace-font horizontal-expand text-center badge badge-<%= !@info[:server_down] ? 'success' : 'danger' %>"><%= !@info[:server_down] ? 'ON' : 'OFF' %></span></div>
-    <div class="p-2 col-2 justify-content-end"></div>
   </div>
   <div class="horizontal-expand">
     <%= erb :'monitoring-details' %>

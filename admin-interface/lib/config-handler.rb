@@ -41,33 +41,33 @@ CONFIG_FILES = {
   game_ini: {
     type: :ini,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Saved', 'Config', (WINDOWS ? 'WindowsServer' : 'LinuxServer'), 'Game.ini'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Game.ini')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Game.ini')%>"
   },
   engine_ini: {
     type: :ini,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Saved', 'Config', (WINDOWS ? 'WindowsServer' : 'LinuxServer'), 'Engine.ini'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Engine.ini')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Engine.ini')%>"
   },
   admins_txt: {
     type: :txt,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Admins.txt'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Admins.txt')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Admins.txt')%>"
   },
   mapcycle_txt: {
     type: :txt,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'MapCycle.txt'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'MapCycle.txt')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'MapCycle.txt')%>"
   },
   mods_txt: {
     type: :txt,
     actual: nil,
     delete: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Mods.txt'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'Mods.txt')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Mods.txt')%>"
   },
   mod_scenarios_txt: {
     type: :txt,
     actual: nil,
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, ConfigHandler.sanitize_directory(config_name), 'ModScenarios.txt')%>"
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'ModScenarios.txt')%>"
   },
   bans_json: {
     type: :json,
@@ -328,7 +328,7 @@ class ConfigHandler
   end
 
   def get_default_config
-    defaults = {}
+    defaults = {'id' => Sysrandom.uuid}
     CONFIG_VARIABLES.each { |k, v| defaults[k] = v['default'] }
     defaults
   end
@@ -354,6 +354,7 @@ class ConfigHandler
   def load_monitor_configs
     @monitor_configs = Oj.load(File.read(MONITOR_CONFIGS_FILE))
     @monitor_configs = {} if @monitor_configs.to_s.empty?
+    @monitor_configs.each { |_, config| config['id'] ||= Sysrandom.uuid }
     @monitor_configs
   rescue Errno::ENOENT
     {}
@@ -365,10 +366,15 @@ class ConfigHandler
   def load_server_configs
     @server_configs = Oj.load(File.read(SERVER_CONFIGS_FILE))
     @server_configs = {'Default' => get_default_config} if @server_configs.nil? || @server_configs.empty?
-    init_server_config_files
     @server_configs.each do |config_name, config|
+      new_id = config['id'].nil?
       server_configs[config_name] = get_default_config.merge(config)
+      if new_id
+        # Migrate old config directories
+        FileUtils.mv File.join(CONFIG_FILES_DIR, config_name), File.join(CONFIG_FILES_DIR, server_configs[config_name]['id']) rescue nil
+      end
     end
+    init_server_config_files
     @server_configs
   rescue Errno::ENOENT
     {'Default' => get_default_config}
@@ -409,12 +415,21 @@ class ConfigHandler
 
   def delete_server_config(config_name)
     log "Deleting server config: #{config_name}"
-    server_configs.delete config_name
-    CONFIG_FILES.values.each do |it|
+    config_id = (server_configs.delete config_name)['id']
+    CONFIG_FILES.reject { |f, _| f == :bans_json }.values.each do |it|
       local = ERB.new(it[:local_erb]).result(binding)
-      FileUtils.rm local rescue nil
+      FileUtils.rm local
+    rescue Errno::ENOENT
+    rescue => e
+      log "Error while trying to delete file (#{local})", e
     end
-    FileUtils.rmdir File.join(CONFIG_FILES_DIR, config_name) rescue nil
+    begin
+      dir = File.join(CONFIG_FILES_DIR, config_id)
+      FileUtils.rmdir dir
+    rescue Errno::ENOENT
+    rescue => e
+      log "Error while trying to delete directory (#{dir})", e
+    end
     write_server_configs
     nil
   end
@@ -444,7 +459,8 @@ class ConfigHandler
 
   def init_server_config_files(config_name=nil)
     configs = config_name.nil? ? @server_configs.keys : [config_name]
-    configs.map {|name| ConfigHandler.sanitize_directory name }.each do |config_name|
+    configs.each do |config_name|
+      config_id = @server_configs[config_name]['id']
       CONFIG_FILES.values.each do |it|
         [ERB.new(it[:local_erb]).result(binding), it[:actual]].each do |path|
           next if path.nil?
@@ -456,28 +472,33 @@ class ConfigHandler
     nil
   end
 
-  def apply_server_config_files(config, config_name)
+  def apply_server_config_files(config, config_id)
     # Apply values in case any in memory aren't in the file
-    apply_game_ini_local config, config_name
-    apply_engine_ini_local config, config_name
+    apply_game_ini_local config, config_id
+    apply_engine_ini_local config, config_id
     apply_server_bans # Ensure we don't overwrite a new ban
 
     # Remove Mods.txt so that the server doesn't use any the user may have manually set outside of SAW
     CONFIG_FILES.reject {|_,i| i[:delete].nil? }.values.each do |it|
       local = ERB.new(it[:delete]).result(binding)
       log "Deleting #{local}"
-      FileUtils.rm local rescue nil
+      FileUtils.rm local
+    rescue Errno::ENOENT
+    rescue => e
+      log "Error while trying to delete file (#{local})", e
     end
 
     CONFIG_FILES.reject {|_,i| i[:actual].nil? }.values.each do |it|
-      local = ERB.new(it[:local_erb]).result(binding) # relies on config_name
+      local = ERB.new(it[:local_erb]).result(binding) # relies on config_id
       log "Applying #{local} -> #{it[:actual]}"
       FileUtils.cp local, it[:actual]
+    rescue => e
+      log "Error while trying to copy file (#{local} -> #{it[:actual]})", e
     end
     nil
   end
 
-  def get_server_config_file_content(config_file, config_name)
+  def get_server_config_file_content(config_file, config_id)
     local = ERB.new(CONFIG_FILES[config_file][:local_erb]).result(binding)
     File.read(local)
   end
@@ -598,7 +619,7 @@ class ConfigHandler
     )
     arguments.push("-ruleset=#{config['server_rule_set']}") unless config['server_rule_set'] == 'None'
     arguments.push("-mutators=#{mutators}") unless mutators.empty?
-    config_name = config['server-config-name']
+    config_id = config['id']
     mods_txt_content = File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip
     unless mods_txt_content.empty?
       arguments.push("-Mods")
@@ -614,11 +635,11 @@ class ConfigHandler
     arguments
   end
 
-  def apply_game_ini_local(config, config_name)
+  def apply_game_ini_local(config, config_id)
     apply_ini(config, ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding))
   end
 
-  def apply_engine_ini_local(config, config_name)
+  def apply_engine_ini_local(config, config_id)
     apply_ini(config, ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding))
   end
 

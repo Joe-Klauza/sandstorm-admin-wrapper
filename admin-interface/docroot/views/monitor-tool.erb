@@ -10,13 +10,14 @@
 
     <div class="d-flex flex-column justify-content-between horizontal-expand bg-light m-1">
       <div class="d-flex justify-content-between horizontal-expand">
+        <span id="monitor-config-id" style="display: none;"><%= @config['id'] %></span>
         <div class="col-7 d-flex justify-content-between bg-secondary m-1 p-2">
           <div class="col-2">Name</div>
-          <div class="col"><input id="name" type="text" class="form-control" placeholder="<%= CGI.escapeHTML @config['server-config-name'] %>"></div>
+          <div class="col"><input id="name" type="text" class="form-control" placeholder="<%= CGI.escapeHTML @name %>"></div>
           <div class="col-2"><button class="btn btn-info" onclick="saveMonitorConfig($('#name').val() || $('#name').attr('placeholder'), $('#ip').val() || $('#ip').attr('placeholder'), $('#query_port').val() || $('#query_port').attr('placeholder'), $('#rcon_port').val() || $('#rcon_port').attr('placeholder'), $('#rcon_password').val() || $('#rcon_password').attr('placeholder'));">Save</button></div>
         </div>
         <div class="d-flex col-2 justify-content-start horizontal-expand bg-secondary m-1 p-2">
-          <button id="start-stop-monitor" type="button" class="btn btn-success btn-block" onclick="toggleMonitor($('#name').val() || $('#name').attr('placeholder'), $('#ip').val() || $('#ip').attr('placeholder'), $('#query_port').val() || $('#query_port').attr('placeholder'), $('#rcon_port').val() || $('#rcon_port').attr('placeholder'), $('#rcon_password').val() || $('#rcon_password').attr('placeholder'));">Start Monitor</button>
+          <button id="start-stop-monitor" type="button" class="btn btn-success btn-block" onclick="toggleMonitor();">Start Monitor</button>
         </div>
         <ul class="nav nav-pills col-3 flex-column bg-secondary m-1 p-2">
           <li class="nav-item dropdown horizontal-expand d-flex justify-content-end">
@@ -41,7 +42,7 @@
         <div class="d-flex col-5 justify-content-start horizontal-expand bg-secondary m-1 p-2">
           <div class="col-5">Query Port</div>
           <div class="col-7">
-            <input id="query_port" type="text" class="form-control" placeholder="<%= @config['server_query_port'] %>">
+            <input id="query_port" type="text" class="form-control" placeholder="<%= @config['query_port'] || @config['server_query_port'] %>">
           </div>
         </div>
 
@@ -61,7 +62,7 @@
         <div class="d-flex col-4  justify-content-start horizontal-expand bg-secondary m-1 p-2">
           <div class="col-4">RCON Port</div>
           <div class="col-8">
-            <input id="rcon_port" type="text" class="form-control" placeholder="<%= @config['server_rcon_port'] %>">
+            <input id="rcon_port" type="text" class="form-control" placeholder="<%= @config['rcon_port'] || @config['server_rcon_port'] %>">
           </div>
         </div>
 
@@ -69,7 +70,7 @@
         <div class="d-flex col-8 justify-content-start horizontal-expand bg-secondary m-1 p-2">
           <div class="col-3">RCON Password</div>
           <div class="col-5">
-            <input id="rcon_password" type="text" class="form-control blur" placeholder="<%= @config['server_rcon_password'] %>">
+            <input id="rcon_password" type="text" class="form-control blur" placeholder="<%= @config['rcon_password'] || @config['server_rcon_password'] %>">
           </div>
           <div class="col-4">
             <button id="rcon_password_revealer" type="button" class="btn btn-success horizontal-expand mr-4" onclick="revealHide('#rcon_password', '#rcon_password_revealer');">Reveal</button>
@@ -89,9 +90,9 @@
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="$('#rcon_input').val('');">Clear</button>
           <button type="button" class="btn btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  '/rcon', 1000, {'command': $('#rcon_input').val() || $('#rcon_input').attr('placeholder'),
-                 'host': $('#ip').val() || $('#ip').attr('placeholder'),
-                 'port': $('#rcon_port').val() || $('#rcon_port').attr('placeholder'),
-                 'pass': $('#rcon_password').val() || $('#rcon_password').attr('placeholder')});}">Send</button>
+                  'host': $('#ip').val() || $('#ip').attr('placeholder'),
+                  'port': $('#rcon_port').val() || $('#rcon_port').attr('placeholder'),
+                  'pass': $('#rcon_password').val() || $('#rcon_password').attr('placeholder')});}">Send</button>
         </div>
       </div>
     </div>

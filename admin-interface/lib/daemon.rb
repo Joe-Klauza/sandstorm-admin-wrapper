@@ -201,8 +201,8 @@ class SandstormServerDaemon
   def run_game_server
     log "Applying config"
     @frozen_config = @config.dup
-    $config_handler.apply_server_config_files @frozen_config, @frozen_config['server-config-name']
-    @admin_ids = $config_handler.get_server_config_file_content(:admins_txt, @frozen_config['server-config-name']).split("\n").map { |l| l[/\d{17}/] }.compact
+    $config_handler.apply_server_config_files @frozen_config, @frozen_config['id']
+    @admin_ids = $config_handler.get_server_config_file_content(:admins_txt, @frozen_config['id']).split("\n").map { |l| l[/\d{17}/] }.compact
     executable = BINARY
     arguments = $config_handler.get_server_arguments(@frozen_config)
     @active_game_port = @frozen_config['server_game_port']

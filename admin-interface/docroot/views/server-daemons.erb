@@ -3,7 +3,7 @@
     <h3 class="py-2">Server Daemons</h3>
   </div>
   <div class="d-flex flex-column horizontal-expand justify-content-between">
-    <% @daemons.sort_by {|_, daemon| daemon.config['server-config-name'] }.each do |key, daemon| %>
+    <% @daemons.sort_by {|_, daemon| daemon.config['server-config-name'] }.each do |id, daemon| %>
       <% server_running = daemon.server_running? %>
       <% monitor = daemon.monitor rescue nil %>
       <% @info = monitor.info rescue nil%>
@@ -12,8 +12,8 @@
       <% threads = (WINDOWS ? process.thread_count : process.nlwp) if process %>
       <% @threads = threads || 0 %>
       <div class="horizontal-expand d-flex justify-content-start py-2">
-        <div class="col"><%= "#{daemon.config['server-config-name']} (#{@info.dig(:a2s_info, 'name')})" %></div>
-        <div class="p-2 col-2 d-flex flex-column" style="font-size: 80%">
+        <div class="col"><%= "#{daemon.config['server-config-name']} | #{ @info.nil? || @info.dig(:a2s_info, 'name').to_s.empty? ? daemon.config['server_hostname'] : @info.dig(:a2s_info, 'name')}" %></div>
+        <div class="p-2 col-1 d-flex flex-column" style="font-size: 80%">
           <div style="white-space: pre;">Game Port: <span id="game-port"><%= daemon.active_game_port %></span></div>
           <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= daemon.active_query_port %></span></div>
           <div style="white-space: pre;">RCON Port: <span id="rcon-port"><%= daemon.active_rcon_port %></span></div>
@@ -22,7 +22,7 @@
           <%= erb :threads %>
         </div>
         <div class="ml-4 p-2 col-1"><span class="monospace-font horizontal-expand text-center badge badge-<%= server_running ? 'success' : 'danger' %>"><%= server_running ? 'ON' : 'OFF' %></span></div>
-        <button class="col-1 btn btn-danger" onclick="serverControl('delete', '<%= daemon.active_game_port %>'); setTimeout(()=>{window.location.href = '/server-daemons';}, 500);" style="padding: 0 0">Delete</button>
+        <button class="col-1 btn btn-danger" onclick="serverControl('delete', '<%= id %>'); setTimeout(()=>{window.location.href = '/server-daemons';}, 500);" style="padding: 0 0">Delete</button>
       </div>
     <% end %>
   </div>

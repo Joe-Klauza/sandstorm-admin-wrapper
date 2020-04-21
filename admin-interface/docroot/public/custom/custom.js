@@ -133,15 +133,21 @@ function deleteMonitorConfig(name) {
 }
 
 function loadMonitorConfig(name) {
-  $.get(`/monitor-config?name=${encodeURIComponent(name)}`, function(data) {
+  $.get(`/monitor-config/${encodeURIComponent(name)}`, function(data) {
     data = JSON.parse(data);
-    $('#name').val(name);
-    $('#ip').val(data['ip']);
-    $('#query_port').val(data['query_port']);
-    $('#rcon_port').val(data['rcon_port']);
-    $('#rcon_password').val(data['rcon_password']);
-    $('#server-monitor').html('');
-    monitorButtonStart();
+    $('#monitor-config-id').html(data['id']);
+    $('#name').val(''); $('#name').attr('placeholder', data['name']);
+    $('#ip').val(''); $('#ip').attr('placeholder', data['ip']);
+    $('#query_port').val(''); $('#query_port').attr('placeholder', data['query_port']);
+    $('#rcon_port').val(''); $('#rcon_port').attr('placeholder', data['rcon_port']);
+    $('#rcon_password').val(''); $('#rcon_password').attr('placeholder', data['rcon_password']);
+    clearInterval(updateMonitoringDetailsInterval);
+    $('#monitoring-details').html('');
+    if (data.running) {
+      startMonitoringDetailsInterval(data['id']);
+    } else {
+      monitorButtonStart();
+    }
   });
 }
 
@@ -157,11 +163,11 @@ function monitorButtonStop() {
   $('#start-stop-monitor').addClass('btn-warning');
 }
 
-function startMonitoringDetailsInterval(ip, rcon_port, element) {
+function startMonitoringDetailsInterval(id, element) {
   clearInterval(updateMonitoringDetailsInterval);
-  setTimeout(() => { updateMonitoringDetails(ip, rcon_port, element); }, 750);
-  updateMonitoringDetailsInterval = setInterval(() => { updateMonitoringDetails(ip, rcon_port, element); }, 2000);
-  startRemoteRconTail(ip, rcon_port);
+  setTimeout(() => { updateMonitoringDetails(id, element); }, 750);
+  updateMonitoringDetailsInterval = setInterval(() => { updateMonitoringDetails(id, element); }, 2000);
+  startRemoteRconTail(id);
 }
 
 function loadActiveMonitors(element) {
@@ -175,54 +181,53 @@ function loadMonitorConfigs(element) {
   $.get('/monitor-configs', function(data) { $(element).html(data); });
 }
 
-function toggleMonitor(name, ip, query_port, rcon_port, rcon_password) {
+function toggleMonitor(id) {
+  id = id || $('#monitor-config-id').html()
   if ($('#start-stop-monitor').html() === 'Start Monitor') {
-    startMonitor(name, ip, query_port, rcon_port, rcon_password);
+    startMonitor(id);
   } else {
-    stopMonitor(ip, rcon_port);
+    stopMonitor(id);
   }
 }
 
-function updateMonitoringDetails(ip, rcon_port, element) {
+function updateMonitoringDetails(id, element) {
   if (typeof element === 'undefined') {
     element = '#monitoring-details'
   }
-  $.get(`/monitoring-details/${ip}/${rcon_port}`, function(data){ $(element).html(data); });
+  $.get(`/monitoring-details/${id}`, function(data){ $(element).html(data); });
 }
 
-function startRemoteRconTail(ip, rcon_port) {
+function startRemoteRconTail(id) {
   tailBufferStopUuids = tailBufferUuids
   tailBufferUuids = []
-  $.get(`/monitor/${ip}/${rcon_port}`, (rcon_buffer_uuid)=>{ tailBufferUuids.push(rcon_buffer_uuid); tailBuffer('#rcon-log', 1000, rcon_buffer_uuid); });
+  $.get(`/monitor/${id}`, (rcon_buffer_uuid)=>{ tailBufferUuids.push(rcon_buffer_uuid); tailBuffer('#rcon-log', 1000, rcon_buffer_uuid); });
 }
 
-function startMonitor(name, ip, query_port, rcon_port, rcon_password) {
+function startMonitor(id) {
   $.ajax({
-    url: '/monitor/start',
+    url: `/monitor/${id}/start`,
     type: 'POST',
     contentType: "application/json",
-    data: JSON.stringify({config: {name: name, ip: ip, query_port: query_port, rcon_port: rcon_port, rcon_password: rcon_password}}),
     success: function(message) {
       successToast(message);
       monitorButtonStop();
-      startMonitoringDetailsInterval(ip, rcon_port);
+      startMonitoringDetailsInterval(id);
       loadActiveMonitors();
     },
     error: function(request,msg,error) {
       failureToast(request.responseText);
       monitorButtonStop();
-      startMonitoringDetailsInterval(ip, rcon_port);
+      startMonitoringDetailsInterval(id);
       loadActiveMonitors();
     }
   });
 }
 
-function stopMonitor(ip, rcon_port) {
+function stopMonitor(id) {
   $.ajax({
-    url: '/monitor/stop',
+    url: `/monitor/${id}/stop`,
     type: 'POST',
     contentType: "application/json",
-    data: JSON.stringify({config: {ip: ip, rcon_port: rcon_port}}),
     success: function(message) {
       successToast(message);
       monitorButtonStart();
@@ -246,8 +251,20 @@ function saveMonitorConfig(name, ip, query_port, rcon_port, rcon_password) {
     type: 'POST',
     contentType: "application/json",
     data: JSON.stringify({config: {ip: ip, query_port: query_port, rcon_port: rcon_port, rcon_password: rcon_password}}),
-    success: function(message) {
-      successToast(message);
+    success: function(data) {
+      data = JSON.parse(data);
+      if (data['id'] !== $('#monitor-config-id').html()) {
+        // New monitor saved; make sure button allows start
+        monitorButtonStart();
+        $('#monitoring-details').html('');
+      }
+      $('#monitor-config-id').html(data['id']);
+      $('#name').val(''); $('#name').attr('placeholder', data['name']);
+      $('#ip').val(''); $('#ip').attr('placeholder', data['ip']);
+      $('#query_port').val(''); $('#query_port').attr('placeholder', data['query_port']);
+      $('#rcon_port').val(''); $('#rcon_port').attr('placeholder', data['rcon_port']);
+      $('#rcon_password').val(''); $('#rcon_password').attr('placeholder', data['rcon_password']);
+      successToast(data['message']);
       loadMonitorConfigs('#server-monitor-configs');
     },
     error: function(request,msg,error) {
@@ -269,8 +286,8 @@ function loadActiveServers(element) {
   });
 }
 
-function loadActiveServerConfig(game_port) {
-  $.get(`/daemon/${game_port}`, (data) => {
+function loadActiveServerConfig(config_id) {
+  $.get(`/daemon/${config_id}`, (data) => {
     if ($('#server-status').length) {
       window.location.href = '/control';
       return;
@@ -335,7 +352,7 @@ function saveServerConfig() {
   name = filterConfigName(name);
   writeConfigFiles(name);
   $.ajax({
-    url: `/server-config/${encodeURIComponent(name)}`,
+    url: `/server-config`,
     type: 'POST',
     contentType: "application/json",
     data: JSON.stringify(config),
@@ -492,15 +509,15 @@ function updateServerUpdateInfo() {
   });
 }
 
-function startServerChatTail(element, game_port, interval) {
+function startServerChatTail(element, config_id, interval) {
   if (!server_chat_log_active) {
     server_chat_log_active = true;
-     $.ajax({
-      url: `/get-buffer/${game_port}/chat`,
+    $.ajax({
+      url: `/get-buffer/${config_id}/chat`,
       type: 'GET',
       success: (buffer_uuid)=>{ chat_log_uuid = buffer_uuid; setTimeout(()=>{ tailBuffer(element, interval, buffer_uuid) }, 0);},
       error: function(request,msg,error) {
-        console.log(`Failed to start chat log for port ${game_port}.`);
+        console.log(`Failed to start chat log for config ID ${config_id}.`);
         server_chat_log_active = false;
       }
     });
@@ -509,15 +526,15 @@ function startServerChatTail(element, game_port, interval) {
   }
 }
 
-function startServerLogTail(element, game_port, interval) {
+function startServerLogTail(element, config_id, interval) {
   if (!server_log_active) {
     server_log_active = true;
-     $.ajax({
-      url: `/get-buffer/${game_port}/server`,
+    $.ajax({
+      url: `/get-buffer/${config_id}/server`,
       type: 'GET',
       success: (buffer_uuid)=>{ server_log_uuid = buffer_uuid; setTimeout(()=>{ tailBuffer(element, interval, buffer_uuid) }, 0);},
       error: function(request,msg,error) {
-        console.log(`Failed to start server log for port ${game_port}.`);
+        console.log(`Failed to start server log for config ID ${config_id}.`);
         server_log_active = false;
       }
     });
@@ -526,15 +543,15 @@ function startServerLogTail(element, game_port, interval) {
   }
 }
 
-function startServerRconTail(element, game_port, interval) {
+function startServerRconTail(element, config_id, interval) {
   if (!server_rcon_log_active) {
     server_rcon_log_active = true;
-     $.ajax({
-      url: `/get-buffer/${game_port}/rcon`,
+    $.ajax({
+      url: `/get-buffer/${config_id}/rcon`,
       type: 'GET',
       success: (buffer_uuid)=>{ rcon_log_uuid = buffer_uuid; setTimeout(()=>{ tailBuffer(element, interval, buffer_uuid) }, 0);},
       error: function(request,msg,error) {
-        console.log(`Failed to start rcon log for port ${game_port}.`);
+        console.log(`Failed to start rcon log for config ID ${config_id}.`);
         server_rcon_log_active = false;
       }
     });
@@ -556,9 +573,9 @@ function updateServerList(element) {
   });
 }
 
-function updatePlayers(game_port, element) {
+function updatePlayers(id, element) {
  $.ajax({
-    url: `/players/${game_port}`,
+    url: `/players/${id}`,
     type: 'GET',
     success: function(data) {
       $(element || '#players').html(data);
@@ -569,9 +586,9 @@ function updatePlayers(game_port, element) {
   });
 }
 
-function updateThreads(game_port, element) {
+function updateThreads(id, element) {
  $.ajax({
-    url: `/threads/${game_port}`,
+    url: `/threads/${id}`,
     type: 'GET',
     success: function(data) {
       $(element || '#threads').html(data);
@@ -597,21 +614,20 @@ function reloadControlStatus() {
 
 function updateServerControlStatus() {
   reloadControlStatus();
-  game_port = $('#game-port').html();
-  rcon_port = $('#rcon-port').html();
-  if ($('#server-status').html() == 'ON') {
+  id = $('#config-id').html();
+  if (id && $('#server-status').html() == 'ON') {
     if (!server_chat_log_active && $('#chat-log').length) {
-      setTimeout(()=>{startServerChatTail('#chat-log', game_port, server_log_tail_interval);}, 0);
+      setTimeout(()=>{startServerChatTail('#chat-log', id, server_log_tail_interval);}, 0);
     }
     if (!server_log_active && $('#server-log').length) {
-      setTimeout(()=>{startServerLogTail('#server-log', game_port, server_log_tail_interval);}, 0);
+      setTimeout(()=>{startServerLogTail('#server-log', id, server_log_tail_interval);}, 0);
     }
     if (!server_rcon_log_active && $('#rcon-log').length) {
-      setTimeout(()=>{startServerRconTail('#rcon-log', game_port, server_log_tail_interval);}, 0);
+      setTimeout(()=>{startServerRconTail('#rcon-log', id, server_log_tail_interval);}, 0);
     }
   }
   setTimeout(()=>{updateServerControlStatus();}, 1000);
-  setTimeout(()=>{updateMonitoringDetails('127.0.0.1', rcon_port);}, 1000);
+  setTimeout(()=>{updateMonitoringDetails(id);}, 1000);
 }
 
 function addLogLines(target, lines) {
@@ -861,11 +877,10 @@ function getConfigFileContent(config_name, identifier) {
   });
 }
 
-function serverControl(action, game_port, config_name) {
+function serverControl(action, config_id) {
   $.ajax({
-      url: `/control/server/${encodeURIComponent(action)}`,
+      url: `/control/server/${encodeURIComponent(action)}/${encodeURIComponent(config_id)}`,
       type: 'POST',
-      data: JSON.stringify({config_name: config_name, game_port: game_port}),
       success: function(response) {
         successToast(response);
       },
@@ -1008,14 +1023,14 @@ function tailBuffer(logElement, interval, uuid, bookmark) {
   });
 }
 
-function playerBan(ip, port, steam_id, reason, log_element) {
+function playerBan(id, steam_id, reason, log_element) {
   if (typeof log_element === 'undefined') {
     log_element = '#rcon-log'
   }
   $.ajax({
     url: `/moderator/ban/${steam_id}`,
     contentType: "application/json",
-    data: JSON.stringify({reason: reason, ip: ip, port: port}),
+    data: JSON.stringify({reason: reason, id: id}),
     type: 'POST',
     success: function(response) {
       successToast(`Banning ${steam_id}`);
@@ -1027,14 +1042,14 @@ function playerBan(ip, port, steam_id, reason, log_element) {
   });
 }
 
-function playerKick(ip, port, steam_id, reason, log_element) {
+function playerKick(id, steam_id, reason, log_element) {
   if (typeof log_element === 'undefined') {
     log_element = '#rcon-log'
   }
   $.ajax({
     url: `/moderator/kick/${steam_id}`,
     contentType: "application/json",
-    data: JSON.stringify({reason: reason, ip: ip, port: port}),
+    data: JSON.stringify({reason: reason, id: id}),
     type: 'POST',
     success: function(response) {
       successToast(`Kicking ${steam_id}`);

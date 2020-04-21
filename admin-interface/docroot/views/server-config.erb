@@ -19,8 +19,12 @@
           </li>
         </ul>
       </div>
-      <div class="p-2 col-4 justify-content-end">
-        <div class="d-flex justify-content-end">
+      <div class="p-2 col-4 justify-content-between">
+        <div class="p-2 col-2">
+          <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server-config-name');">Fill</button>
+          <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server-config-name');">Copy</button>
+        </div>
+        <div class="d-flex col justify-content-end">
           <button type="button" class="btn btn-info m-1 ml-4" onclick="saveServerConfig();">Save All</button>
         </div>
       </div>
