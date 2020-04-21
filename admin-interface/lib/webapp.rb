@@ -735,6 +735,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @id = @config['id']
     daemon = @@daemons[@id]
     if daemon
+      @config = daemon.frozen_config
       log "/control working with daemon ID #{daemon.config['id']}"
     else
       log "/control Failed to get running daemon for config with id #{@config['id']}"
@@ -793,6 +794,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @id = @config['id']
     daemon = @@daemons[@id]
     if daemon
+      @config = daemon.frozen_config
       log "/server-control-status working with daemon ID #{daemon.config['id']}"
     else
       log "/server-control-status Failed to get running daemon for config with id #{@id}"
@@ -1008,18 +1010,18 @@ class SandstormAdminWrapperSite < Sinatra::Base
         else
           params['value']
         end
-        config_id = params['id']
+        config_name = params['config']
         config = $config_handler.server_configs[config_name] rescue nil
         if config.nil?
           status 404
-          return "Unable to find config with ID #{config_id}"
+          return "Unable to find config with name #{config_name}"
         end
         status, msg, current, old = $config_handler.set config['server-config-name'], params['variable'], value
         if status
-          daemon = @@daemons[config_id]
+          daemon = @@daemons.select { |id, _| id == config['id'] }.first.last rescue nil
           if daemon
             daemon.config.merge!($config_handler.server_configs[config_name]) # Merge the current config for next restart
-            log "Merged config to active daemon for config ID #{config_id}"
+            log "Merged config to active daemon for config ID #{daemon.config['id']}"
           end
           "Changed #{params['variable']}: #{old} => #{current}"
         else

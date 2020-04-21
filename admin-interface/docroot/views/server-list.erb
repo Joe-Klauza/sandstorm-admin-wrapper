@@ -8,7 +8,7 @@
 
   <!-- Server List -->
   <div class="d-flex justify-content-start horizontal-expand bg-light m-1">
-    <div class="ml-4 p-2 col-4 badge badge-primary"><%= daemon.config['server_hostname'] %></div>
+    <div class="ml-4 p-2 col-4 badge badge-primary"><%= daemon.frozen_config['server_hostname'] %></div>
     <div class="p-2 col-2 d-flex flex-column" style="font-size: 80%">
       <div style="white-space: pre;">Game Port: <span id="game-port"><%= daemon.active_game_port %></span></div>
       <div style="white-space: pre;">Query Port: <span id="rcon-port"><%= daemon.active_query_port %></span></div>
