@@ -21,7 +21,16 @@
       <% @threads = threads || 0 %>
       <%= erb :threads %>
     </div>
-    <div class="ml-4 p-2 col-1"><span class="monospace-font horizontal-expand text-center badge badge-<%= server_running ? 'success' : 'danger' %>"><%= server_running ? 'ON' : 'OFF' %></span></div>
+    <div class="ml-4 p-2 col-1 d-flex flex-column">
+      <div class="monospace-font horizontal-expand text-center badge badge-<%= server_running ? 'success' : 'danger' %>"><%= server_running ? 'ON' : 'OFF' %></div>
+      <% if is_admin? %>
+        <div class="horizontal-expand">
+          <button type="button" class="m-1 monospace-font horizontal-expand text-center badge btn-success" data-toggle="tooltip" data-placement="bottom" title="" data-html="true" data-original-title="Start" onclick="serverControl('start', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">▶</button>
+          <button type="button" class="m-1 monospace-font horizontal-expand text-center badge btn-warning" data-toggle="tooltip" data-placement="bottom" title="" data-html="true" data-original-title="Restart" onclick="serverControl('restart', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">⭮</button>
+          <button type="button" class="m-1 monospace-font horizontal-expand text-center badge btn-danger" data-toggle="tooltip" data-placement="bottom" title="" data-html="true" data-original-title="Stop" onclick="serverControl('stop', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">■</button>
+        </div>
+      <% end %>
+  </div>
   </div>
   <div class="horizontal-expand">
     <%= erb :'monitoring-details' %>

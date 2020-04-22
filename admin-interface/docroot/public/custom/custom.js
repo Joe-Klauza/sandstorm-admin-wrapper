@@ -448,7 +448,7 @@ function restartWrapper() {
     type: 'POST',
     success: function() {
       successToast("Wrapper is restarting.");
-      setTimeout(()=>{ window.location.href = '/wrapper-config'; }, 2000);
+      setTimeout(()=>{ location.reload(true); }, 3000);
     },
     error: function(request,msg,error) {
       failureToast(request.responseText);
