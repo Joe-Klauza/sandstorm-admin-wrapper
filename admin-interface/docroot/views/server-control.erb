@@ -45,7 +45,7 @@
         <div class="ml-4 p-2 col-2">Server RCON</div>
         <input id="rcon_input" type="text" class="form-control horizontal-expand m-1" placeholder="listplayers">
         <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#rcon_input').val('');">Clear</button>
-          <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon`, 1000, {game_port: '<%= @game_port %>', command: $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
+          <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon/<%= @id %>`, 1000, {command: $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
       </div>
     </div>
 

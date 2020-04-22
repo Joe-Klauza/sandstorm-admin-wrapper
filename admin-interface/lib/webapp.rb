@@ -886,13 +886,13 @@ class SandstormAdminWrapperSite < Sinatra::Base
   post '/control/server/:action(/:id)?', auth: :admin do
     id = params['id']
     action = params['action']
-    daemon = @@daemons[id]
     body = request.body.read
     request.body.rewind
     options = Oj.load body, symbol_keys: true
+    daemon = @@daemons[id]
     if daemon.nil? && !['install', 'update', 'start'].include?(action)
       status 400
-      return "Could not find daemon for game port #{options[:game_port]}"
+      return "Could not find an active daemon for ID #{id}!"
     end
     validate = params['validate'].to_s == "true"
     case action
@@ -941,7 +941,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
           steam_id = options[:command][/\d{17}/]
           $config_handler.unban_master(steam_id) if steam_id
         end
-        Thread.new { daemon.do_send_rcon(options[:command], host: options[:host], port: options[:port], pass: options[:pass], buffer: daemon.rcon_buffer, outcome_buffer: buffer) }
+        Thread.new { daemon.do_send_rcon(options[:command], host: options[:host] || '127.0.0.1', port: options[:port], pass: options[:pass], buffer: daemon.rcon_buffer, outcome_buffer: buffer) }
         uuid
       rescue => e
         log "Error while sending RCON", e
