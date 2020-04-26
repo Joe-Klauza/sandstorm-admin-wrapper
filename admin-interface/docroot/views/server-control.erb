@@ -74,7 +74,7 @@
             <div class="p-2 col-2 justify-content-end">
               <div class="d-flex justify-content-between">
                 <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#chat_input').val('');">Clear</button>
-                <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#chat_input').val() || $('#chat_input').attr('placeholder')) { tailProcess('#chat-log',  `/control/server/chat`, 1000, {game_port: '<%= @game_port %>', command: `${$('#chat_input').val() || $('#chat_input').attr('placeholder')}`}); }">Send</button>
+                <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#chat_input').val() || $('#chat_input').attr('placeholder')) { tailProcess('#chat-log',  `/control/server/chat/<%= @id %>`, 1000, {command: `${$('#chat_input').val() || $('#chat_input').attr('placeholder')}`}); }">Send</button>
               </div>
             </div>
             <div class="p-2 col-2 justify-content-end">
