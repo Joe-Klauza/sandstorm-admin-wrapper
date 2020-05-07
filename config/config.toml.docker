@@ -1,0 +1,7 @@
+admin_interface_bind_ip         = "0.0.0.0"
+admin_interface_bind_port       = "51422"
+admin_interface_use_ssl         = false
+admin_interface_verify_ssl      = false
+admin_interface_ssl_cert        = "/etc/letsencrypt/live/your-domain.com/fullchain.pem"
+admin_interface_ssl_key         = "/etc/letsencrypt/live/your-domain.com/privkey.pem"
+admin_interface_session_secret  = ""
