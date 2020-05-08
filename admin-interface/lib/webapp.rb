@@ -716,7 +716,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
       status 400
       return "Unknown config"
     end
-    # $config_handler.init_server_config_files config_name
+    $config_handler.init_server_config_files config_name
     config_id = @config['id']
     @game_ini = File.read ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding)
     @engine_ini = File.read ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding)
