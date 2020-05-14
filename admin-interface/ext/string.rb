@@ -36,7 +36,7 @@ class String
   end
 
   def utf8
-    s = force_encoding('UTF-8')
+    s = encode("UTF-16be", :invalid=>:replace, :replace=>"?").encode('UTF-8') #force_encoding('UTF-8')
     s.strip # Don't strip; test that it can be stripped (else we fall back to encode())
     s
   rescue => e

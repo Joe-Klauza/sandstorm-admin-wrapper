@@ -38,7 +38,7 @@ class SubprocessRunner
     [stdout, stderr].reject(&:nil?).each do |stream|
       Thread.new do
         loop do
-          output = stream.gets
+          output = stream.gets.utf8
           break if output.nil?
           formatted_output = if formatter
               formatter.call(output, origin)
