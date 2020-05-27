@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'socket'
+require_relative 'logger'
 
 # https://developer.valvesoftware.com/wiki/Server_queries
 # https://apidock.com/ruby/Array/pack
@@ -140,4 +141,13 @@ class ServerQuery
     log "[#{server_ip}:#{server_port}] Rescued error while querying rules: #{resp.inspect}", e, level: :warn
     raise
   end
+end
+
+if __FILE__ == $0
+  require 'pp'
+  # Parse ip/port from args. Allows 'ip:port' or 'ip' 'port'
+  ip, port = ARGV[1].nil? ? ARGV[0].split(':') : [ARGV[0], ARGV[1]]
+  pp ServerQuery::a2s_info(ip, port)
+  pp ServerQuery::a2s_rules(ip, port)
+  pp ServerQuery::a2s_player(ip, port)
 end

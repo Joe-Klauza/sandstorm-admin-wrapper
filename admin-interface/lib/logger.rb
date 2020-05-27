@@ -6,6 +6,7 @@ Dir.mkdir 'log' unless Dir.exist? 'log'
 LOG_FILE = File.join('log', 'sandstorm-admin-wrapper.log')
 SEVERITY_JUSTIFY = Logger::Severity.constants.map(&:length).max # [:DEBUG, :INFO, :WARN, :ERROR, :FATAL, :UNKNOWN]
 DATETIME_FORMAT = "%Y/%m/%d %H:%M:%S.%L %z"
+USER_HOME ||= ENV['HOME']
 $caller_justification = 25
 
 class MultiTargetLogger
@@ -88,4 +89,3 @@ def log(message, exception=nil, level: nil)
   level ||= :debug
   LOGGER.log level, message
 end
-
