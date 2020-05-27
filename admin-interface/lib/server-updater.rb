@@ -45,14 +45,28 @@ class ServerUpdater
       '+app_info_print 581330',
       '+exit'
     )
-    found_text = stdout[/branches(.*\n){5}/]
-    return nil if found_text.nil?
-    build_id = found_text.split("\n").last[/\d+/] # public buildid is several lines after "branches"; seems to always be at the top of branches.
+    # Convert SteamCMD output to JSON for better traversal
+    output = stdout[stdout.index('"581330"')..stdout.index(/^\}$/)]
+    # Strip irrelevant characters, add colon separators for JSON
+    lines = output.gsub("\t", '').gsub('""', '":"').gsub(/"(\s*)\{/, '":\1{').split("\n")
+    # Add comma unless next line is an object start/end
+    converted = lines.each_with_index.map do |line, index|
+      # Don't add a comma to any line containing { or when {/} is on the following line
+      (line[/[{]/] || lines[index + 1].nil? || lines[index + 1][/[{}]/]) ? line : "#{line},"
+    end.join("\n")
+    json = JSON.parse "{#{converted}}"
+    build_id = json.dig('581330', 'depots', 'branches', 'public', 'buildid')
+    if build_id.nil?
+      log "Unable to get build ID fron converted JSON. See log file for debug information.", level: :warn
+      log "SteamCMD STDOUT: #{stdout}\nSteamCMD STDERR: #{stderr}"
+      log "Converted JSON: #{json}"
+      return nil
+    end
     log "Got latest build ID: #{build_id}"
     @available_build_id = build_id
   rescue => e
-    log "Rescued error while getting latest build ID", e
-    log "SteamCMD STDOUT: #{stdout}\nSteamCMD STDERR: #{stderr}", level: :error
+    log "Rescued error while getting latest build ID. See log file for SteamCMD output", e
+    log "SteamCMD STDOUT: #{stdout}\nSteamCMD STDERR: #{stderr}"
     nil
   ensure
     restore_app_cache
