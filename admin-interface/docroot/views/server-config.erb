@@ -316,6 +316,25 @@
       </div>
     </div>
 
+    <!-- Default Lighting -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-3">Default Lighting</div>
+      <div class="p-2 col"></div>
+      <div class="p-2 col-3 justify-content-start">
+          <div class="custom-control custom-switch p-2 ml-5">
+            <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="server_lighting_day" <%= 'checked' if @config['server_lighting_day'].to_s.casecmp('true').zero? %>>
+            <label id="server_lighting_day_label" class="custom-control-label" for="server_lighting_day"> <%= @config['server_lighting_day'].to_s.casecmp('true').zero? ? 'Day' : 'Night'  %></label>
+          </div>
+      </div>
+      <div class="p-2 col-2 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_lighting_day', !$('#server_lighting_day')[0].checked); toggleChecked('#server_lighting_day');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_lighting_day', $('#server_lighting_day')[0].checked);">Save</button>
+        </div>
+      </div>
+    </div>
+
+
     <!-- Scenario Mode -->
     <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-2">Scenario Mode</div>
@@ -461,6 +480,42 @@
         <div class="d-flex flex-column p-2 col-1 ml-1 justify-content-end">
           <button id="config_file_revealer" type="button" class="btn btn-success horizontal-expand mr-4 m-1" onclick="revealHide('#config-files-tab-content', '#config_file_revealer');">Reveal</button>
           <button type="button" class="btn btn-info horizontal-expand mr-4 m-1" onclick="writeConfigFile($('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Travel Arguments -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-2 justify-content-between"><div>Custom Travel Arguments</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Set this to use additional travel arguments (?Key=val) unsupported by SAW. Args delimited by unquoted spaces." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="server_custom_travel_args" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_custom_travel_args'] %>">
+      </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_custom_travel_args');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_custom_travel_args');">Copy</button>
+      </div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_custom_travel_args');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_custom_travel_args', $('#server_custom_travel_args').val());">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Server Arguments -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-2 justify-content-between"><div>Custom Server Arguments</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Set this to use additional server arguments (-Key=val) unsupported by SAW. Args delimited by unquoted spaces." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col">
+        <input id="server_custom_server_args" type="text" class="form-control server-config-text-input" placeholder="<%= @config['server_custom_server_args'] %>">
+      </div>
+      <div class="p-2 col-1">
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="fillFromPlaceholder('#server_custom_server_args');">Fill</button>
+        <button type="button" class="btn btn-sm btn-outline-info horizontal-expand mx-1" onclick="copyToClipboard('#server_custom_server_args');">Copy</button>
+      </div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_custom_server_args');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_custom_server_args', $('#server_custom_server_args').val());">Save</button>
         </div>
       </div>
     </div>

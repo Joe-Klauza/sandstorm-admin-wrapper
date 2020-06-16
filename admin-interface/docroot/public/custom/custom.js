@@ -104,6 +104,10 @@ $(document).ready(function() {
     'input': $.debounce(100, setConfigChangeBorderColor),
     'change': $.debounce(100, setConfigChangeBorderColor)
   }, $(".server-config-text-input"));
+
+  $("#server_lighting_day").change(function () {
+      $('#server_lighting_day_label').text($('#server_lighting_day').is(':checked') ? 'Day' : 'Night');
+  });
 });
 
 function setConfigChangeBorderColor(event) {
@@ -303,7 +307,7 @@ function loadServerConfig(name) {
     }
     config = JSON.parse(data);
     $.each(config, (key, val) => {
-      console.log(`${key} => ${val}`);
+      // console.log(`${key} => ${val} (${typeof val})`);
       if (key === 'server_mutators')
       {
         $('.server-config-mutator-input').each((i, el) => { el.checked = false });
@@ -320,7 +324,9 @@ function loadServerConfig(name) {
           element.attr('previous', '');
           element.val('');
         } else if (element.hasClass('server-config-checkbox-input')) {
-          element[0].checked = val
+          if (element[0].checked.toString() !== val.toString()) { // Handle boolean and string
+            element[0].click();
+          }
         } else {
           console.log("Unhandled loadServerConfig type: " + key);
         }

@@ -77,6 +77,7 @@ CONFIG_FILES = {
 }
 
 MAPMAP = {
+  'Buhriz'     => 'Tideway',
   'Canyon'     => 'Crossing',
   'Compound'   => 'Outskirts',
   'Farmhouse'  => 'Farmhouse',
@@ -176,6 +177,10 @@ class ConfigHandler
       'random' => false,
       'validation' => Proc.new { true },
       'type' => :map
+    },
+    'server_lighting_day' => {
+      'default' => 'true',
+      'validation' => Proc.new { |val| ['true', 'false'].include? val }
     },
     'server_default_side' => {
       'default' => SIDES.sample,
@@ -285,6 +290,14 @@ class ConfigHandler
       'type' => :argument,
       'validation' => Proc.new { |token| token =~ /\A[ABCDEF0-9]+\Z/ || token.empty? },
       'sensitive' => true
+    },
+    'server_custom_server_args' => {
+      'default' => '',
+      'validation' => Proc.new { true }
+    },
+    'server_custom_travel_args' => {
+      'default' => '',
+      'validation' => Proc.new { true }
     },
     'hang_recovery' => {
       'default' => 'true',
@@ -571,13 +584,19 @@ class ConfigHandler
     "Scenario_#{filtered_map}_#{mode}#{'_' << side if ['Checkpoint', 'Push'].include?(mode)}"
   end
 
-  def get_query_string(config, map: nil, side: nil, game_mode: nil, scenario_mode: nil, max_players: nil, mutators: nil, password: nil, scenario: nil)
+  def get_additional_travel_args(config)
+    # Split using regex for unquoted strings
+    config['server_custom_travel_args'].dup.split(/[ ]+(?=[^"]*(?:"[^"]*"[^"]*)*$)/)
+  end
+
+  def get_query_string(config, map: nil, side: nil, game_mode: nil, scenario_mode: nil, max_players: nil, mutators: nil, password: nil, scenario: nil, lighting: nil)
     map = config['server_default_map'] == 'Random' ? MAPMAP.keys.sample : config['server_default_map'].dup if map.nil?
     side = config['server_default_side'] == 'Random' ? SIDES.sample : config['server_default_side'].dup if side.nil?
     game_mode = config['server_game_mode'] == 'Random' ? GAME_MODES.sample : config['server_game_mode'].dup if game_mode.nil?
     scenario_mode = config['server_scenario_mode'] == 'Random' ? SCENARIO_MODES.sample : config['server_scenario_mode'].dup if scenario_mode.nil?
     max_players ||= config['server_max_players'].dup
     password ||= config['server_password'].dup
+    lighting ||= config['server_lighting_day'].dup.to_s.casecmp('true').zero? ? 'Day' : 'Night'
     query = if scenario.nil?
       scenario = get_scenario(map, scenario_mode, side)
       "#{map}?Scenario=#{scenario}"
@@ -588,6 +607,8 @@ class ConfigHandler
     query << "?Game=#{game_mode}" unless game_mode == 'None'
     query << "?Password=#{password}" unless password.empty?
     query << "?Mutators=#{mutators}" unless mutators.to_s.empty?
+    query << "?Lighting=#{lighting}"
+    get_additional_travel_args(config).each { |arg| query << arg }
     query
   end
 
@@ -597,6 +618,11 @@ class ConfigHandler
       scenario = nil
     end
     "-ModDownloadTravelTo=#{get_query_string(config, map: map, mutators: mutators, scenario: scenario)}"
+  end
+
+  def get_additional_server_args(config)
+    # Split using regex for unquoted strings
+    config['server_custom_server_args'].dup.split(/[ ]+(?=[^"]*(?:"[^"]*"[^"]*)*$)/)
   end
 
   def get_server_arguments(config)
@@ -619,6 +645,8 @@ class ConfigHandler
     )
     arguments.push("-ruleset=#{config['server_rule_set']}") unless config['server_rule_set'] == 'None'
     arguments.push("-mutators=#{mutators}") unless mutators.empty?
+    custom_args = get_additional_server_args(config)
+    arguments.concat(custom_args)
     config_id = config['id']
     mods_txt_content = File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip
     unless mods_txt_content.empty?
