@@ -4,7 +4,7 @@ FROM ruby:2.7-slim-buster
 RUN apt-get update
 
 # General dependencies
-RUN apt-get install -y wget make gcc neovim htop
+RUN apt-get install -y wget make gcc
 
 # Install Steamcmd dependencies
 RUN apt-get install -y lib32gcc1
