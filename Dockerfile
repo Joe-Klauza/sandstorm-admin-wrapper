@@ -22,12 +22,10 @@ RUN mv steamcmd_linux.tar.gz steamcmd/installation/
 RUN cd steamcmd/installation && tar -xvf steamcmd_linux.tar.gz
 RUN rm steamcmd/installation/steamcmd_linux.tar.gz
 
-RUN steamcmd/installation/steamcmd.sh +login anonymous +force_install_dir /home/sandstorm/sandstorm-server +app_update 581330 +quit
-
 # Add config for docker container
 
 RUN cp config/config.toml.docker config/config.toml
 
 RUN gem install bundler:1.17.2
 
-CMD ./linux_start.sh
+CMD ./docker_start.sh
