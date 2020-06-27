@@ -28,4 +28,10 @@ RUN cp config/config.toml.docker config/config.toml
 
 RUN gem install bundler:1.17.2
 
+WORKDIR /home/sandstorm/admin-interface
+
+RUN /bin/bash -c bundle
+
+WORKDIR /home/sandstorm
+
 CMD ./docker_start.sh
