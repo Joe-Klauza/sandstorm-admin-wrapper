@@ -1,5 +1,6 @@
 version: '3'
 volumes:
+  sandstorm_wrapper_config:
   sandstorm_server:
   sandstorm_config:
 services:
@@ -16,3 +17,4 @@ services:
     volumes:
       - sandstorm_server:/home/sandstorm/sandstorm-server
       - sandstorm_config:/home/sandstorm/server-config
+      - sandstorm_wrapper_config:/home/sandstorm/admin-interface/config
