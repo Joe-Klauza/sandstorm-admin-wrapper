@@ -111,6 +111,8 @@ Command-line parameters:
 - If you plan to install/run a server, [install SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Downloading_SteamCMD) manually to `sandstorm-admin-wrapper/steamcmd/installation`. `steamcmd.exe`/`steamcmd.sh` should be in the `installation` directory.
   - During runtime, we change the wrapper's `HOME` environment variable to `sandstorm-admin-wrapper/steamcmd` in order to contain SteamCMD's home directory pollution (on Linux) within the wrapper. You may see shell or Steam-related files in this directory as a result.
 
+[Docker instructions](/Docker.md) are also available.
+
 ### Starting the Admin Wrapper
 
 - Run the start script for your OS (`windows_start.bat` for Windows, `linux_start.sh` for Linux (BASH))

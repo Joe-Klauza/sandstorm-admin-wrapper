@@ -1,0 +1,20 @@
+version: '3'
+volumes:
+  sandstorm_wrapper_config:
+  sandstorm_server:
+  sandstorm_config:
+services:
+  sandstorm-wrapper:
+    build: .
+    ports:
+      - "27015:27015/tcp"
+      - "27015:27015/udp"
+      - "27131:27131/tcp"
+      - "27131:27131/udp"
+      - "51422:51422"
+      - "7777:7777/tcp"
+      - "7777:7777/udp"
+    volumes:
+      - sandstorm_server:/home/sandstorm/sandstorm-server
+      - sandstorm_config:/home/sandstorm/server-config
+      - sandstorm_wrapper_config:/home/sandstorm/admin-interface/config
