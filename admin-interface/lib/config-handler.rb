@@ -87,6 +87,7 @@ MAPMAP = {
   'Oilfield'   => 'Refinery',
   'PowerPlant' => 'PowerPlant',
   'Precinct'   => 'Precinct',
+  'Tell'       => 'Tell',
   'Town'       => 'Hideout'
 }
 MAPMAP_INVERTED = MAPMAP.invert
