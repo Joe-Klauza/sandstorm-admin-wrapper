@@ -102,6 +102,7 @@ SCENARIO_MODES = [
   'Firefight_East',
   'Firefight_West',
   'Frontline',
+  'Outpost',
   'Push',
   'Skirmish',
   'Team_Deathmatch'
