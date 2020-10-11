@@ -609,13 +609,13 @@ class ConfigHandler
     query << "?Game=#{game_mode}" unless game_mode == 'None'
     query << "?Password=#{password}" unless password.empty?
     query << "?Mutators=#{mutators}" unless mutators.to_s.empty?
-    query << "?Lighting=#{lighting}"
+    query << "?Lighting=#{lighting}" unless query.include?('?Lighting=')
     get_additional_travel_args(config).each { |arg| query << arg }
     query
   end
 
   def get_mod_travel_string(config, map, scenario, mutators)
-    if MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map)
+    if MAPMAP.keys.concat(MAPMAP.values).uniq.include?(scenario)
       map = nil
       scenario = nil
     end
