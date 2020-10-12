@@ -603,7 +603,7 @@ class ConfigHandler
       scenario = get_scenario(map, scenario_mode, side)
       "#{map}?Scenario=#{scenario}"
     else
-      scenario # Mod scenario; allow users to customize since the map name and scenario name are needed
+      scenario.dup # Mod scenario; allow users to customize since the map name and scenario name are needed
     end
     query << "?MaxPlayers=#{max_players}"
     query << "?Game=#{game_mode}" unless game_mode == 'None'
@@ -614,12 +614,13 @@ class ConfigHandler
     query
   end
 
-  def get_mod_travel_string(config, map, scenario, mutators)
-    if MAPMAP.keys.concat(MAPMAP.values).uniq.include?(scenario)
-      map = nil
-      scenario = nil
+  def get_mod_travel_string(config, map, map_or_mod_scenario, mutators)
+    if MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map_or_mod_scenario)
+      # We are starting on a stock map, so we should generate the scenario
+      map_or_mod_scenario = nil
     end
-    "-ModDownloadTravelTo=#{get_query_string(config, map: map, mutators: mutators, scenario: scenario)}"
+    # map?Scenario=scenario?Mutators=mutators
+    "-ModDownloadTravelTo=#{get_query_string(config, map: map, mutators: mutators, scenario: map_or_mod_scenario)}"
   end
 
   def get_additional_server_args(config)
@@ -632,6 +633,7 @@ class ConfigHandler
     map = config['server_default_map'].dup
     starting_map = map == 'Random' ? MAPMAP.keys.sample : map
     starting_map = MAPMAP.keys.include?(starting_map) ? starting_map : (MAPMAP.keys.include?(MAPMAP.key(starting_map)) ? MAPMAP.key(starting_map) : 'Farmhouse' )
+    modtravelto_map = map == 'Random' ? starting_map : map # Ensure we have a map name to travel to, whether that's a modded map scenario or a base map name
     mutators = (config['server_mutators'] + config['server_mutators_custom'].split(',')).join(',')
     arguments.push(
       get_query_string(config, map: starting_map, mutators: mutators),
@@ -655,7 +657,7 @@ class ConfigHandler
       arguments.push("-Mods")
       arguments.push("-CmdModList=\"#{mods_txt_content.split("\n").map {|modId| modId[/^\d+/] }.reject(&:nil?).join(',')}\"")
       # Use mod travel string regardless, otherwise mutators don't work on the first map
-      arguments.push(get_mod_travel_string(config, starting_map, map, mutators)) # unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
+      arguments.push(get_mod_travel_string(config, starting_map, modtravelto_map, mutators)) # unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
     end
     if config['server_gslt'].to_s.empty?
       arguments.push("-EnableCheats") if config['server_cheats'].to_s.casecmp('true').zero?
