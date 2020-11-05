@@ -532,10 +532,15 @@ class ConfigHandler
     @bans_mutex.synchronize do
       server_bans = Oj.load(File.read CONFIG_FILES[:bans_json][:actual]) || []
       master_bans = Oj.load(File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)) || []
-      return if server_bans == master_bans
       log "Applying new player bans"
-      master_bans.concat(server_bans).uniq! { |ban| ban['playerId'] }
+      master_bans.concat(server_bans).delete_if do |current_ban|
+        master_bans.any? do |other_ban|
+          old_ban = current_ban['playerId'] == other_ban['playerId'] &&
+            current_ban['banTime'] < other_ban['banTime']
+        end
+      end
       master_bans.sort_by! { |ban| ban['banTime'] }
+      master_bans.uniq! { |ban| ban['playerId'] }
       File.write(ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding), Oj.dump(master_bans, indent: 2))
     end
     nil
