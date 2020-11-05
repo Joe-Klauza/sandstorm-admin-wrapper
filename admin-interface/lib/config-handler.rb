@@ -491,7 +491,6 @@ class ConfigHandler
     # Apply values in case any in memory aren't in the file
     apply_game_ini_local config, config_id
     apply_engine_ini_local config, config_id
-    apply_server_bans # Ensure we don't overwrite a new ban
 
     # Remove Mods.txt so that the server doesn't use any the user may have manually set outside of SAW
     CONFIG_FILES.reject {|_,i| i[:delete].nil? }.values.each do |it|
