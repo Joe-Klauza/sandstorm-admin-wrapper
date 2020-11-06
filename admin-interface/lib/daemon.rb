@@ -30,6 +30,7 @@ class SandstormServerDaemon
   attr_reader :threads
   attr_reader :monitor
   attr_reader :log_file
+  attr_reader :rcon_listening
 
   def initialize(config, daemons, mutex, rcon_client, server_buffer, rcon_buffer, chat_buffer, steam_api_key: '')
     @config = config
@@ -41,6 +42,7 @@ class SandstormServerDaemon
     @rcon_buffer = rcon_buffer
     @chat_buffer = chat_buffer
     @rcon_client = rcon_client
+    @rcon_listening = false
     @game_pid = nil
     @monitor = nil
     @threads = {}
@@ -248,7 +250,32 @@ class SandstormServerDaemon
                   log "RCON failed to initialize: #{line}", level: :warn
                   kill_server_process
                 elsif line.include?('LogRcon: Rcon listening') && @monitor.nil?
+                  @rcon_listening = true
                   Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_pass, name: @name, rcon_buffer: @rcon_buffer, interval: 5, daemon_handle: self) }
+                elsif line.include? 'SANDSTORM_ADMIN_WRAPPER'
+                elsif line[/^[\[\]0-9.:-]+\[[0-9 ]+\]LogRcon: \d+.\d+.\d+.\d+:\d+ <<\s+banid (.*)/]
+                  @daemons.reject{ |_,d| d == self || !d.rcon_listening || d.nil? }.each do |id, daemon|
+                    begin
+                      args = $1.split(' ')
+                      if args.size > 0
+                        args = $config_handler.parse_banid_args(args)
+                        daemon.do_send_rcon("banid #{args.join(' ')} SANDSTORM_ADMIN_WRAPPER") # Give a custom suffix so we don't recursively unban
+                      end
+                    rescue => e
+                      log "Failed to 'banid #{$1}' from server #{daemon.name} (#{id})"
+                    end
+                  end
+                elsif line[/^[\[\]0-9.:-]+\[[0-9 ]+\]LogRcon: \d+.\d+.\d+.\d+:\d+ <<\s+unban (\d+)/]
+                  # Allow unbans with master bans
+                  $config_handler.unban_master($1)
+                  log "Unbanning ID #{$1} from all servers (unban command detected)", level: :info
+                  @daemons.reject{ |_,d| d == self || !d.rcon_listening || d.nil? }.each do |id, daemon|
+                    begin
+                      daemon.do_send_rcon("unban #{$1} SANDSTORM_ADMIN_WRAPPER") # Give a custom suffix so we don't recursively unban
+                    rescue => e
+                      log "Failed to unban #{$1} from server #{daemon.name} (#{id})"
+                    end
+                  end
                 end
               elsif last_line_was_rcon
                 if line =~ /^\[\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:/ || line =~ /^Log/
@@ -295,7 +322,6 @@ class SandstormServerDaemon
         @rcon_listening = false
         socket = @rcon_client.sockets["127.0.0.1:#{@active_rcon_port}"]
         @rcon_client.delete_socket(socket) unless socket.nil?
-        $config_handler.apply_server_bans
       rescue => e
         log "Error while cleaning up game server thread", e
       end

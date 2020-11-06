@@ -307,6 +307,14 @@ class RconClient
 
   # User interface
   def send(server_ip, port, password, command, buffer: nil, outcome_buffer: nil, no_rx: false, ignore_status: false, ignore_message: false, timeout: 2, retries: 1)
+    command.strip!
+    if command[/^banid (.*)/]
+      # Add quotes to banid command so that we don't lose most of the banReason
+      args = $1.split(' ')
+      suffix = args.delete('SANDSTORM_ADMIN_WRAPPER') # We will want to add this back in to avoid recursive ban commands
+      args = $config_handler.parse_banid_args(args)
+      command = "banid #{args.join(' ')} #{suffix}"
+    end
     socket = get_socket_for_host server_ip, port, password
     raise "Couldn't get socket for #{server_ip}:#{port}!" if socket.nil?
     packet = build_packet command

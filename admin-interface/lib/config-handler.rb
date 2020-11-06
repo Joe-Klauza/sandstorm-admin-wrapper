@@ -29,7 +29,7 @@ SERVER_ROOT = File.join WRAPPER_ROOT, 'sandstorm-server'
 STEAMCMD_ROOT = File.join WRAPPER_ROOT, 'steamcmd'
 STEAMCMD_EXE = File.join STEAMCMD_ROOT, 'installation', (WINDOWS ? "steamcmd.exe" : "steamcmd.sh")
 STEAM_APPINFO_VDF = File.join STEAMCMD_ROOT, (WINDOWS ? "installation" : 'Steam'), 'appcache', 'appinfo.vdf'
-USER_HOME = ENV['HOME']
+USER_HOME = ENV['HOME'] unless USER_HOME
 ENV['HOME'] = STEAMCMD_ROOT # Steam will pollute the user directory otherwise on Linux.
 
 BINARY = File.join SERVER_ROOT, 'Insurgency', 'Binaries', (WINDOWS ? 'Win64\InsurgencyServer-Win64-Shipping.exe' : 'Linux/InsurgencyServer-Linux-Shipping')
@@ -163,6 +163,7 @@ class ConfigHandler
   attr_reader :monitor_configs
   attr_reader :server_configs
   attr_reader :users
+  attr_reader :bans_thread
   attr_accessor :players
 
   def self.generate_password
@@ -329,6 +330,45 @@ class ConfigHandler
     @server_configs = load_server_configs
     @players = load_player_config
     @bans_mutex = Mutex.new
+    @bans_thread = Thread.new do
+      monitor_bans
+    end
+  end
+
+  def monitor_bans
+    # Since the server writes bans (to one file) when the changes occur
+    # we need to be watching and ready to incorporate the changes
+    # into the master bans file to avoid losing changes from other
+    # servers overwriting with their own changes.
+    start_bans = get_bans_master
+    while true
+      begin
+        end_bans = get_bans_actual
+        if start_bans != end_bans
+          $config_handler.apply_server_bans(start_bans, end_bans)
+          start_bans = get_bans_actual
+        end
+      rescue => e
+        log "Ban monitor failed!", e
+      end
+      sleep 2
+    end
+  end
+
+  def get_bans_actual
+    @bans_mutex.synchronize do
+      Oj.load(File.read CONFIG_FILES[:bans_json][:actual]) || []
+    end
+  rescue Errno::ENOENT
+    []
+  end
+
+  def get_bans_master
+    @bans_mutex.synchronize do
+      Oj.load(File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)) || []
+    end
+  rescue Errno::ENOENT
+    []
   end
 
   def self.valid_port?(port)
@@ -521,25 +561,64 @@ class ConfigHandler
     @bans_mutex.synchronize do
       master_bans_file = ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)
       master_bans = Oj.load(File.read master_bans_file) || []
-      log "Unbanning #{steam_id} from master bans", level: :info
-      master_bans.reject! { |ban| ban['playerId'].to_s == steam_id.to_s }
-      File.write(master_bans_file, Oj.dump(master_bans, indent: 2))
+      new_master_bans = master_bans.reject { |ban| ban['playerId'].to_s == steam_id.to_s }
+      if new_master_bans.size < master_bans.size
+        log "Unbanning ID #{steam_id} from master bans", level: :info
+        log "Total master bans: #{new_master_bans.size}", level: :info
+        File.write(master_bans_file, Oj.dump(new_master_bans, indent: 2))
+      end
     end
   end
 
-  def apply_server_bans
+  def parse_banid_args(args)
+    if args.size == 1
+      args.push '-1' # Default permanent
+    end
+    if args.size == 2 # Missing reason
+      args.push '"No reason specified"'
+    elsif args.size > 3 # too many args
+      reason = args[2..].join(' ').strip
+      unless reason.start_with?('"') && reason.end_with?('"')
+        # Quote reason so that we don't lose words beyond first
+        reason = "\"#{reason.gsub('"', '\"')}\""
+      end
+      args = args[0..1].push(reason)
+    end
+    args
+  end
+
+  def apply_server_bans(start_bans, end_bans)
+    # Applies player ban changes. Note that when a ban occurs the server writes Bans.json immediately,
+    # but bans are handled in-memory otherwise (e.g. listbans). This means servers can overwrite one another's
+    # bans if two different bans occur in different servers prior to exiting the servers.
     @bans_mutex.synchronize do
-      server_bans = Oj.load(File.read CONFIG_FILES[:bans_json][:actual]) || []
+      created_bans = end_bans - start_bans
+      removed_bans = start_bans - end_bans
       master_bans = Oj.load(File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)) || []
-      log "Applying new player bans"
-      master_bans.concat(server_bans).delete_if do |current_ban|
-        master_bans.any? do |other_ban|
-          old_ban = current_ban['playerId'] == other_ban['playerId'] &&
-            current_ban['banTime'] < other_ban['banTime']
+      ## We can't remove bans based on them missing, as a second server adding a ban might look like
+      ## we removed a ban from a previous server's ban addition
+      ## We'll have to monitor for unban commands coming in via RCON.
+      # if removed_bans.any?
+      #   log "Removing #{removed_bans.size} unbanned player ban(s) from master bans: #{removed_bans.map{|b|b['playerId']}.join(', ')}", level: :info
+      #   master_bans.delete_if { |ban| removed_bans.include?(ban) }
+      # end
+      if created_bans.any?
+        prior_size = master_bans.size
+        master_bans.concat(created_bans).delete_if do |current_ban|
+          master_bans.any? do |other_ban|
+            old_ban = current_ban['playerId'] == other_ban['playerId'] &&
+              current_ban['banTime'] < other_ban['banTime']
+          end
+        end
+        master_bans.sort_by! { |ban| ban['banTime'] }
+        master_bans.uniq! { |ban| ban['playerId'] }
+        if master_bans.size != prior_size
+          log "Banned #{master_bans.size - prior_size} new player(s): #{created_bans.map{|b| "#{b['playerId']} (Duration: #{b['duration']} | Reason: #{b['banReason']})"}.join(', ')}", level: :info
+          log "Total master bans: #{master_bans.size}", level: :info
+        else
+          log "Updated ban(s) for #{created_bans.size} player(s): #{created_bans.map{|b| "#{b['playerId']} (Duration: #{b['duration']} | Reason: #{b['banReason']})"}.join(', ')}", level: :info
         end
       end
-      master_bans.sort_by! { |ban| ban['banTime'] }
-      master_bans.uniq! { |ban| ban['playerId'] }
       File.write(ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding), Oj.dump(master_bans, indent: 2))
     end
     nil

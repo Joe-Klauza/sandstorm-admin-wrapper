@@ -937,10 +937,6 @@ class SandstormAdminWrapperSite < Sinatra::Base
     when 'rcon'
       begin
         uuid, buffer = self.class.create_buffer
-        if options[:command].split(' ').first.start_with?('unban')
-          steam_id = options[:command][/\d{17}/]
-          $config_handler.unban_master(steam_id) if steam_id
-        end
         Thread.new { daemon.do_send_rcon(options[:command], host: options[:host] || '127.0.0.1', port: options[:port], pass: options[:pass], buffer: daemon.rcon_buffer, outcome_buffer: buffer) }
         uuid
       rescue => e

@@ -1,6 +1,6 @@
 <% at_least_one_server = false %>
-<% at_least_one_server = true unless @daemons.values.empty? && @monitors.empty? %>
-<% @daemons.sort_by{ |_, d| d.config['server_hostname'] }.each do |id, daemon| %>
+<% at_least_one_server = true unless @daemons.values.compact.empty? && @monitors.compact.empty? %>
+<% @daemons.reject{|_,d| d.nil? }.sort_by{ |_, d| d.config['server_hostname'] }.each do |id, daemon| %>
   <% @id = id %>
   <% server_running = daemon.server_running? %>
   <% @monitor = daemon.monitor rescue nil %>
