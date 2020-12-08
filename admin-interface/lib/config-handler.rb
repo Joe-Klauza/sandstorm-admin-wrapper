@@ -77,6 +77,7 @@ CONFIG_FILES = {
 }
 
 MAPMAP = {
+  'Bab'        => 'Bab',
   'Buhriz'     => 'Tideway',
   'Canyon'     => 'Crossing',
   'Compound'   => 'Outskirts',
