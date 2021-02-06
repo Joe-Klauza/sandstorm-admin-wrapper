@@ -234,7 +234,7 @@
 
     <!-- Cheats -->
     <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
-      <div class="p-2 col-3">Cheats (disabled if GSLT set)</div>
+      <div class="p-2 col-3">Cheats (disabled if GST or GSLT set)</div>
       <div class="p-2 col"></div>
       <div class="p-2 col-3 justify-content-start">
           <div class="custom-control custom-switch p-2 ml-5">
@@ -274,6 +274,23 @@
         </div>
       </div>
       <div class="col">
+      </div>
+    </div>
+
+    <!-- GameStats Token (GST) -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-3 d-inline-block">GameStats Token (<a href="https://gamestats.sandstorm.game/" target="_blank" data-toggle="tooltip" data-placement="top" title="" data-html="true" data-original-title="Authenticate with GameStats using Steam to generate a token">GST</a>)</div>
+      <div class="p-2 col-3">
+        <input id="server_gst" type="text" class="form-control server-config-text-input blur" placeholder="<%= @config['server_gst'] %>">
+      </div>
+      <div class="p-2 col-2">
+        <button id="server_gst_revealer" type="button" class="btn btn-success horizontal-expand mr-4" onclick="revealHide('#server_gst', '#server_gst_revealer');">Reveal</button>
+      </div>
+      <div class="p-2 col-4 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="undoServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_gst');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#server-config-name').val() || $('#server-config-name').attr('placeholder'), 'server_gst', $('#server_gst').val());">Save</button>
+        </div>
       </div>
     </div>
 

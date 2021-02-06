@@ -179,7 +179,7 @@ class ConfigHandler
     'server_default_map' => {
       'default' => MAPMAP.keys.sample,
       'random' => false,
-      'validation' => Proc.new { true },
+      'validation' => Proc.new { |map| !map.to_s.empty? },
       'type' => :map
     },
     'server_lighting_day' => {
@@ -287,6 +287,12 @@ class ConfigHandler
       'getter' => Proc.new { |game_ini| game_ini['Rcon']['Password'] },
       'setter' => Proc.new { |game_ini, password| game_ini['Rcon']['Password'] = password },
       'validation' => Proc.new { true },
+      'sensitive' => true
+    },
+    'server_gst' => {
+      'default' => '',
+      'type' => :argument,
+      'validation' => Proc.new { |token| token =~ /\A[ABCDEF0-9]+\Z/ || token.empty? },
       'sensitive' => true
     },
     'server_gslt' => {
@@ -743,10 +749,12 @@ class ConfigHandler
       # Use mod travel string regardless, otherwise mutators don't work on the first map
       arguments.push(get_mod_travel_string(config, starting_map, modtravelto_map, mutators)) # unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
     end
-    if config['server_gslt'].to_s.empty?
+    if config['server_gslt'].to_s.empty? && config['server_gst'].to_s.empty?
       arguments.push("-EnableCheats") if config['server_cheats'].to_s.casecmp('true').zero?
     else
-      arguments.push("-GameStats", "-GSLTToken=#{config['server_gslt']}")
+      arguments.push("-GameStats")
+      arguments.push("-GameStatsToken=#{config['server_gst']}") unless config['server_gst'].to_s.empty?
+      arguments.push("-GSLTToken=#{config['server_gslt']}") unless config['server_gslt'].to_s.empty?
     end
     arguments
   end
