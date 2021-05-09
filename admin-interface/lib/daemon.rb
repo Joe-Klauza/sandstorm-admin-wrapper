@@ -37,6 +37,7 @@ class SandstormServerDaemon
     @name = @config['server-config-name']
     @daemons = daemons
     @daemons_mutex = mutex
+    @monitor_mutex = Mutex.new
     @rcon_ip = '127.0.0.1'
     @buffer = server_buffer
     @rcon_buffer = rcon_buffer
@@ -200,6 +201,14 @@ class SandstormServerDaemon
     msg
   end
 
+  def create_monitor
+    @monitor_mutex.synchronize do
+      if @monitor.nil?
+        Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_pass, name: @name, rcon_buffer: @rcon_buffer, interval: 5, daemon_handle: self) }
+      end
+    end
+  end
+
   def run_game_server
     log "Applying config"
     @frozen_config = @config.dup
@@ -251,7 +260,7 @@ class SandstormServerDaemon
                   kill_server_process
                 elsif line.include?('LogRcon: Rcon listening') && @monitor.nil?
                   @rcon_listening = true
-                  Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_pass, name: @name, rcon_buffer: @rcon_buffer, interval: 5, daemon_handle: self) }
+                  create_monitor
                 elsif line.include? 'SANDSTORM_ADMIN_WRAPPER'
                 elsif line[/^[\[\]0-9.:-]+\[[0-9 ]+\]LogRcon: \d+.\d+.\d+.\d+:\d+ <<\s+banid (.*)/]
                   @daemons.reject{ |_,d| d == self || !d.rcon_listening || d.nil? }.each do |id, daemon|
@@ -315,8 +324,10 @@ class SandstormServerDaemon
       @threads.delete :game_server unless @server_started # If we can't even start the server, don't keep trying
     ensure
       begin
-        @monitor.stop unless @monitor.nil?
-        @monitor = nil
+        @monitor_mutex.synchronize do
+          @monitor.stop unless @monitor.nil?
+          @monitor = nil
+        end
         @game_pid = nil
         @log_file = nil
         @rcon_listening = false
