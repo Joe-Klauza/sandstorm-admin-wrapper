@@ -281,7 +281,7 @@ class SandstormServerDaemon
                   create_monitor
                   Thread.new do
                     log "RCON listening. Waiting for Server Query success before ending server lock", level: :info
-                    sleep 0.5 until @monitor.all_green? || @exit_requested
+                    sleep 0.5 until @exit_requested || @monitor.all_green?
                     log "Server is ready (RCON and Query connected). Server start lock ending.", level: :info
                     @server_started = true
                   end
