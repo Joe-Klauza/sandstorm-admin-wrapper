@@ -43,4 +43,8 @@ class String
     log("Failed to encode string as UTF-8: #{self.inspect}", level: :warn)
     encode('UTF-8', invalid: :replace, undef: :replace)
   end
+
+  def is_uuid?
+    self =~ /^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$/
+  end
 end

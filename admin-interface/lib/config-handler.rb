@@ -72,8 +72,18 @@ CONFIG_FILES = {
   bans_json: {
     type: :json,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Bans.json'),
-    local_erb: "<%=File.join(CONFIG_FILES_DIR, 'Bans.json')%>" # Master Bans.json due to multi-server
-  }
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, 'Bans.json')%>" # Master Bans.json due to multi-server (no known argument for server-specific ban file)
+  },
+  motd_txt: {
+    type: :txt,
+    actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Motd.txt'),
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Motd.txt')%>"
+  },
+  notes_txt: {
+    type: :txt,
+    actual: nil,
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Notes.txt')%>"
+  },
 }
 
 MAPMAP = {
@@ -389,8 +399,16 @@ class ConfigHandler
     directory_name.gsub(/[^ 0-9A-Za-z.\-'"]/, '')
   end
 
+  def get_uuid(uuid=Sysrandom.uuid)
+    return uuid if @server_configs.nil? || @server_configs.empty?
+    while @server_configs.keys.include?(uuid)
+      uuid = Sysrandom.uuid
+    end
+    uuid
+  end
+
   def get_default_config
-    defaults = {'id' => Sysrandom.uuid}
+    defaults = {'id' => get_uuid}
     CONFIG_VARIABLES.each { |k, v| defaults[k] = v['default'] }
     defaults
   end
@@ -416,7 +434,7 @@ class ConfigHandler
   def load_monitor_configs
     @monitor_configs = Oj.load(File.read(MONITOR_CONFIGS_FILE))
     @monitor_configs = {} if @monitor_configs.to_s.empty?
-    @monitor_configs.each { |_, config| config['id'] ||= Sysrandom.uuid }
+    @monitor_configs.each { |_, config| config['id'] ||= get_uuid }
     @monitor_configs
   rescue Errno::ENOENT
     {}
@@ -425,16 +443,30 @@ class ConfigHandler
     raise
   end
 
+  def add_server_config(config)
+    @server_configs[config['id']] = config
+  end
+
+  def get_server_configs_skeleton
+    skeleton = {}
+    default_config = get_default_config
+    skeleton[default_config['id']] = default_config
+  end
+
   def load_server_configs
     @server_configs = Oj.load(File.read(SERVER_CONFIGS_FILE))
-    @server_configs = {'Default' => get_default_config} if @server_configs.nil? || @server_configs.empty?
-    @server_configs.each do |config_name, config|
-      new_id = config['id'].nil?
-      server_configs[config_name] = get_default_config.merge(config)
-      if new_id
-        # Migrate old config directories
-        FileUtils.mv File.join(CONFIG_FILES_DIR, config_name), File.join(CONFIG_FILES_DIR, server_configs[config_name]['id']) rescue nil
-      end
+    if @server_configs.nil? || @server_configs.empty?
+      @server_configs = {}
+      add_server_config(get_default_config)
+    end
+    # Ensure all keys are IDs, else convert automatically
+    @server_configs.select { |k, _| !k.is_uuid? }.keys.each do |key|
+      log "Replacing config key '#{key}' with an ID"
+      config = @server_configs[key]
+      id = config['id'] || get_uuid
+      config['id'] = id
+      @server_configs[id] = config
+      @server_configs.delete(key)
     end
     init_server_config_files
     @server_configs
@@ -464,20 +496,33 @@ class ConfigHandler
     File.write(MONITOR_CONFIGS_FILE, Oj.dump(@monitor_configs, indent: 2))
   end
 
-  def create_server_config(config_name, settings)
-    log "Creating server config: #{config_name}"
-    server_configs[config_name] = get_default_config.
-        merge(server_configs[config_name] || {}).
-        merge(settings).
-        merge({'server-config-name' => config_name})
+  def create_server_config(incoming_config)
+    config_id = incoming_config['id']
+    config_name = incoming_config['server-config-name']
+    overwrote = false
+    outgoing_config = if config_id && @server_configs[config_id] && @server_configs[config_id]['server-config-name'] == config_name
+      overwrote = true
+      log "Writing server config:  #{config_id} #{config_name}", level: :info
+      @server_configs[config_id] = get_default_config.merge(incoming_config)
+    else
+      new_config = get_default_config
+      config_id = new_config['id']
+      log "Creating server config: #{config_id} #{config_name}", level: :info
+      @server_configs[config_id] = get_default_config.merge(incoming_config)
+          .merge({
+            'id' => config_id, # Ignore provided config ID
+          })
+    end
     write_server_configs
-    init_server_config_files(config_name)
-    nil
+    init_server_config_files(config_id)
+    outgoing_config
   end
 
-  def delete_server_config(config_name)
-    log "Deleting server config: #{config_name}"
-    config_id = (server_configs.delete config_name)['id']
+  def delete_server_config(config_id)
+    config = @server_configs[config_id]
+    config_name = config['server-config-name']
+    log "Deleting server config: #{config_id} #{config_name}", level: :info
+    @server_configs.delete config_id
     CONFIG_FILES.reject { |f, _| f == :bans_json }.values.each do |it|
       local = ERB.new(it[:local_erb]).result(binding)
       FileUtils.rm local
@@ -492,6 +537,7 @@ class ConfigHandler
     rescue => e
       log "Error while trying to delete directory (#{dir})", e
     end
+    add_server_config(get_default_config) if @server_configs.empty?
     write_server_configs
     nil
   end
@@ -519,10 +565,10 @@ class ConfigHandler
     false
   end
 
-  def init_server_config_files(config_name=nil)
-    configs = config_name.nil? ? @server_configs.keys : [config_name]
-    configs.each do |config_name|
-      config_id = @server_configs[config_name]['id']
+  def init_server_config_files(config_id=nil)
+    configs = config_id.nil? ? @server_configs.keys : [config_id]
+    configs.reject{ |id| !@server_configs.keys.include?(id) }.each do |config_id|
+      config_id = @server_configs[config_id]['id']
       CONFIG_FILES.values.each do |it|
         [ERB.new(it[:local_erb]).result(binding), it[:actual]].each do |path|
           next if path.nil?
@@ -534,10 +580,11 @@ class ConfigHandler
     nil
   end
 
-  def apply_server_config_files(config, config_id)
+  def apply_server_config_files(config)
+    config_id = config['id'] # Needed for bindings
     # Apply values in case any in memory aren't in the file
-    apply_game_ini_local config, config_id
-    apply_engine_ini_local config, config_id
+    apply_game_ini_local config
+    apply_engine_ini_local config
 
     # Remove Mods.txt so that the server doesn't use any the user may have manually set outside of SAW
     CONFIG_FILES.reject {|_,i| i[:delete].nil? }.values.each do |it|
@@ -631,10 +678,10 @@ class ConfigHandler
     nil
   end
 
-  def set(config_name, variable, value)
+  def set(config_id, variable, value)
     return [false, "Variable not in config: #{variable}"] unless CONFIG_VARIABLES.keys.include? variable
     return [false, "Variable has no validation: #{variable}"] unless CONFIG_VARIABLES[variable]['validation'].respond_to?('call')
-    config = (@server_configs[config_name] = get_default_config.merge(@server_configs[config_name] || {}))
+    config = (@server_configs[config_id] = get_default_config.merge(@server_configs[config_id] || {}))
     old_value = config[variable]
     return [false, "Variable #{variable} is already set to #{CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : value}."] if value.to_s == old_value.to_s
     status = false
@@ -645,8 +692,8 @@ class ConfigHandler
       log "Value passed validation: #{CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : value.inspect}"
       config[variable] = value
       write_server_configs
-      apply_game_ini_local(@server_configs[config_name], config_name) if CONFIG_VARIABLES[variable]['type'] == :game_ini
-      apply_engine_ini_local(@server_configs[config_name], config_name) if CONFIG_VARIABLES[variable]['type'] == :engine_ini
+      apply_game_ini_local(@server_configs[config_id]) if CONFIG_VARIABLES[variable]['type'] == :game_ini
+      apply_engine_ini_local(@server_configs[config_id]) if CONFIG_VARIABLES[variable]['type'] == :engine_ini
       status = true
     else
       msg = "Value failed validation for variable #{variable.inspect}: #{CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : value.inspect}"
@@ -656,12 +703,12 @@ class ConfigHandler
     return [status, msg, CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : config[variable], CONFIG_VARIABLES[variable]['sensitive'] ? '[REDACTED]' : old_value]
   end
 
-  def get(config_name, variable)
-    @server_configs[config_name][variable]
+  def get(config_id, variable)
+    @server_configs[config_id][variable]
   end
 
-  def get_log_file(config_name)
-    log_file = File.join(SERVER_LOG_DIR, "#{config_name}.log")
+  def get_log_file(config_id)
+    log_file = File.join(SERVER_LOG_DIR, "#{config_id}.log")
     FileUtils.mkdir_p File.dirname log_file
     begin
       FileUtils.touch log_file
@@ -731,7 +778,7 @@ class ConfigHandler
       "-MaxPlayers=#{config['server_max_players']}",
       "-Port=#{config['server_game_port']}",
       "-QueryPort=#{config['server_query_port']}",
-      "-log=#{config['server-config-name']}.log",
+      "-log=#{config['id']}.log",
       "-LogCmds=LogGameplayEvents Log",
       "-LOCALLOGTIMES",
       "-AdminList=Admins",
@@ -742,45 +789,44 @@ class ConfigHandler
     custom_args = get_additional_server_args(config)
     arguments.concat(custom_args)
     config_id = config['id']
-    mods_txt_content = File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip
-    unless mods_txt_content.empty?
-      arguments.push("-Mods")
-      arguments.push("-CmdModList=\"#{mods_txt_content.split("\n").map {|modId| modId[/^\d+/] }.reject(&:nil?).join(',')}\"")
-      # Use mod travel string regardless, otherwise mutators don't work on the first map
-      arguments.push(get_mod_travel_string(config, starting_map, modtravelto_map, mutators)) # unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
-    end
+    # Stats/Experience
     if config['server_gslt'].to_s.empty? && config['server_gst'].to_s.empty?
       arguments.push("-EnableCheats") if config['server_cheats'].to_s.casecmp('true').zero?
     else
-      arguments.push("-GameStats")
       arguments.push("-GameStatsToken=#{config['server_gst']}") unless config['server_gst'].to_s.empty?
+      arguments.push("-GameStats")
       arguments.push("-GSLTToken=#{config['server_gslt']}") unless config['server_gslt'].to_s.empty?
+    end
+    # MOTD
+    motd_txt_content = File.read(ERB.new(CONFIG_FILES[:motd_txt][:local_erb]).result(binding)).strip
+    unless motd_txt_content.empty?
+      arguments.push("-Motd")
+    end
+    # Mods
+    mods_txt_content = File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip
+    unless mods_txt_content.empty?
+      modlist = mods_txt_content.split("\n").map {|modId| modId[/^\d+/] }.compact
+      if modlist.any?
+        arguments.push("-Mods")
+        arguments.push("-CmdModList=\"#{modlist.join(',')}\"")
+        # Use mod travel string regardless, otherwise mutators don't work on the first map
+        arguments.push(get_mod_travel_string(config, starting_map, modtravelto_map, mutators)) # unless (MAPMAP.keys.concat(MAPMAP.values).uniq.include?(map))
+      end
     end
     arguments
   end
 
-  def apply_game_ini_local(config, config_id)
+  def apply_game_ini_local(config)
+    # config_id needed in binding
+    config_id = config['id']
     apply_ini(config, ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding))
   end
 
-  def apply_engine_ini_local(config, config_id)
+  def apply_engine_ini_local(config)
+    # config_id needed in binding
+    config_id = config['id']
     apply_ini(config, ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding))
   end
-
-  # def update_ini(source, dest)
-  #   log "Updating ini #{source} -> #{dest}"
-  #   source_ini = IniFile.load(source)
-  #   dest_ini = IniFile.load(dest)
-  #   source_ini.each_section do |section|
-  #     source_ini[section].each do |variable, value|
-  #       log "Setting [#{section}][#{variable}] = #{value}"
-  #       dest_ini[section][variable] = value
-  #     end
-  #   end
-  # rescue => e
-  #   log "Error while updating ini", e
-  #   raise
-  # end
 
   def apply_ini(config, path)
     type = File.basename(path).downcase.sub('.', '_').to_sym

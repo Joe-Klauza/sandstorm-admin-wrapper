@@ -6,6 +6,7 @@
 
     <!-- Server Config Selection -->
     <div class="d-flex justify-content-between horizontal-expand bg-secondary m-1">
+      <input id="id" type="text" class="form-control server-config-text-input" placeholder="<%= CGI.escapeHTML(@config['id']) %>" readonly style="display: none;">
       <input id="server-config-name" type="text" class="form-control server-config-text-input" placeholder="<%= CGI.escapeHTML(@config['server-config-name']) %>" readonly style="display: none;">
       <div class="p-2 col-9">
         <ul class="nav nav-pills col-5">
@@ -28,9 +29,9 @@
         </ul>
       </div>
       <div class="p-2 col-3 d-flex justify-content-end">
-        <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Start</button>
-        <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Restart</button>
-        <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Stop</button>
+        <button type="button" class="font-weight-bold btn btn-success m-1" onclick="serverControl('start', '<%= @config_id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Start</button>
+        <button type="button" class="font-weight-bold btn btn-warning m-1" onclick="serverControl('restart', '<%= @config_id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Restart</button>
+        <button type="button" class="font-weight-bold btn btn-danger m-1" onclick="serverControl('stop', '<%= @config_id %>', $('#server-config-name').val() || $('#server-config-name').attr('placeholder'));">Stop</button>
       </div>
     </div>
 
@@ -45,7 +46,7 @@
         <div class="ml-4 p-2 col-2">Server RCON</div>
         <input id="rcon_input" type="text" class="form-control horizontal-expand m-1" placeholder="listplayers">
         <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#rcon_input').val('');">Clear</button>
-          <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon/<%= @id %>`, 1000, {command: $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
+          <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#rcon_input').val() || $('#rcon_input').attr('placeholder')) { tailProcess('#rcon-log',  `/control/server/rcon/<%= @config_id %>`, 1000, {command: $('#rcon_input').val() || $('#rcon_input').attr('placeholder')}); }">Send</button>
       </div>
     </div>
 
@@ -74,7 +75,7 @@
             <div class="p-2 col-2 justify-content-end">
               <div class="d-flex justify-content-between">
                 <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#chat_input').val('');">Clear</button>
-                <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#chat_input').val() || $('#chat_input').attr('placeholder')) { tailProcess('#chat-log',  `/control/server/chat/<%= @id %>`, 1000, {command: `${$('#chat_input').val() || $('#chat_input').attr('placeholder')}`}); }">Send</button>
+                <button type="button" class="btn btn-sm btn-info m-1" onclick="if ($('#chat_input').val() || $('#chat_input').attr('placeholder')) { tailProcess('#chat-log',  `/control/server/chat/<%= @config_id %>`, 1000, {command: `${$('#chat_input').val() || $('#chat_input').attr('placeholder')}`}); }">Send</button>
               </div>
             </div>
             <div class="p-2 col-2 justify-content-end">
@@ -110,8 +111,8 @@
             <div class="col d-flex justify-content-end">
               <span>Download Logs:<span>
               <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download('/download-server-logs')">All Servers</button>
-              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download(`/download-server-logs/${$('#server-config-name').val() || $('#server-config-name').attr('placeholder')}`)">This Server</button>
-              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download(`/download-server-log/${$('#server-config-name').val() || $('#server-config-name').attr('placeholder')}`)">Current Run</button>
+              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download(`/download-server-logs/${$('#id').attr('placeholder')}`)">This Server</button>
+              <button type="button" class="btn btn-sm btn-secondary m-1" onclick="download(`/download-server-log/${$('#id').attr('placeholder')}`)">Current Run</button>
               <span>|<span>
               <button type="button" class="btn btn-sm btn-secondary m-1" onclick="$('#server-log').html('');">Clear Log</button>
               <button type="button" class="font-weight-bold btn btn-sm btn-info m-1" onclick="resetLogScroll('#server-log', true);">Tail Log</button>

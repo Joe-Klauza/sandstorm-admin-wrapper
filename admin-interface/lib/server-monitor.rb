@@ -334,6 +334,11 @@ class ServerMonitor
     @thread.kill if @thread.respond_to?('kill')
   end
 
+  def all_green?
+    # RCON and Query successfully reached
+    !@info[:a2s_connection_problem] && !@info[:rcon_connection_problem]
+  end
+
   def monitor
     return nil if @stop
     Thread.new do

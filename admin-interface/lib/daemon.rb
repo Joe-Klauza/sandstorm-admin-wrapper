@@ -18,6 +18,7 @@ class SandstormServerDaemon
   attr_accessor :steam_api_key
   attr_reader :frozen_config
   attr_reader :name
+  attr_reader :id
   attr_reader :active_game_port
   attr_reader :active_rcon_port
   attr_reader :active_query_port
@@ -35,6 +36,7 @@ class SandstormServerDaemon
   def initialize(config, daemons, mutex, rcon_client, server_buffer, rcon_buffer, chat_buffer, steam_api_key: '')
     @config = config
     @name = @config['server-config-name']
+    @id = @config['id']
     @daemons = daemons
     @daemons_mutex = mutex
     @monitor_mutex = Mutex.new
@@ -70,6 +72,7 @@ class SandstormServerDaemon
     @player_feed = []
     @admin_ids = nil
     @steam_api_key = steam_api_key
+    @exit_requested = false
     start_daemon
     log "Daemon initialized"
   end
@@ -126,7 +129,9 @@ class SandstormServerDaemon
   end
 
   def do_start_server
+    @exit_requested = false
     @daemons_mutex.synchronize do
+      return "Exiting" if @exit_requested
       if server_running? || (@threads[:game_server] && @threads[:game_server].alive?)
         "Server is already running. PID: #{@game_pid}"
       else
@@ -144,9 +149,10 @@ class SandstormServerDaemon
         log "Starting server", level: :info
         @server_started = false
         @server_failed = false
+        @game_pid = nil
         @threads[:game_server] = get_game_server_thread
-        sleep 0.1 until @server_started || @server_failed
-        @server_started ? "Server is starting. PID: #{@game_pid}" : "Server failed to start!"
+        sleep 0.1 until @game_pid
+        @game_pid ? "Server is starting. PID: #{@game_pid}" : "Server failed to start!"
       end
     end
   end
@@ -158,6 +164,7 @@ class SandstormServerDaemon
   end
 
   def do_stop_server
+    @exit_requested = true
     @daemons_mutex.synchronize do
       return 'Server not running.' unless server_running?
       log "Stopping server", level: :info
@@ -175,13 +182,17 @@ class SandstormServerDaemon
   end
 
   def implode
-    log "Daemon for server #{@name} imploding", level: :info
-    do_stop_server
+    log "Daemon for server #{@name} (#{@config['id']}) imploding", level: :info
+    @exit_requested = true
     @game_pid = nil
     @buffer.reset
     @buffer = nil
     @rcon_buffer.reset
     @rcon_buffer = nil
+    Thread.new { @monitor.stop if @monitor }
+    game_server_thread = @threads.delete :game_server
+    kill_server_process
+    game_server_thread.join
     @threads.keys.each do |thread_name|
       thread = @threads.delete thread_name
       thread.kill if thread.respond_to? :kill
@@ -206,13 +217,14 @@ class SandstormServerDaemon
       if @monitor.nil?
         Thread.new { @monitor = ServerMonitor.new('127.0.0.1', @active_query_port, @active_rcon_port, @active_rcon_pass, name: @name, rcon_buffer: @rcon_buffer, interval: 5, daemon_handle: self) }
       end
+      sleep 0.5 while @monitor.nil? && !(@exit_requested)
     end
   end
 
   def run_game_server
     log "Applying config"
     @frozen_config = @config.dup
-    $config_handler.apply_server_config_files @frozen_config, @frozen_config['id']
+    $config_handler.apply_server_config_files @frozen_config
     @admin_ids = $config_handler.get_server_config_file_content(:admins_txt, @frozen_config['id']).split("\n").map { |l| l[/\d{17}/] }.compact
     executable = BINARY
     arguments = $config_handler.get_server_arguments(@frozen_config)
@@ -220,7 +232,7 @@ class SandstormServerDaemon
     @active_query_port = @frozen_config['server_query_port']
     @active_rcon_port = @frozen_config['server_rcon_port']
     @active_rcon_pass = @frozen_config['server_rcon_password']
-    @log_file = $config_handler.get_log_file(@frozen_config['server-config-name'])
+    @log_file = $config_handler.get_log_file(@frozen_config['id'])
     log "Spawning game process: #{[executable, *arguments].inspect}", level: :info
     SubprocessRunner.run(
       [executable, *arguments],
@@ -243,8 +255,6 @@ class SandstormServerDaemon
           sleep 0.5
         end
         log "Log file is in use. Proceeding with log tailing."
-        log "Server is ready. Server start lock ending.", level: :info
-        @server_started = true
         begin
           File.open(@log_file) do |log|
             log.extend(File::Tail)
@@ -258,9 +268,15 @@ class SandstormServerDaemon
                 if line[/LogRcon: Error: Failed to create TcpListener at .* for rcon support/]
                   log "RCON failed to initialize: #{line}", level: :warn
                   kill_server_process
-                elsif line.include?('LogRcon: Rcon listening') && @monitor.nil?
+                elsif !@rcon_listening && line.include?('LogRcon: Rcon listening') && @monitor.nil?
                   @rcon_listening = true
                   create_monitor
+                  Thread.new do
+                    log "RCON listening. Waiting for Server Query success before ending server lock", level: :info
+                    sleep 0.5 until @monitor.all_green? || @exit_requested
+                    log "Server is ready (RCON and Query connected). Server start lock ending.", level: :info
+                    @server_started = true
+                  end
                 elsif line.include? 'SANDSTORM_ADMIN_WRAPPER'
                 elsif line[/^[\[\]0-9.:-]+\[[0-9 ]+\]LogRcon: \d+.\d+.\d+.\d+:\d+ <<\s+banid (.*)/]
                   @daemons.reject{ |_,d| d == self || !d.rcon_listening || d.nil? }.each do |id, daemon|
@@ -317,17 +333,18 @@ class SandstormServerDaemon
 
   def get_game_server_thread
     Thread.new do
-      run_game_server
+      if !@exit_requested
+        run_game_server
+      end
     rescue => e
       @server_failed = true
       log "Game server failed", e
       @threads.delete :game_server unless @server_started # If we can't even start the server, don't keep trying
     ensure
+      @server_thread_exited = true
       begin
-        @monitor_mutex.synchronize do
-          @monitor.stop unless @monitor.nil?
-          @monitor = nil
-        end
+        @monitor.stop unless @monitor.nil?
+        @monitor = nil
         @game_pid = nil
         @log_file = nil
         @rcon_listening = false
@@ -336,7 +353,6 @@ class SandstormServerDaemon
       rescue => e
         log "Error while cleaning up game server thread", e
       end
-      @server_thread_exited = true
     end
   end
 

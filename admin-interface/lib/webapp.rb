@@ -48,7 +48,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
       Thread.new do
         if @@daemons.any?
           log "Stopping daemons", level: :info
-          @@daemons.each { |_, daemon| daemon.do_stop_server }
+          @@daemons.each { |_, daemon| daemon.implode }
         end
       end.join
     end
@@ -79,17 +79,17 @@ class SandstormAdminWrapperSite < Sinatra::Base
       break if arg.nil?
       case arg
       when '--start', '-s'
-        config_name = args.shift
-        break if config_name.nil?
+        config_name_or_id = args.shift
+        break if config_name_or_id.nil?
         @@daemons_mutex.synchronize do
-          Thread.new(config_name) do |config_name|
-            config = $config_handler.server_configs[config_name].dup
+          Thread.new(config_name_or_id) do |config_name_or_id|
+            config = $config_handler.server_configs.values.select{|conf| conf['id'] == config_name_or_id || conf['server-config-name'] == config_name_or_id }.first.dup rescue nil
             sleep 2 # Allow webrick SSL cert to be logged before starting servers
             if config
-              log "Starting daemon for #{config_name}", level: :info
+              log "Starting daemon for #{config_name_or_id}", level: :info
               init_daemon(config, start: true)
             else
-              log "Unknown server config: #{config_name}", level: :warn
+              log "Unknown server config name/ID: #{config_name_or_id}", level: :warn
             end
           end
         end
@@ -256,7 +256,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  def zip_logs(zip_path, glob)
+  def zip_files(zip_path, glob)
     log "Zipping logs from #{glob} into #{zip_path.sub(USER_HOME, '~')}"
     files_to_zip = Dir.glob(glob).map { |f| File.expand_path f }
     Zip::File.open(zip_path, Zip::File::CREATE) do |zipfile|
@@ -344,13 +344,34 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
 
     def get_active_config
-      # log "Getting active server config using ID #{session[:active_server_config]}"
+      # log "Getting active server config using ID #{session[:active_server_config]}", level: :fatal
       if $config_handler.server_configs.empty?
-        $config_handler.server_configs.merge!({'Default' => $config_handler.get_default_config})
+        $config_handler.add_server_config(get_default_config)
       end
-      active_config = $config_handler.server_configs.values.select { |config| config['id'] == session[:active_server_config] }.first || $config_handler.server_configs.values.last
-      # log "Got active server config with name #{active_config['server-config-name']} (ID: #{active_config['id']})"
+      # binding.pry
+      active_config = $config_handler.server_configs.select { |id, _| id == session[:active_server_config] }.to_h.values.first || $config_handler.server_configs.values.last
+      # log "Got active server config with name #{active_config['server-config-name']} (ID: #{active_config['id']})", level: :fatal
       active_config
+    end
+
+    def get_config(config_id)
+      halt 400, 'Invalid config ID format' unless config_id.to_s.is_uuid?
+      config = $config_handler.server_configs[config_id]
+      halt 400, "Unable to find config for ID #{config_id}" if config.nil?
+      config
+    end
+
+    def redirect_to_config(config_id, path)
+      if config_id && config_id.is_uuid? && $config_handler.server_configs.keys.include?(config_id)
+        session[:active_server_config] = config_id
+      else
+        config_id = session[:active_server_config]
+        if config_id && config_id.is_uuid? && $config_handler.server_configs.keys.include?(config_id)
+          redirect "#{path}?config-id=#{session[:active_server_config]}"
+        else
+          session[:active_server_config] = nil
+        end
+      end
     end
   end
 
@@ -358,9 +379,9 @@ class SandstormAdminWrapperSite < Sinatra::Base
     e = env['sinatra.error']
     log "#{request.ip} | Error occurred in route #{request.path}", e
     if is_host?
-      "An error occurred (#{e.class}). Only hosts can see the following message and backtrace: #{e.message} | Backtrace:<br>#{e.backtrace.map{|l| l.gsub(USER_HOME, '~') }.join('<br>')}"
+      "An error occurred (#{CGI.escapeHTML(e.class.to_s)}). Only hosts can see the following message and backtrace: #{CGI.escapeHTML(e.message)} | Backtrace:<br>#{e.backtrace.map{|l| CGI.escapeHTML(l.gsub(USER_HOME, '~')) }.join('<br>')}"
     else
-      "An error occurred (#{e.class}). Please view the logs or contact the maintainer."
+      CGI.escapeHTML "An error occurred (#{e.class.to_s}). Please view the logs or contact the maintainer."
     end
   end
 
@@ -695,13 +716,8 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/maplist', auth: :admin do
-    config = get_active_config
-    config_id = config['id']
-    @config = $config_handler.server_configs[config_id] || $config_handler.server_configs.first.last
-    if @config.nil?
-      status 400
-      return "Unknown config"
-    end
+    @config = get_config(params['config-id'])
+    config_id = @config['id'] # Needed in ERB binding
     @mod_scenarios_txt = File.read ERB.new(CONFIG_FILES[:mod_scenarios_txt][:local_erb]).result(binding)
     @modScenarios = @mod_scenarios_txt.split("\n").reject(&:empty?)
     erb(:maplist)
@@ -709,15 +725,17 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/config', auth: :admin do
     redirect '/setup' unless @@prereqs_complete
-    config = get_active_config
-    config_name = config['server-config-name']
-    @config = $config_handler.server_configs[config_name] || $config_handler.server_configs.first.last
-    if config_name.to_s.empty?
+    config_id = params['config-id']
+    redirect_to_config(config_id, '/config')
+    active_config = get_active_config
+    # We _should_ always have a config, as config_handler should ensure that at least the Default config exists at all times
+    @config = $config_handler.server_configs[active_config['id']] || $config_handler.server_configs.values.last
+    unless @config
       status 400
-      return "Unknown config"
+      return "Unable to find config"
     end
-    $config_handler.init_server_config_files config_name
     config_id = @config['id']
+    $config_handler.init_server_config_files config_id
     @game_ini = File.read ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding)
     @engine_ini = File.read ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding)
     @admins_txt = File.read ERB.new(CONFIG_FILES[:admins_txt][:local_erb]).result(binding)
@@ -726,24 +744,25 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @mod_scenarios_txt = File.read ERB.new(CONFIG_FILES[:mod_scenarios_txt][:local_erb]).result(binding)
     @modScenarios = @mod_scenarios_txt.split("\n").reject(&:empty?)
     @bans_json = File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)
+    @motd_txt = File.read ERB.new(CONFIG_FILES[:motd_txt][:local_erb]).result(binding)
+    @notes_txt = File.read ERB.new(CONFIG_FILES[:notes_txt][:local_erb]).result(binding)
     erb(:'server-config', layout: :'layout-main')
   end
 
   get '/control', auth: :admin do
     redirect '/setup' unless @@prereqs_complete
+    config_id = params['config-id']
+    redirect_to_config(config_id, '/control')
     @config = get_active_config
-    @id = @config['id']
-    daemon = @@daemons[@id]
+    @config_id = @config['id']
+    daemon = @@daemons[@config_id]
     if daemon
       @config = daemon.frozen_config
-      log "/control working with daemon ID #{daemon.config['id']}"
-    else
-      log "/control Failed to get running daemon for config with id #{@config['id']}"
     end
     @game_port = daemon.server_running? ? daemon.active_game_port : @config['server_game_port'] rescue @config['server_game_port']
     @rcon_port = daemon.server_running? ? daemon.active_rcon_port : @config['server_rcon_port'] rescue @config['server_rcon_port']
     @query_port = daemon.server_running? ? daemon.active_query_port : @config['server_query_port'] rescue @config['server_query_port']
-    @server_status = get_server_status(@id)
+    @server_status = get_server_status(@config_id)
     @pid = daemon.game_pid if daemon
     process = Sys::ProcTable.ps(pid: @pid) if @pid
     threads = (WINDOWS ? process.thread_count : process.nlwp) if process
@@ -927,7 +946,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     when 'delete'
       @@daemons.delete(@@daemons.key daemon).implode
     when 'restart'
-      daemon.config.merge!($config_handler.server_configs[daemon.name]) if $config_handler.server_configs[daemon.name]
+      daemon.config.merge!($config_handler.server_configs[daemon.id]) if $config_handler.server_configs[daemon.id]
       if daemon.server_running?
         daemon.do_restart_server
       else
@@ -961,29 +980,19 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/config/file/:file', auth: :admin do
-    config_name = params['config']
-    config = $config_handler.server_configs[config_name] rescue nil
-    if config.nil?
-      status 404
-      return "Failed to find config with name #{config_name}"
-    end
+    config = get_config(params['config-id'])
     file = params['file'].gsub('..', '')
     file = File.join CONFIG_FILES_DIR, (file == 'Bans.json' ? '' : config['id']), file
     if File.exist? file
       File.read(file)
     else
-      status 400
-      "File not found: #{file.sub(USER_HOME, '~')}"
+      halt 400, "File not found: #{file.sub(USER_HOME, '~')}"
     end
   end
 
-  post '/config/file/:file', auth: :admin do
-    config_name = params['config']
-    config = $config_handler.server_configs[config_name] rescue nil
-    if config.nil?
-      status 404
-      return "Failed to find config with name #{config_name}"
-    end
+  post '/config/file', auth: :admin do
+    config_id = params['config_id']
+    config = get_config(config_id)
     file = params['file'].gsub('..', '')
     content = params['content']
     content << "\n" unless content.end_with? "\n"
@@ -1006,17 +1015,13 @@ class SandstormAdminWrapperSite < Sinatra::Base
         else
           params['value']
         end
-        config_name = params['config']
-        config = $config_handler.server_configs[config_name] rescue nil
-        if config.nil?
-          status 404
-          return "Unable to find config with name #{config_name}"
-        end
-        status, msg, current, old = $config_handler.set config['server-config-name'], params['variable'], value
+        config_id = params['config-id']
+        config = get_config(config_id)
+        status, msg, current, old = $config_handler.set config['id'], params['variable'], value
         if status
           daemon = @@daemons.select { |id, _| id == config['id'] }.first.last rescue nil
           if daemon
-            daemon.config.merge!($config_handler.server_configs[config_name]) # Merge the current config for next restart
+            daemon.config.merge!($config_handler.server_configs[config_id]) # Merge the current config for next restart
             log "Merged config to active daemon for config ID #{daemon.config['id']}"
           end
           "Changed #{params['variable']}: #{old} => #{current}"
@@ -1031,7 +1036,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
         "#{msg} | #{e.class}: #{e.message}"
       end
     elsif params['action'] == 'get'
-      value = $config_handler.get params['config'], params['variable']
+      value = $config_handler.get params['config-id'], params['variable']
       if value.nil?
         status 404
         "Could not find value for #{params['variable']}"
@@ -1039,8 +1044,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
         value.to_s
       end
     else
-      status 400
-      'Unknown action'
+      halt 400, 'Unknown action'
     end
   end
 
@@ -1202,36 +1206,34 @@ class SandstormAdminWrapperSite < Sinatra::Base
     erb :'server-configs'
   end
 
-  get '/server-config/:name', auth: :admin do
-    config_name = params['name']
-    config = $config_handler.server_configs[config_name]
-    if config
-      session[:active_server_config] = config['id']
-      Oj.dump(config)
-    else
-      status 404
-      "Unknown server config: #{config_name}"
-    end
+  get '/server-config', auth: :admin do
+    config_id = params['config-id']
+    config = get_config(config_id)
+    session[:active_server_config] = config_id
+    Oj.dump(config)
   end
 
   post '/server-config', auth: :admin do
     config = Oj.load(request.body.read)
+    config_id = config['id']
+    if config_id && !config_id.is_uuid?
+      halt 400, "Invalid config ID format"
+    end
     config_name = config['server-config-name']
-    overwrote = !$config_handler.server_configs[config_name].nil?
     request.body.rewind
-    $config_handler.create_server_config config_name, config
-    "#{overwrote ? 'Overwrote' : 'Saved' } #{config_name}"
+    new_config = $config_handler.create_server_config config
+    overwrote = new_config['id'] == config_id
+    Oj.dump({
+        message: "#{overwrote ? 'Overwrote' : 'Created'} #{new_config['id']}",
+        id: new_config['id'],
+      }, mode: :compat)
   end
 
-  delete '/server-config/:name', auth: :admin do
-    config_name = params['name']
-    if $config_handler.server_configs[config_name]
-      $config_handler.delete_server_config config_name
-      "Deleted #{params['name']}"
-    else
-      status 400
-      "Server config not found: #{params['name']}"
-    end
+  delete '/server-config', auth: :admin do
+    config_id = params['config-id']
+    halt 400, "Server config not found for ID #{config_id}" unless $config_handler.server_configs[config_id]
+    $config_handler.delete_server_config config_id
+    "Deleted #{params['name']}"
   end
 
   get '/get-buffer/:id/:type', auth: :admin do
@@ -1276,8 +1278,27 @@ class SandstormAdminWrapperSite < Sinatra::Base
     ConfigHandler.generate_password
   end
 
-  get '/download-server-log/:config_name', auth: :admin do
-    log_file = File.expand_path File.join SERVER_LOG_DIR, "#{params['config_name']}.log"
+  get '/download-server-config', auth: :admin do
+    config_id = params['config-id']
+    unless config_id.is_uuid?
+      halt 400, "Invalid config ID format"
+    end
+    config_dir = File.join CONFIG_FILES_DIR, config_id
+    unless File.directory?(config_dir)
+      halt 400, "No files found for this config ID"
+    end
+    zip_path = File.expand_path File.join CONFIG_FILES_DIR, "saw-config_#{config_id}_#{DateTime.now.strftime('%Y-%m-%d_%H-%M-%S')}.zip"
+    FileUtils.touch zip_path
+    zip_files zip_path, File.join(config_dir, '**/*')
+    begin
+      send_file zip_path, filename: File.basename(zip_path), disposition: :attachment
+    ensure
+      Thread.new { FileUtils.rm zip_path }
+    end
+  end
+
+  get '/download-server-log/:config_id', auth: :admin do
+    log_file = File.expand_path File.join SERVER_LOG_DIR, "#{params['config_id']}.log"
     if File.exist? log_file
       send_file log_file, filename: File.basename(log_file), disposition: :attachment
     else
@@ -1286,10 +1307,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
-  get '/download-server-logs(/:config_name)?', auth: :admin do
-    config_name = params['config_name']
-    zip_path = File.expand_path File.join SERVER_LOG_DIR, "#{config_name + '-' if config_name}sandstorm-logs-#{DateTime.now.strftime('%Y-%m-%d_%H-%M-%S')}.zip"
-    zip_logs zip_path, File.join(SERVER_LOG_DIR, config_name ? "#{config_name}*.log" : '*.log')
+  get '/download-server-logs(/:config_id)?', auth: :admin do
+    config_id = params['config_id']
+    zip_path = File.expand_path File.join SERVER_LOG_DIR, "#{config_id + '-' if config_id}sandstorm-logs-#{DateTime.now.strftime('%Y-%m-%d_%H-%M-%S')}.zip"
+    zip_files zip_path, File.join(SERVER_LOG_DIR, config_id ? "#{config_id}*.log" : '*.log')
     begin
       send_file zip_path, filename: File.basename(zip_path), disposition: :attachment
     ensure
@@ -1299,7 +1320,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   get '/download-wrapper-logs', auth: :host do
     zip_path = File.expand_path File.join WEBAPP_ROOT, 'log', "saw-logs-#{DateTime.now.strftime('%Y-%m-%d_%H-%M-%S')}.zip"
-    zip_logs zip_path, File.join(WEBAPP_ROOT, 'log', '*.log*')
+    zip_files zip_path, File.join(WEBAPP_ROOT, 'log', '*.log*')
     begin
       send_file zip_path, filename: File.basename(zip_path), disposition: :attachment
     ensure

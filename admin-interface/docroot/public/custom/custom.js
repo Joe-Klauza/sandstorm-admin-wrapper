@@ -299,42 +299,52 @@ function loadActiveServerConfig(config_id) {
   });
 }
 
-function loadServerConfig(name) {
-  $.get(`/server-config/${encodeURIComponent(name)}`, function(data) {
-    if ($('#server-status').length) {
-      window.location.href = '/control';
-      return;
-    }
-    config = JSON.parse(data);
-    $.each(config, (key, val) => {
-      // console.log(`${key} => ${val} (${typeof val})`);
-      if (key === 'server_mutators')
-      {
-        $('.server-config-mutator-input').each((i, el) => { el.checked = false });
-        $.each(val, (i, mutator) => {
-          $(`#server_mutator_${mutator}`)[0].checked = true;
-        });
-        setMutatorCount();
-        return;
-      }
-      var element = $(`#${key}`)
-      if (element.length) {
-        if (element.hasClass('server-config-text-input')) {
-          element.attr('placeholder', val);
-          element.attr('previous', '');
-          element.val('');
-        } else if (element.hasClass('server-config-checkbox-input')) {
-          if (element[0].checked.toString() !== val.toString()) { // Handle boolean and string
-            element[0].click();
-          }
-        } else {
-          console.log("Unhandled loadServerConfig type: " + key);
-        }
-      }
-    })
-    loadServerConfigFileContent(name);
-  });
+function loadServerConfig(config_id, milliseconds) {
+  milliseconds ||= 0;
+  let path = '/config'
+  if ($('#server-status').length) {
+    path = '/control';
+    milliseconds = 0;
+  }
+  setTimeout(_ => { window.location.href = `${path}?config-id=${config_id}`; }, milliseconds);
 }
+
+// function loadServerConfig(config_id) {
+//   $.get(`/server-config?config-id=${encodeURIComponent(config_id)}`, function(data) {
+//     if ($('#server-status').length) {
+//       window.location.href = '/control';
+//       return;
+//     }
+//     config = JSON.parse(data);
+//     $.each(config, (key, val) => {
+//       // console.log(`${key} => ${val} (${typeof val})`);
+//       if (key === 'server_mutators')
+//       {
+//         $('.server-config-mutator-input').each((i, el) => { el.checked = false });
+//         $.each(val, (i, mutator) => {
+//           $(`#server_mutator_${mutator}`)[0].checked = true;
+//         });
+//         setMutatorCount();
+//         return;
+//       }
+//       var element = $(`#${key}`)
+//       if (element.length) {
+//         if (element.hasClass('server-config-text-input')) {
+//           element.attr('placeholder', val);
+//           element.attr('previous', '');
+//           element.val('');
+//         } else if (element.hasClass('server-config-checkbox-input')) {
+//           if (element[0].checked.toString() !== val.toString()) { // Handle boolean and string
+//             element[0].click();
+//           }
+//         } else {
+//           console.log("Unhandled loadServerConfig type: " + key);
+//         }
+//       }
+//     })
+//     loadServerConfigFileContent(config_id);
+//   });
+// }
 
 function saveServerConfig() {
   var config = {};
@@ -354,17 +364,18 @@ function saveServerConfig() {
     }
   });
   config['server_mutators'] = mutators
-  var name = $('#server-config-name').val() || $('#server-config-name').attr('placeholder');
-  name = filterConfigName(name);
-  writeConfigFiles(name);
   $.ajax({
     url: `/server-config`,
     type: 'POST',
     contentType: "application/json",
     data: JSON.stringify(config),
-    success: function(message) {
+    success: function(response) {
+      response = JSON.parse(response);
+      let message = response.message;
+      let id = response.id;
       successToast(message);
-      loadServerConfig(name);
+      writeConfigFiles(id);
+      loadServerConfig(id, 1000);
     },
     error: function(request,msg,error) {
       failureToast(request.responseText);
@@ -372,9 +383,9 @@ function saveServerConfig() {
   });
 }
 
-function deleteServerConfig(name) {
+function deleteServerConfig(config_id) {
   $.ajax({
-    url: `/server-config/${encodeURIComponent(name)}`,
+    url: `/server-config?config-id=${encodeURIComponent(config_id)}`,
     type: 'DELETE',
     success: function(message) {
       successToast(message);
@@ -788,32 +799,31 @@ function toggleChecked(identifier) {
   element.prop('checked', !checked)
 }
 
-function undoServerConfig(config_name, variable) {
-  config_name = filterConfigName(config_name);
+function undoServerConfig(config_id, variable) {
+  config_id = filterConfigName(config_id);
   var previous = $(`#${variable}`).attr('previous');
   if (previous) {
-    setServerConfig(config_name, variable, previous);
+    setServerConfig(config_id, variable, previous);
   } else {
     failureToast("No previous value to reinstate.");
   }
 }
 
 function loadPreviousServerConfig() {
-  var previous = $(`#server-config-name`).attr('previous');
+  var previous = $(`#id`).attr('previous');
   if (previous) {
-    previous = filterConfigName(previous);
     loadServerConfig(previous);
   } else {
     failureToast("No previous value to reinstate.");
   }
 }
 
-function loadServerConfigFileContent(config_name) {
+function loadServerConfigFileContent(config_id) {
   if ($('#config-files-tab-content').length) {
     let timeout = 0;
     $('#config-files-tab-content').children().each((i, e)=>{
       var textareaId = $(e).children().first().attr('id');
-      setTimeout(()=>{getConfigFileContent(config_name, `#${textareaId}`);}, timeout);
+      setTimeout(()=>{getConfigFileContent(config_id, `#${textareaId}`);}, timeout);
       timeout += 10;
     });
   }
@@ -825,16 +835,15 @@ function filterConfigName(config_name) {
   return new_name;
 }
 
-function setServerConfig(config_name, variable, value) {
-  config_name = filterConfigName(config_name);
+function setServerConfig(config_id, variable, value) {
   $.ajax({
-      url: `/config/set?config=${encodeURIComponent(config_name)}&variable=${encodeURIComponent(variable)}&value=${encodeURIComponent(value)}`,
+      url: `/config/set?config-id=${encodeURIComponent(config_id)}&variable=${encodeURIComponent(variable)}&value=${encodeURIComponent(value)}`,
       type: 'PUT',
       success: function(response) {
         $(`#${variable}`).attr('previous', $(`#${variable}`).attr('placeholder'));
         if ($(`#${variable}`).is('[placeholder]')) { $(`#${variable}`).attr('placeholder', value); }
         $(`#${variable}`).val("");
-        loadServerConfigFileContent(config_name);
+        loadServerConfigFileContent(config_id);
         successToast(response);
       },
       error: function(request,msg,error) {
@@ -868,11 +877,11 @@ function setWrapperConfig(variable, value) {
   });
 }
 
-function getConfigFileContent(config_name, identifier) {
+function getConfigFileContent(config_id, identifier) {
   var element = $(identifier);
   var file = element.attr('file');
   $.ajax({
-      url: `/config/file/${encodeURIComponent(file)}?config=${encodeURIComponent(config_name)}`,
+      url: `/config/file/${encodeURIComponent(file)}?config-id=${encodeURIComponent(config_id)}`,
       type: 'GET',
       success: function(response) {
         element.val(response);
@@ -896,27 +905,31 @@ function serverControl(action, config_id) {
   });
 }
 
-function writeConfigFiles(config_name) {
+function writeConfigFiles(config_id) {
   $('#config-files-tab-content').children().each((i, e)=>{
     var textareaId = $(e).children().first().attr('id');
     setTimeout(()=>{
-      writeConfigFile(config_name, textareaId, true);
+      writeConfigFile(config_id, textareaId, true);
     }, 0);
   });
 
 }
 
-function writeConfigFile(config_name, textareaId, suppress_toasts) {
+function writeConfigFile(config_id, textareaId, suppress_toasts) {
   let textarea = textareaId ? $(`#${textareaId}`) : $('#config-files-tab-content').children('.active').first().children('textarea').first();
   textareaId = textareaId || textarea.attr('id')
   let file = textarea.attr('file');
   let content = textarea.val();
   $.ajax({
-    url: `/config/file/${file}?config=${config_name}`,
+    url: '/config/file',
     type: 'POST',
-    data: {'content': content},
+    data: {
+      config_id: config_id,
+      content: content,
+      file: file,
+    },
     success: function(response) {
-      if (textareaId === "mod-scenarios-txt") reloadMapList();
+      if (textareaId === "mod-scenarios-txt") reloadMapList(config_id);
       if (!suppress_toasts) {
         successToast(response);
       }
@@ -929,8 +942,8 @@ function writeConfigFile(config_name, textareaId, suppress_toasts) {
   });
 }
 
-function reloadMapList() {
-  $.get('/maplist', (mapListHtml) => {
+function reloadMapList(config_id) {
+  $.get(`/maplist?config-id=${config_id}`, (mapListHtml) => {
     $('#maplist').html(mapListHtml);
   });
 }

@@ -3,6 +3,10 @@
   border: 1px solid #f00 !important;
 }*/
 
+.disabled {
+  background: #36423e !important;
+}
+
 div {
   display: -webkit-flex; /* Safari */
   -webkit-align-items: center; /* Safari 7.0+ */
