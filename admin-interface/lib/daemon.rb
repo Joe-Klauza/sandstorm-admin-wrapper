@@ -130,7 +130,9 @@ class SandstormServerDaemon
 
   def do_start_server
     @exit_requested = false
+    # log "start daemons mutex wait"
     @daemons_mutex.synchronize do
+      # log "start daemons mutex start"
       return "Exiting" if @exit_requested
       if server_running? || (@threads[:game_server] && @threads[:game_server].alive?)
         "Server is already running. PID: #{@game_pid}"
@@ -151,10 +153,12 @@ class SandstormServerDaemon
         @server_failed = false
         @game_pid = nil
         @threads[:game_server] = get_game_server_thread
-        sleep 0.1 until @game_pid
+        sleep 0.1 until @game_pid || @server_failed
         @game_pid ? "Server is starting. PID: #{@game_pid}" : "Server failed to start!"
       end
+      # log "start daemons mutex end"
     end
+    # log "start daemons mutex clear"
   end
 
   def do_restart_server
@@ -165,7 +169,9 @@ class SandstormServerDaemon
 
   def do_stop_server
     @exit_requested = true
+    # log "stop daemons mutex wait"
     @daemons_mutex.synchronize do
+      # log "stop daemons mutex start"
       return 'Server not running.' unless server_running?
       log "Stopping server", level: :info
       # No need to do anything besides remove it from monitoring
@@ -178,7 +184,9 @@ class SandstormServerDaemon
       sleep 0.2 until @server_thread_exited || @server_failed
       log "Server thread #{@server_failed ? "failed" : "exited and cleaned up"}"
       msg
+      # log "stop daemons mutex end"
     end
+    # log "stop daemons mutex clear"
   end
 
   def implode
@@ -339,7 +347,9 @@ class SandstormServerDaemon
     rescue => e
       @server_failed = true
       log "Game server failed", e
+      Thread.new { @monitor.stop if @monitor }
       @threads.delete :game_server unless @server_started # If we can't even start the server, don't keep trying
+      kill_server_process
     ensure
       @server_thread_exited = true
       begin
@@ -353,6 +363,7 @@ class SandstormServerDaemon
       rescue => e
         log "Error while cleaning up game server thread", e
       end
+      log "Game server thread exiting"
     end
   end
 

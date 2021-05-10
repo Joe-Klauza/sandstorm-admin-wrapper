@@ -468,6 +468,10 @@ class ConfigHandler
       @server_configs[id] = config
       @server_configs.delete(key)
     end
+    # Ensure all configs have latest config params
+    @server_configs.each do |id, config|
+      @server_configs[id] = get_default_config.merge(config)
+    end
     init_server_config_files
     @server_configs
   rescue Errno::ENOENT
@@ -725,7 +729,7 @@ class ConfigHandler
 
   def get_additional_travel_args(config)
     # Split using regex for unquoted strings
-    config['server_custom_travel_args'].dup.split(/[ ]+(?=[^"]*(?:"[^"]*"[^"]*)*$)/)
+    config['server_custom_travel_args'].dup.to_s.split(/[ ]+(?=[^"]*(?:"[^"]*"[^"]*)*$)/)
   end
 
   def get_query_string(config, map: nil, side: nil, game_mode: nil, scenario_mode: nil, max_players: nil, mutators: nil, password: nil, scenario: nil, lighting: nil)
