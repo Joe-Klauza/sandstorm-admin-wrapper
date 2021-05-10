@@ -200,7 +200,7 @@ class SandstormServerDaemon
     Thread.new { @monitor.stop if @monitor }
     game_server_thread = @threads.delete :game_server
     kill_server_process
-    game_server_thread.join
+    game_server_thread.join unless game_server_thread.nil?
     @threads.keys.each do |thread_name|
       thread = @threads.delete thread_name
       thread.kill if thread.respond_to? :kill
