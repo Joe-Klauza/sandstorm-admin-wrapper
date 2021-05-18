@@ -270,6 +270,7 @@ class SandstormServerDaemon
             log.backward(0)
             last_line_was_rcon = false
             log.tail do |line|
+              Thread.kill if @exit_requested
               next if line.nil?
               if line.include? 'LogRcon'
                 last_line_was_rcon = true

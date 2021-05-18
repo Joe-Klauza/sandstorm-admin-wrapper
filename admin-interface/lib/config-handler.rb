@@ -90,6 +90,7 @@ MAPMAP = {
   'Bab'        => 'Bab',
   'Buhriz'     => 'Tideway',
   'Canyon'     => 'Crossing',
+  'Citadel'    => 'Citadel',
   'Compound'   => 'Outskirts',
   'Farmhouse'  => 'Farmhouse',
   'Sinjar'     => 'Hillside',
@@ -116,6 +117,7 @@ SCENARIO_MODES = [
   'Outpost',
   'Push',
   'Skirmish',
+  'Survival',
   'Team_Deathmatch'
 ]
 GAME_MODES = [
@@ -132,7 +134,8 @@ GAME_MODES = [
   'CheckpointHardcore',
   'CheckpointTutorial',
   'Operations',
-  'Outpost'
+  'Outpost',
+  'Survival'
 ]
 RULE_SETS = [
   'CheckpointFrenzy',
@@ -146,18 +149,24 @@ MUTATORS = {
   'AntiMaterielRiflesOnly' => { 'name' => 'Anti-Materiel Only', 'description' => 'Only anti-materiel rifles are available along with normal equipment and explosives.' },
   'BoltActionsOnly' => { 'name' => 'Bolt-Actions Only', 'description' =>'Only bolt-action rifles are available along with normal equipment and explosives.' },
   'Broke' => { 'name' => 'Broke', 'description' => 'Start with 0 supply points.' },
+  'BudgetAntiquing' => {'name' => 'Budget Antiquing', 'description' => 'Only allows only old, cheap weapons along with normal equipment and explosives.' },
   'BulletSponge' => { 'name' => 'Bullet Sponge', 'description' => 'Health is increased.' },
   'Competitive' => { 'name' => 'Competitive', 'description' => 'Equipment is more expensive, rounds are shorter, and capturing objectives is faster.' },
   'CompetitiveLoadouts' => { 'name' => 'Competitive Loadouts', 'description' => 'Player classes are replaced with those from Competitive.' },
   'FastMovement' => { 'name' => 'Fast Movement', 'description' => 'Move faster.' },
   'Frenzy' => { 'name' => 'Frenzy', 'description' => 'Fight against AI enemies who only use melee attacks. Watch out for special enemies.' },
+  'FullyLoaded' => {'name' => 'Fully Loaded', 'description' => 'All weapons, equipment, and explosives in the game are available in the Loadout Menu.' },
   'Guerrillas' => { 'name' => 'Guerrillas', 'description' => 'Start with 5 supply points.' },
+  'Gunslingers' => {'name' => 'Gunslingers', 'description' => 'Players are equipped with the MR 73 revolver, normal equipment, and explosives.' },
   'Hardcore' => { 'name' => 'Hardcore', 'description' => 'Mutator featuring slower movement speeds and longer capture times.' },
   'HeadshotOnly' => { 'name' => 'Headshots Only', 'description' => 'Players only take damage when shot in the head.' },
   'HotPotato' => { 'name' => 'Hot Potato', 'description' => 'A live fragmentation grenade is dropped on death.' },
   'LockedAim' => { 'name' => 'Locked Aim', 'description' => 'Weapons always point to the center of the screen.' },
+  'MakarovsOnly' => {'name' => 'Makarovs Only', 'description' => 'Makarov pistols only.' },
   'NoAim' => { 'name' => 'No Aim Down Sights', 'description' => 'Aiming down sights is disabled.' },
+  'NoDrops' => {'name' => 'No Drops', 'description' => 'Weapons, explosives, and equipment are not dropped by dead players or enemy AI.' },
   'PistolsOnly' => { 'name' => 'Pistols Only', 'description' => 'Only pistols are available along with normal equipment and explosives.' },
+  'Poor' => {'name' => 'Poor', 'description' => 'Players start with only 2 supply points' },
   'ShotgunsOnly' => { 'name' => 'Shotguns Only', 'description' => 'Only Shotguns are available along with normal equipment and explosives.' },
   'SlowCaptureTimes' => { 'name' => 'Slow Capture Times', 'description' => 'Objectives will take longer to capture.' },
   'SlowMovement' => { 'name' => 'Slow Movement', 'description' => 'Move slower.' },
