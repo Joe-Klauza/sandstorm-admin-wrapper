@@ -93,12 +93,13 @@ MAPMAP = {
   'Citadel'    => 'Citadel',
   'Compound'   => 'Outskirts',
   'Farmhouse'  => 'Farmhouse',
-  'Sinjar'     => 'Hillside',
+  'Gap'        => 'Gap',
   'Ministry'   => 'Ministry',
   'Mountain'   => 'Summit',
   'Oilfield'   => 'Refinery',
   'PowerPlant' => 'PowerPlant',
   'Precinct'   => 'Precinct',
+  'Sinjar'     => 'Hillside',
   'Tell'       => 'Tell',
   'Town'       => 'Hideout'
 }
