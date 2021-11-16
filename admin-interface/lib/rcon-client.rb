@@ -365,16 +365,19 @@ class RconClient
       raise "#{server_ip}:#{port} Failed to parse valid RCON response for listplayers. Response: #{players_text.inspect}"
     end
     players_and_bots.map! do |entry|
+      # Handle Steam ID prefix
+      steam_id = entry[2].utf8[/SteamNWI:\d{17}$/][/\d{17}/] rescue nil
       {
         'id' => entry[0].utf8,
         'name' => entry[1].utf8,
-        'steam_id' => entry[2].utf8,
+        'platform_id' => entry[2],
+        'steam_id' => steam_id,
         'ip' => entry[3].utf8,
         'score' => entry[4].utf8
       }
     end
-    players = players_and_bots.reject { |entry| entry['steam_id'][/\d{17}/].nil? }
-    bots = players_and_bots.select { |entry| entry['steam_id'][/\d{17}/].nil? }
+    players = players_and_bots.reject { |entry| entry['ip'].to_s.empty? }
+    bots = players_and_bots.select { |entry| entry['ip'].to_s.empty? }
     return players, bots
   end
 end
