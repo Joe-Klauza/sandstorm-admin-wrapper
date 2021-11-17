@@ -166,7 +166,7 @@ class ServerMonitor
         unless @daemon_handle.config[message_option].empty?
           Thread.new(message_option) do |message_option|
             message = @daemon_handle.config[message_option]
-            message = message.gsub('${player_name}', player.dig('steam_info', 'name') || player['name']).gsub('${player_id}', player['steam_id'])
+            message = message.gsub('${player_name}', player.dig('steam_info', 'name') || player['name']).gsub('${player_id}', player['steam_id'] || 'NULL')
             sleep @welcome_message_delay # Allow time to select a loadout and see the chat
             @rcon_client.send(@ip, @rcon_port, @rcon_pass, "say #{message}")
           end
@@ -229,7 +229,7 @@ class ServerMonitor
         log "Player left: #{player['name']} (#{player['steam_id']})#{' (admin)' if is_admin}", level: :info
         unless @daemon_handle.config['leave_message'].empty?
           Thread.new do
-            message = @daemon_handle.config['leave_message'].gsub('${player_name}', player.dig('steam_info', 'name') || player['name']).gsub('${player_id}', player['steam_id'])
+            message = @daemon_handle.config['leave_message'].gsub('${player_name}', player.dig('steam_info', 'name') || player['name']).gsub('${player_id}', player['steam_id'] || 'NULL')
             @rcon_client.send(@ip, @rcon_port, @rcon_pass, "say #{message}")
           end
         end

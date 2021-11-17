@@ -368,15 +368,17 @@ class RconClient
       # Handle Steam ID prefix
       steam_id = entry[2].utf8[/SteamNWI:\d{17}$/][/\d{17}/] rescue nil
       {
-        'id' => entry[0].utf8,
-        'name' => entry[1].utf8,
-        'platform_id' => entry[2],
+        'id' => entry[0].utf8.strip,
+        'name' => entry[1].utf8.strip,
+        'platform_id' => entry[2].utf8.strip,
         'steam_id' => steam_id,
-        'ip' => entry[3].utf8,
-        'score' => entry[4].utf8
+        'ip' => entry[3].utf8.strip,
+        'score' => entry[4].utf8.strip
       }
     end
-    players = players_and_bots.reject { |entry| entry['ip'].to_s.empty? }
+    # Check id as a stop-gap from putting bots in players when
+    # East Asian Width Unicode characters truncate the response
+    players = players_and_bots.reject { |entry| entry['ip'].to_s.empty? || entry['id'][/^\d+$/].nil? }
     bots = players_and_bots.select { |entry| entry['ip'].to_s.empty? }
     return players, bots
   end

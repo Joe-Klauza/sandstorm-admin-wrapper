@@ -20,10 +20,10 @@
       <% region_name = ip_info['regionName'] %>
       <% city = ip_info['city'] %>
       <%= ('<span class="mr-1 flag-icon flag-icon-' << country_code << '"></span> ') if country_code %>
-      <a target="<%= !@use_steam_urls ? '_blank' : '' %>" href="<%= !@use_steam_urls ? 'https://steamcommunity.com/profiles/' : 'steam://url/SteamIDPage/' %><%= player['steam_id'] %>">
-        <img src="<%= player['steam_info']['avatar'] || '/custom/missing.png' rescue '/custom/missing.png' %>" width="32" height="32">
+      <<% if player['steam_id'].nil? %>span<% else %>a target="<%= !@use_steam_urls ? '_blank' : '' %>" href="<%= !@use_steam_urls ? 'https://steamcommunity.com/profiles/' : 'steam://url/SteamIDPage/' %><%= player['steam_id'] %>" <% end %>>
+        <img src="<%= player.dig('steam_info', 'avatar') || '/custom/missing.png' %>" width="32" height="32">
         <%= CGI.escapeHTML player['display_name'] %>
-      </a>
+      </<% if player['steam_id'].nil? %>span<% else %>a<% end %>>
     </div>
     <div class="col-2"><%= player['score'] %></div>
     <div class="col-2"><%= player['duration'] %></div>
