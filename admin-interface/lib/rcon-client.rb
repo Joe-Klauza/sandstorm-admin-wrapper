@@ -365,21 +365,28 @@ class RconClient
       raise "#{server_ip}:#{port} Failed to parse valid RCON response for listplayers. Response: #{players_text.inspect}"
     end
     players_and_bots.map! do |entry|
+      id = entry[0].utf8.strip[/\d+/]
       # Handle Steam ID prefix
       steam_id = entry[2].utf8[/SteamNWI:\d{17}$/][/\d{17}/] rescue nil
+      platform_id = entry[2].utf8.strip
+      score = entry[4].utf8.strip[/\d+/]
       {
-        'id' => entry[0].utf8.strip,
+        'id' => id,
         'name' => entry[1].utf8.strip,
-        'platform_id' => entry[2].utf8.strip,
+        'platform_id' => platform_id,
         'steam_id' => steam_id,
         'ip' => entry[3].utf8.strip,
-        'score' => entry[4].utf8.strip
+        'score' => score,
       }
+    end.reject! do |entry|
+      # Discard any rejects missing info due to response truncation
+      entry['id'].nil? || entry['platform_id'].nil? || entry['score'].nil?
     end
-    # Check id as a stop-gap from putting bots in players when
-    # East Asian Width Unicode characters truncate the response
-    players = players_and_bots.reject { |entry| entry['ip'].to_s.empty? || entry['id'][/^\d+$/].nil? }
-    bots = players_and_bots.select { |entry| entry['ip'].to_s.empty? }
+    # Check id, ip as a stop-gap from putting bots in players when
+    # the response is truncated
+    valid_ipv4_regex = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$/
+    players = players_and_bots.reject { |entry| entry['id'][/^\d+$/].nil? || entry['ip'][valid_ipv4_regex].nil? }
+    bots = players_and_bots.select { |entry| entry['platform_id'] == 'None:INVALID' }
     return players, bots
   end
 end
