@@ -109,6 +109,7 @@ SIDES = [
   'Security'
 ]
 SCENARIO_MODES = [
+  'Ambush',
   'Checkpoint',
   'Domination',
   'Firefight_A', # Ministry... https://newworldinteractive.com/isl/uploads/2019/09/Sandstorm-Server-Admin-Guide-1.4.pdf
@@ -122,6 +123,7 @@ SCENARIO_MODES = [
   'Team_Deathmatch'
 ]
 GAME_MODES = [
+  'Ambush',
   'Domination',
   'Firefight',
   'Frontline',
