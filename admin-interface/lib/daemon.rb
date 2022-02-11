@@ -153,7 +153,8 @@ class SandstormServerDaemon
         @server_failed = false
         @game_pid = nil
         @threads[:game_server] = get_game_server_thread
-        sleep 0.1 until @game_pid || @server_failed
+        # Keep the mutex lock until we see RCON listening or the server fails to start
+        sleep 0.1 until (@game_pid && @rcon_listening) || @server_failed
         @game_pid ? "Server is starting. PID: #{@game_pid}" : "Server failed to start!"
       end
       # log "start daemons mutex end"
@@ -279,11 +280,11 @@ class SandstormServerDaemon
                   kill_server_process
                 elsif !@rcon_listening && line.include?('LogRcon: Rcon listening') && @monitor.nil?
                   @rcon_listening = true
+                  log "RCON listening - Ending server start/stop lock", level: :info
                   create_monitor
                   Thread.new do
-                    log "RCON listening. Waiting for Server Query success before ending server lock", level: :info
                     sleep 0.5 until @exit_requested || (@monitor && @monitor.all_green?)
-                    log "Server is ready (RCON and Query connected). Server start lock ending.", level: :info
+                    log "Server is ready (RCON and Query connected)", level: :info
                     @server_started = true
                   end
                 elsif line.include? 'SANDSTORM_ADMIN_WRAPPER'
