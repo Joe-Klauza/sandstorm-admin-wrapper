@@ -738,6 +738,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     $config_handler.init_server_config_files config_id
     @game_ini = File.read ERB.new(CONFIG_FILES[:game_ini][:local_erb]).result(binding)
     @engine_ini = File.read ERB.new(CONFIG_FILES[:engine_ini][:local_erb]).result(binding)
+    @game_user_settings_ini = File.read ERB.new(CONFIG_FILES[:game_user_settings_ini][:local_erb]).result(binding)
     @admins_txt = File.read ERB.new(CONFIG_FILES[:admins_txt][:local_erb]).result(binding)
     @mapcycle_txt = File.read ERB.new(CONFIG_FILES[:mapcycle_txt][:local_erb]).result(binding)
     @mods_txt = File.read ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)

@@ -176,11 +176,6 @@ div {
   word-wrap: normal;
 }
 
-/* CodeMirror/Mergely */
-.CodeMirror { height: 100%; }
-.mergely.current.start { border-top: 1px solid #fff !important; }
-.mergely.current.end { border-bottom: 1px solid #fff !important; }
-
 /* Pushy sidebar */
 .pushy-link { margin-left: 1px; }
 /* Ensure pushy doesn't summon the horizontal scrollbar */

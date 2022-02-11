@@ -228,7 +228,7 @@
       </div>
     </div>
 
-    <!-- Hang Recovery -->
+    <!-- RCON Hang Recovery -->
     <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
       <div class="p-2 col-3 d-flex justify-content-between"><div>Hang Recovery</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Automatically hard-restart this server if it fails local RCON queries for over 30 seconds." style="font-size: 125%;font-weight: bold;">?</button></div>
       <div class="p-2 col"></div>
@@ -242,6 +242,24 @@
         <div class="d-flex justify-content-between">
           <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#id').attr('placeholder'), 'hang_recovery', !$('#hang_recovery')[0].checked); toggleChecked('#hang_recovery');">Undo</button>
           <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#id').attr('placeholder'), 'hang_recovery', $('#hang_recovery')[0].checked);">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query Failure Recovery -->
+    <div class="d-flex justify-content-between horizontal-expand bg-light my-1">
+      <div class="p-2 col-3 d-flex justify-content-between"><div>Query Recovery</div><button type="button" class="btn btn-sm btn-secondary my-1 mx-2" data-toggle="tooltip" data-placement="left" title="" data-html="true" data-original-title="Automatically hard-restart this server if it fails local Server Query queries for over 30 seconds." style="font-size: 125%;font-weight: bold;">?</button></div>
+      <div class="p-2 col"></div>
+      <div class="p-2 col-3 justify-content-start">
+          <div class="custom-control custom-switch p-2 ml-5">
+            <input type="checkbox" class="custom-control-input server-config-checkbox-input" id="query_recovery" <%= 'checked' if @config['query_recovery'].to_s.casecmp('true').zero? %>>
+            <label class="custom-control-label" for="query_recovery">Enable Automatic Query Recovery</label>
+          </div>
+      </div>
+      <div class="p-2 col-2 justify-content-end">
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary m-1" onclick="setServerConfig($('#id').attr('placeholder'), 'query_recovery', !$('#query_recovery')[0].checked); toggleChecked('#query_recovery');">Undo</button>
+          <button type="button" class="btn btn-info m-1 ml-4" onclick="setServerConfig($('#id').attr('placeholder'), 'query_recovery', $('#query_recovery')[0].checked);">Save</button>
         </div>
       </div>
     </div>
@@ -468,6 +486,9 @@
             <a class="nav-link" data-toggle="tab" href="#engine-ini-tab">Engine.ini</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#game-user-settings-ini-tab">GameUserSettings.ini</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#admins-txt-tab">Admins.txt</a>
           </li>
           <li class="nav-item">
@@ -497,6 +518,9 @@
           </div>
           <div class="tab-pane fade horizontal-expand" id="engine-ini-tab">
             <textarea id="engine-ini" class="m-2 config-file" file="Engine.ini"><%= @engine_ini %></textarea>
+          </div>
+          <div class="tab-pane fade horizontal-expand" id="game-user-settings-ini-tab">
+            <textarea id="engine-ini" class="m-2 config-file" file="GameUserSettings.ini"><%= @game_user_settings_ini %></textarea>
           </div>
           <div class="tab-pane fade horizontal-expand" id="admins-txt-tab">
             <textarea id="admins-txt" class="m-2 config-file" file="Admins.txt"><%= @admins_txt %></textarea>

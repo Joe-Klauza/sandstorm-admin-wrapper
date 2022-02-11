@@ -48,6 +48,11 @@ CONFIG_FILES = {
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Saved', 'Config', (WINDOWS ? 'WindowsServer' : 'LinuxServer'), 'Engine.ini'),
     local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Engine.ini')%>"
   },
+  game_user_settings_ini: {
+    type: :ini,
+    actual: File.join(SERVER_ROOT, 'Insurgency', 'Saved', 'Config', (WINDOWS ? 'WindowsServer' : 'LinuxServer'), 'GameUserSettings.ini'),
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'GameUserSettings.ini')%>"
+  },
   admins_txt: {
     type: :txt,
     actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Admins.txt'),
@@ -332,6 +337,10 @@ class ConfigHandler
       'validation' => Proc.new { true }
     },
     'hang_recovery' => {
+      'default' => 'true',
+      'validation' => Proc.new { |val| ['true', 'false'].include? val }
+    },
+    'query_recovery' => {
       'default' => 'true',
       'validation' => Proc.new { |val| ['true', 'false'].include? val }
     },

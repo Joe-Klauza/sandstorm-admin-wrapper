@@ -324,7 +324,16 @@ class ServerMonitor
     @info[:a2s_connection_problem] = true
     query_fail_time = Time.now.to_i - @info[:a2s_last_success]
     log "Time since last server query success: #{query_fail_time.to_s << 's'}", level: query_fail_time > @query_fail_limit ? :error : :warn
-    @info[:server_down] ||= (query_fail_time > @query_fail_limit) && @info[:rcon_connection_problem]
+    if query_fail_time > @query_fail_limit
+      @info[:server_down] = true
+      if @daemon_handle && @daemon_handle.frozen_config['query_recovery'].to_s.casecmp('true').zero?
+        Thread.new do
+          log "Restarting server due to repeated Server Query failure", level: :warn
+          response = @daemon_handle.do_restart_server
+          log "Daemon response: #{response}"
+        end
+      end
+    end
   end
 
   def stop
