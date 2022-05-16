@@ -104,6 +104,7 @@ MAPMAP = {
   'Oilfield'   => 'Refinery',
   'PowerPlant' => 'PowerPlant',
   'Precinct'   => 'Precinct',
+  'Prison'     => 'Prison',
   'Sinjar'     => 'Hillside',
   'Tell'       => 'Tell',
   'Town'       => 'Hideout'
