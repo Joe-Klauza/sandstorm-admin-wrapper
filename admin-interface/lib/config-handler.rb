@@ -81,7 +81,7 @@ CONFIG_FILES = {
   },
   motd_txt: {
     type: :txt,
-    actual: File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Motd.txt'),
+    actual_erb: "<%=File.join(SERVER_ROOT, 'Insurgency', 'Config', 'Server', 'Motd_' + config_id + '.txt')%>",
     local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Motd.txt')%>"
   },
   notes_txt: {
@@ -596,7 +596,7 @@ class ConfigHandler
     configs.reject{ |id| !@server_configs.keys.include?(id) }.each do |config_id|
       config_id = @server_configs[config_id]['id']
       CONFIG_FILES.values.each do |it|
-        [ERB.new(it[:local_erb]).result(binding), it[:actual]].each do |path|
+        [ERB.new(it[:local_erb]).result(binding), it[:actual], it[:actual_erb] && ERB.new(it[:actual_erb]).result(binding)].each do |path|
           next if path.nil?
           FileUtils.mkdir_p File.dirname path
           FileUtils.touch path
@@ -622,12 +622,13 @@ class ConfigHandler
       log "Error while trying to delete file (#{local})", e
     end
 
-    CONFIG_FILES.reject {|_,i| i[:actual].nil? }.values.each do |it|
+    CONFIG_FILES.reject {|_,i| i[:actual].nil? && i[:actual_erb].nil? }.values.each do |it|
       local = ERB.new(it[:local_erb]).result(binding) # relies on config_id
-      log "Applying #{local} -> #{it[:actual]}"
-      FileUtils.cp local, it[:actual]
+      actual = it[:actual_erb] ? ERB.new(it[:actual_erb]).result(binding) : it[:actual] # relies on config_id for actual_erb if present
+      log "Applying #{local} -> #{actual}"
+      FileUtils.cp local, actual
     rescue => e
-      log "Error while trying to copy file (#{local} -> #{it[:actual]})", e
+      log "Error while trying to copy file (#{local} -> #{actual})", e
     end
     nil
   end
@@ -826,7 +827,7 @@ class ConfigHandler
     # MOTD
     motd_txt_content = File.read(ERB.new(CONFIG_FILES[:motd_txt][:local_erb]).result(binding)).strip
     unless motd_txt_content.empty?
-      arguments.push("-Motd")
+      arguments.push("-Motd=Motd_#{config_id}")
     end
     # Mods
     mods_txt_content = File.read(ERB.new(CONFIG_FILES[:mods_txt][:local_erb]).result(binding)).strip
