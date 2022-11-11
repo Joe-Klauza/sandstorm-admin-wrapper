@@ -13,5 +13,7 @@ gem 'sys-proctable'
 gem 'sysrandom'
 gem 'toml-rb'
 gem 'unicode-display_width'
-gem 'rubyzip'
+gem 'rubyzip', '~> 2.3.0'
 
+
+gem "webrick", "~> 1.7"
