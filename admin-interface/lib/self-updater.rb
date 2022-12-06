@@ -12,7 +12,7 @@ class SelfUpdater
   ]
 
   def self.download(url, path)
-    case io = open(url)
+    case io = URI.open(url)
     when StringIO
       File.open(path, 'w') { |f| f.write(io) }
     when Tempfile
