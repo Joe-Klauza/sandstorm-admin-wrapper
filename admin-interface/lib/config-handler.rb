@@ -99,6 +99,7 @@ MAPMAP = {
   'Compound'   => 'Outskirts',
   'Farmhouse'  => 'Farmhouse',
   'Gap'        => 'Gap',
+  'LastLight'  => 'LastLight',
   'Ministry'   => 'Ministry',
   'Mountain'   => 'Summit',
   'Oilfield'   => 'Refinery',
