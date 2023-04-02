@@ -171,7 +171,7 @@ class RconClient
     packet_body = body
     packet_empty_string = ''
     packet = [packet_id, packet_type, packet_body, packet_empty_string] # Skip size for now
-    size = packet.pack(@@pack_string[1..]).length # Get packet size by packing what we have and checking length.
+    size = packet.pack(@@pack_string[2..]).length # Get packet size by packing what we have and checking length.
     packet.unshift(size)
     # log "Packet: " << packet.inspect
     packed = packet.pack(@@pack_string)
