@@ -138,8 +138,8 @@ class ServerUpdater
   def update_server(buffer=nil, validate: nil, ignore_status: true, ignore_message: true)
     log 'Updating server', level: :info
     command = [
-      '+login anonymous',
       "+force_install_dir \"#{@server_root_dir}\"",
+      '+login anonymous',
       "+app_update 581330#{' validate' if validate}",
       '+exit'
     ]
