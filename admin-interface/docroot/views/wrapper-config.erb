@@ -100,7 +100,7 @@
         <input id="admin_interface_session_secret" type="text" class="form-control blur" placeholder="<%= @config['admin_interface_session_secret'] %>">
       </div>
       <div class="p-2 col-2 d-flex justify-content-start">
-        <button type="button" class="btn btn-sm btn-outline-warning horizontal-expand mx-1" onclick="generatePassword('#admin_interface_session_secret');">Generate</button>
+        <button type="button" class="btn btn-sm btn-outline-warning horizontal-expand mx-1" onclick="generateSessionSecret('#admin_interface_session_secret');">Generate</button>
         <button id="admin_interface_session_secret_revealer" type="button" class="btn btn-sm btn-success horizontal-expand mr-4" onclick="revealHide('#admin_interface_session_secret', '#admin_interface_session_secret_revealer');">Reveal</button>
       </div>
       <div class="p-2 col-4">

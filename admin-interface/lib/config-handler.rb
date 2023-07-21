@@ -593,10 +593,11 @@ class ConfigHandler
   end
 
   def init_server_config_files(config_id=nil)
+    # Map server_configs to their id keys
     config_ids = @server_configs.values.map { |c| c['id'] }
+    # Either init all IDs or the desired ID
     config_ids = config_id.nil? ? config_ids : [config_id]
-    config_ids.reject{ |id| !config_ids.include?(id) }.each do |config_id|
-      config_id = @server_configs[config_id]['id']
+    config_ids.each do |config_id|
       CONFIG_FILES.values.each do |it|
         [ERB.new(it[:local_erb]).result(binding), it[:actual], it[:actual_erb] && ERB.new(it[:actual_erb]).result(binding)].each do |path|
           next if path.nil?

@@ -57,7 +57,7 @@ class ServerUpdater
     json = JSON.parse "{#{converted}}"
     build_id = json.dig('581330', 'depots', 'branches', 'public', 'buildid')
     if build_id.nil?
-      log "Unable to get build ID fron converted JSON. See log file for debug information.", level: :warn
+      log "Unable to get build ID from converted JSON. See log file for debug information.", level: :warn
       log "SteamCMD STDOUT: #{stdout}\nSteamCMD STDERR: #{stderr}"
       log "Converted JSON: #{json}"
       return nil

@@ -1275,6 +1275,10 @@ class SandstormAdminWrapperSite < Sinatra::Base
     end
   end
 
+  get '/generate-session-secret', auth: :host do
+    SecureRandom.hex(32)
+  end
+
   get '/generate-password', auth: :admin do
     ConfigHandler.generate_password
   end

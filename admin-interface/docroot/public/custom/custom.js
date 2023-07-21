@@ -1111,6 +1111,10 @@ function setMutatorCount() {
   $('#mutator-count').html(size);
 }
 
+function generateSessionSecret(element) {
+  $.get('/generate-session-secret', (password) => { $(element).val(password); });
+}
+
 function generatePassword(element) {
   $.get('/generate-password', (password) => { $(element).val(password); });
 }
