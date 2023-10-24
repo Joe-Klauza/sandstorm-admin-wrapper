@@ -943,16 +943,16 @@ class SandstormAdminWrapperSite < Sinatra::Base
       daemon.do_start_server
       body "Issued server start"
     when 'stop'
-      body "Issued server stop"
       daemon.do_stop_server
+      body "Issued server stop"
       session[:active_daemon_uuid] = nil if daemon.buffer[:uuid] == session[:active_daemon_uuid]
     when 'delete'
       @@daemons.delete(@@daemons.key daemon).implode
     when 'restart'
       daemon.config.merge!($config_handler.server_configs[daemon.id]) if $config_handler.server_configs[daemon.id]
       if daemon.server_running?
+        daemon.do_restart_server
         body "Issued server restart"
-        Thread.new { daemon.do_restart_server }
       else
         status 400
         "Server is not running"
