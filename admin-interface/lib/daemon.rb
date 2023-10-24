@@ -128,66 +128,74 @@ class SandstormServerDaemon
     @rcon_client.send(host, port, pass, command, buffer: buffer, outcome_buffer: outcome_buffer, no_rx: no_rx)
   end
 
+  def do_start_server_unprotected
+    # log "start daemons mutex start"
+    return if @exit_requested
+    if server_running? || (@threads[:game_server] && @threads[:game_server].alive?)
+      log "Server is already running. PID: #{@game_pid}"
+      return
+    end
+    new_game_port = @config['server_game_port']
+    if @active_game_port && @active_game_port != new_game_port
+      # We need to move the daemon for future access
+      log "Moving daemon #{@active_game_port} -> #{new_game_port}"
+      former_tenant = @daemons[new_game_port]
+      if former_tenant
+        log "Stopping daemon #{former_tenant.name} using desired game port #{new_game_port}", level: :warn
+        former_tenant.implode
+      end
+      @daemons[new_game_port] = @daemons.delete @active_game_port
+    end
+    log "Starting server", level: :info
+    @server_started = false
+    @server_failed = false
+    @game_pid = nil
+    @threads[:game_server] = get_game_server_thread
+    # Keep the mutex lock until we see RCON listening or the server fails to start
+    sleep 0.1 until (@game_pid && @rcon_listening) || @server_failed || @exit_requested
+    msg = @game_pid ? "Server is starting. PID: #{@game_pid}" : "Server failed to start!"
+    log msg
+    nil
+  end
+
+  def do_stop_server_unprotected
+    return unless server_running?
+    log "Stopping server", level: :info
+    # No need to do anything besides remove it from monitoring
+    # We want the signal to be sent to the thread's subprocess
+    # so that the thread has time to set the status/message in the buffer
+    @server_thread_exited = false
+    @threads.delete(:game_server)
+    msg = kill_server_process
+    log "Waiting for server thread to exit and clean up"
+    sleep 0.2 until @server_thread_exited || @server_failed
+    log "Server thread #{@server_failed ? "failed" : "exited and cleaned up"}"
+    log msg
+    nil
+  end
+
   def do_start_server
     @exit_requested = false
-    # log "start daemons mutex wait"
-    @daemons_mutex.synchronize do
-      # log "start daemons mutex start"
-      return "Exiting" if @exit_requested
-      if server_running? || (@threads[:game_server] && @threads[:game_server].alive?)
-        "Server is already running. PID: #{@game_pid}"
-      else
-        new_game_port = @config['server_game_port']
-        if @active_game_port && @active_game_port != new_game_port
-          # We need to move the daemon for future access
-          log "Moving daemon #{@active_game_port} -> #{new_game_port}"
-          former_tenant = @daemons[new_game_port]
-          if former_tenant
-            log "Stopping daemon #{former_tenant.name} using desired game port #{new_game_port}", level: :warn
-            former_tenant.implode
-          end
-          @daemons[new_game_port] = @daemons.delete @active_game_port
-        end
-        log "Starting server", level: :info
-        @server_started = false
-        @server_failed = false
-        @game_pid = nil
-        @threads[:game_server] = get_game_server_thread
-        # Keep the mutex lock until we see RCON listening or the server fails to start
-        sleep 0.1 until (@game_pid && @rcon_listening) || @server_failed
-        @game_pid ? "Server is starting. PID: #{@game_pid}" : "Server failed to start!"
-      end
-      # log "start daemons mutex end"
+    return Thread.new do
+      @daemons_mutex.synchronize { do_start_server_unprotected }
     end
-    # log "start daemons mutex clear"
   end
 
   def do_restart_server
     log "Restarting server", level: :info
-    do_stop_server
-    do_start_server
+    return Thread.new do
+      @daemons_mutex.synchronize do
+        do_start_server_unprotected
+        do_stop_server_unprotected
+      end
+    end
   end
 
   def do_stop_server
     @exit_requested = true
-    # log "stop daemons mutex wait"
-    @daemons_mutex.synchronize do
-      # log "stop daemons mutex start"
-      return 'Server not running.' unless server_running?
-      log "Stopping server", level: :info
-      # No need to do anything besides remove it from monitoring
-      # We want the signal to be sent to the thread's subprocess
-      # so that the thread has time to set the status/message in the buffer
-      @server_thread_exited = false
-      @threads.delete(:game_server)
-      msg = kill_server_process
-      log "Waiting for server thread to exit and clean up"
-      sleep 0.2 until @server_thread_exited || @server_failed
-      log "Server thread #{@server_failed ? "failed" : "exited and cleaned up"}"
-      msg
-      # log "stop daemons mutex end"
+    return Thread.new do
+      @daemons_mutex.synchronize { do_stop_server_unprotected }
     end
-    # log "stop daemons mutex clear"
   end
 
   def implode

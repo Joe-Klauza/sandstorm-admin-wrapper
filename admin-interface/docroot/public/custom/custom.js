@@ -719,7 +719,8 @@ function failureToast(string) {
   $('#toast-container').append(toast);
   console.log(`Failure toasting: ${string}`);
   if (!string.trim()) {
-    string = "Failure";
+    // string = "Failure";
+    return;
   }
   toast.children().children().text(string)
   toast.toast('show')
