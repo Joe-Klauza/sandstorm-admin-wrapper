@@ -185,8 +185,8 @@ class SandstormServerDaemon
     log "Restarting server", level: :info
     return Thread.new do
       @daemons_mutex.synchronize do
-        do_start_server_unprotected
         do_stop_server_unprotected
+        do_start_server_unprotected
       end
     end
   end
