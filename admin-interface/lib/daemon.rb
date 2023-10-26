@@ -201,7 +201,6 @@ class SandstormServerDaemon
   def implode
     log "Daemon for server #{@name} (#{@config['id']}) imploding", level: :info
     @exit_requested = true
-    @game_pid = nil
     @buffer.reset
     @buffer = nil
     @rcon_buffer.reset
@@ -210,10 +209,12 @@ class SandstormServerDaemon
     game_server_thread = @threads.delete :game_server
     kill_server_process
     game_server_thread.join unless game_server_thread.nil?
+    @game_pid = nil
     @threads.keys.each do |thread_name|
       thread = @threads.delete thread_name
       thread.kill if thread.respond_to? :kill
     end
+    log "Daemon for server #{@name} (#{@config['id']}) imploded", level: :info
   end
 
   def kill_server_process(signal: nil)
@@ -292,6 +293,10 @@ class SandstormServerDaemon
                   create_monitor
                   Thread.new do
                     sleep 0.5 until @exit_requested || (@monitor && @monitor.all_green?)
+                    if @exit_requested
+                      kill_server_process
+                      Thread.exit
+                    end
                     log "Server is ready (RCON and Query connected)", level: :info
                     @server_started = true
                   end

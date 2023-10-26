@@ -8,11 +8,12 @@ require_relative 'steam-api-client'
 Geocoder.configure(ip_lookup: :ipapi_com) # :ipinfo_io (default, 1,000/day) :ipapi_com (150/min) #:geoip2 (no actual lookup; not reliable)
 
 class ServerMonitor
+  # Useful for testing hang recovery via pry
+  attr_accessor :query_port
+  attr_accessor :rcon_port
   attr_reader :info
   attr_reader :name
   attr_reader :ip
-  attr_reader :query_port
-  attr_reader :rcon_port
   attr_reader :rcon_pass
   attr_reader :rcon_buffer
 

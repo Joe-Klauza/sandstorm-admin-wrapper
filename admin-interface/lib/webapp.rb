@@ -48,7 +48,14 @@ class SandstormAdminWrapperSite < Sinatra::Base
       Thread.new do
         if @@daemons.any?
           log "Stopping daemons", level: :info
-          @@daemons.each { |_, daemon| daemon.implode }
+          threads = []
+          @@daemons.each do |_, daemon|
+            threads << Thread.new do
+              daemon.implode
+            end
+          end
+          threads.each(&:join)
+          log "Stopped daemons", level: :info
         end
       end.join
     end
@@ -109,22 +116,20 @@ class SandstormAdminWrapperSite < Sinatra::Base
 
   def self.init_daemon(config, start: false)
     id = config['id']
-    @@daemons_mutex.synchronize do
-      if @@daemons[id]
-        log "Daemon with config ID #{id} already exists", level: :info
-      else
-        log "Initializing daemon with config ID #{id}", level: :info
-        @@daemons[id] = SandstormServerDaemon.new(
-          config,
-          @@daemons,
-          @@daemons_mutex,
-          @@rcon_client,
-          create_buffer.last, # Server log
-          create_buffer.last, # RCON
-          create_buffer.last, # Chat
-          steam_api_key: @@config['steam_api_key']
-        )
-      end
+    if @@daemons[id]
+      log "Daemon with config ID #{id} already exists", level: :info
+    else
+      log "Initializing daemon with config ID #{id}", level: :info
+      @@daemons[id] = SandstormServerDaemon.new(
+        config,
+        @@daemons,
+        @@daemons_mutex,
+        @@rcon_client,
+        create_buffer.last, # Server log
+        create_buffer.last, # RCON
+        create_buffer.last, # Chat
+        steam_api_key: @@config['steam_api_key']
+      )
     end
     @@daemons[id].do_start_server if start
     @@daemons[id]
@@ -810,14 +815,20 @@ class SandstormAdminWrapperSite < Sinatra::Base
   end
 
   get '/server-control-status' do
-    @config = get_active_config
-    @id = @config['id']
+    active_config = get_active_config
+    @id = active_config['id']
     daemon = @@daemons[@id]
     if daemon
       @config = daemon.frozen_config
       log "/server-control-status working with daemon ID #{daemon.config['id']}"
     else
+      @config = active_config
       log "/server-control-status Failed to get running daemon for config with id #{@id}"
+    end
+    if @config.nil?
+      # E.g. daemon not yet started
+      status 400
+      return "Config is nil for ID: #{@id}"
     end
     @game_port = daemon.server_running? ? daemon.active_game_port : @config['server_game_port'] rescue @config['server_game_port']
     @rcon_port = daemon.server_running? ? daemon.active_rcon_port : @config['server_rcon_port'] rescue @config['server_rcon_port']

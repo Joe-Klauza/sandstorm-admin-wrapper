@@ -617,7 +617,7 @@ function updateThreads(id, element) {
 }
 
 function reloadControlStatus() {
-  $.ajax({
+  return $.ajax({
     url: `/server-control-status`,
     type: 'GET',
     success: (response) => {
@@ -630,21 +630,24 @@ function reloadControlStatus() {
 }
 
 function updateServerControlStatus() {
-  reloadControlStatus();
-  id = $('#config-id').html();
-  if (id && $('#server-status').html() == 'ON') {
-    if (!server_chat_log_active && $('#chat-log').length) {
-      setTimeout(()=>{startServerChatTail('#chat-log', id, server_log_tail_interval);}, 0);
+  reloadControlStatus().then(_ => {
+    id = $('#config-id').html();
+    if (id && $('#server-status').html() == 'ON') {
+      if (!server_chat_log_active && $('#chat-log').length) {
+        setTimeout(()=>{startServerChatTail('#chat-log', id, server_log_tail_interval);}, 0);
+      }
+      if (!server_log_active && $('#server-log').length) {
+        setTimeout(()=>{startServerLogTail('#server-log', id, server_log_tail_interval);}, 0);
+      }
+      if (!server_rcon_log_active && $('#rcon-log').length) {
+        setTimeout(()=>{startServerRconTail('#rcon-log', id, server_log_tail_interval);}, 0);
+      }
     }
-    if (!server_log_active && $('#server-log').length) {
-      setTimeout(()=>{startServerLogTail('#server-log', id, server_log_tail_interval);}, 0);
-    }
-    if (!server_rcon_log_active && $('#rcon-log').length) {
-      setTimeout(()=>{startServerRconTail('#rcon-log', id, server_log_tail_interval);}, 0);
-    }
-  }
-  setTimeout(()=>{updateServerControlStatus();}, 1000);
-  setTimeout(()=>{updateMonitoringDetails(id);}, 1000);
+    setTimeout(()=>{updateMonitoringDetails(id);}, 1000);
+    setTimeout(()=>{updateServerControlStatus();}, 1000);
+  }).catch(_ => {
+    setTimeout(()=>{updateServerControlStatus();}, 1000);
+  });
 }
 
 function addLogLines(target, lines) {

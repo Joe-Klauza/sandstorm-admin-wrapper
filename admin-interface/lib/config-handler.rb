@@ -119,6 +119,7 @@ SCENARIO_MODES = [
   'Ambush',
   'Checkpoint',
   'Domination',
+  'FFA', # Free For All (Deathmatch)
   'Firefight_A', # Ministry... https://newworldinteractive.com/isl/uploads/2019/09/Sandstorm-Server-Admin-Guide-1.4.pdf
   'Firefight_East',
   'Firefight_West',
