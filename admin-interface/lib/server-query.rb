@@ -2,6 +2,7 @@
 
 require 'socket'
 require_relative 'logger'
+require_relative '../ext/string'
 
 # https://developer.valvesoftware.com/wiki/Server_queries
 # https://apidock.com/ruby/Array/pack

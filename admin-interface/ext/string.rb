@@ -36,9 +36,10 @@ class String
   end
 
   def utf8
-    s = encode("UTF-16be", :invalid=>:replace, :replace=>"?").encode('UTF-8') #force_encoding('UTF-8')
-    s.strip # Don't strip; test that it can be stripped (else we fall back to encode())
-    s
+    # s = encode("UTF-16be", :invalid=>:replace, :replace=>"?").encode('UTF-8') #force_encoding('UTF-8')
+    # s.strip # Don't strip; test that it can be stripped (else we fall back to encode())
+    # s
+    force_encoding('UTF-8')
   rescue => e
     log("Failed to encode string as UTF-8: #{self.inspect}", level: :warn)
     encode('UTF-8', invalid: :replace, undef: :replace)
