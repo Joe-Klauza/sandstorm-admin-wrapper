@@ -11,7 +11,7 @@
     <link href="/touch-punch/jquery-ui.min.css" rel="stylesheet"/>
     <link href="/fonts/inconsolata.css" rel="stylesheet"/>
     <link href="/fonts/oswald.css" rel="stylesheet"/>
-    <link href="/custom/custom.css" rel="stylesheet"/>
+    <link href="/custom/custom.css?<%= @@loaded_wrapper_version %>" rel="stylesheet"/>
 
     <!-- Apple icon stuff -->
     <!-- <link rel="apple-touch-icon-precomposed" sizes="57x57" href="apple-touch-icon-57x57.png" /> -->
@@ -166,5 +166,5 @@
   <script>jQuery.fn.tooltip = _tooltip;</script>
 
   <!-- Ours -->
-  <script src="/custom/custom.js"></script>
+  <script src="/custom/custom.js?<%= @@loaded_wrapper_version %>"></script>
 </html>
