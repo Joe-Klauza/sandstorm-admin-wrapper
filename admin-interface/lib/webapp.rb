@@ -762,7 +762,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @config = get_active_config
     @config_id = @config['id']
     daemon = @@daemons[@config_id]
-    if daemon
+    if daemon && daemon.frozen_config
       @config = daemon.frozen_config
     end
     @game_port = daemon.server_running? ? daemon.active_game_port : @config['server_game_port'] rescue @config['server_game_port']
