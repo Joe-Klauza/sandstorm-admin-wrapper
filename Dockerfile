@@ -9,8 +9,16 @@ RUN apt-get install -y wget make gcc
 # Install Steamcmd dependencies
 RUN apt-get install -y lib32gcc-s1
 
-# Install Locales package for Steamcmd
-RUN apt-get install -y locales
+# Install Locales package for Steamcmd to avoid Warnings about being not being able to set to en_US.UTF-8
+RUN apt-get install -y locales && \
+    # Override all localisation settings to en_US.UTF-8 as default
+    echo "LC_ALL=en_US.UTF-8" >> /etc/environment && \
+    # Tell locale.gen to generate en_US.UTF-8 with UTF-8 encoding
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
+    # Set the default language to en_US.UTF-8
+    echo "LANG=en_US.UTF-8" > /etc/locale.conf && \
+    # Run locale-gen to ensure en_US.UTF-8 is generated
+    locale-gen en_US.UTF-8
 
 # Sandstorm server won't run under root
 RUN useradd -ms /bin/bash sandstorm
