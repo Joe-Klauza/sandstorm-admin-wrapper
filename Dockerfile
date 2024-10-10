@@ -9,6 +9,9 @@ RUN apt-get install -y wget make gcc
 # Install Steamcmd dependencies
 RUN apt-get install -y lib32gcc-s1
 
+# Install Locales package for Steamcmd
+RUN apt-get install -y locales
+
 # Sandstorm server won't run under root
 RUN useradd -ms /bin/bash sandstorm
 
