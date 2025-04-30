@@ -98,6 +98,7 @@ MAPMAP = {
   'Citadel'    => 'Citadel',
   'Compound'   => 'Outskirts',
   'Farmhouse'  => 'Farmhouse',
+  'Forest'     => 'Forest',
   'Gap'        => 'Gap',
   'LastLight'  => 'LastLight',
   'Ministry'   => 'Ministry',
