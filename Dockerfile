@@ -4,7 +4,7 @@ FROM ruby:3-slim-bookworm
 RUN apt-get update
 
 # General dependencies
-RUN apt-get install -y wget make gcc
+RUN apt-get install -y wget make gcc libssl-dev libreadline-dev libyaml-dev libxml2-dev libxslt1-dev libcurl4-openssl-dev openssl
 
 # Install Steamcmd dependencies
 RUN apt-get install -y lib32gcc-s1
