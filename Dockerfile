@@ -1,4 +1,4 @@
-FROM ruby:3-slim-bookworm
+FROM ruby:3.3.6-slim-bookworm
 
 
 RUN apt-get update
