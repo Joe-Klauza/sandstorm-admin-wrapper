@@ -110,6 +110,7 @@ Command-line parameters:
 - Download and extract (or clone) the repository
 - If you plan to install/run a server, [install SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD#Downloading_SteamCMD) manually to `sandstorm-admin-wrapper/steamcmd/installation`. `steamcmd.exe`/`steamcmd.sh` should be in the `installation` directory.
   - During runtime, we change the wrapper's `HOME` environment variable to `sandstorm-admin-wrapper/steamcmd` in order to contain SteamCMD's home directory pollution (on Linux) within the wrapper. You may see shell or Steam-related files in this directory as a result.
+- For Ubuntu some ruby-modules are needed.  `sudo apt install git build-essential libc6-dev libssl-dev ruby-dev ruby-bundler ruby-bcrypt ruby-ffi ruby-oj`
 
 [Docker instructions](/Docker.md) are also available.
 

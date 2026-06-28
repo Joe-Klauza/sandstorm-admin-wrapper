@@ -4,7 +4,7 @@ FROM ruby:3.3.6-slim-bookworm
 RUN apt-get update
 
 # General dependencies
-RUN apt-get install -y wget make gcc
+RUN apt-get install -y wget make gcc iputils-ping
 
 # Install Steamcmd dependencies
 RUN apt-get install -y lib32gcc-s1
@@ -38,6 +38,9 @@ RUN rm steamcmd/installation/steamcmd_linux.tar.gz
 RUN cp config/config.toml.docker config/config.toml
 
 RUN gem install bundler
+
+#WORKDIR /home/sandstorm
+#RUN steamcmd/installation/steamcmd.sh +force_install_dir /home/sandstorm/sandstorm-server +login anonymous +app_update 581330 +quit
 
 WORKDIR /home/sandstorm/admin-interface
 

@@ -9,8 +9,10 @@ class ServerUpdater
   attr_reader :thread
 
   def initialize(server_root_dir, steamcmd_path, steam_appinfovdf_path)
+    log "server-root #{server_root_dir}", level: :debug
     @server_root_dir = server_root_dir
     @app_manifest = File.join server_root_dir, 'steamapps', 'appmanifest_581330.acf'
+    log "app_manifest #{@app_manifest}", level: :debug
     # raise Errno::ENOENT, @app_manifest unless File.exist? @app_manifest
     @steamcmd_path = steamcmd_path
     # raise Errno::ENOENT, @steamcmd_path unless File.exist? @steamcmd_path
@@ -40,11 +42,18 @@ class ServerUpdater
 
   def get_latest_build_id
     back_up_app_cache
+    log "steam get latest build id: #{@steamcmd_path} '+login anonymous' '+app_info_print 581330' '+exit'", level: :info
+
     stdout, stderr, status = Open3.capture3(@steamcmd_path,
       '+login anonymous',
       '+app_info_print 581330',
       '+exit'
     )
+
+    if not stderr.empty?
+      log "steamcmd stderr: \n#{stderr}", level: :debug
+    end
+
     # Convert SteamCMD output to JSON for better traversal
     output = stdout[stdout.index('"581330"')..stdout.index(/^\}$/)]
     # Strip irrelevant characters, add colon separators for JSON
@@ -138,7 +147,7 @@ class ServerUpdater
   def update_server(buffer=nil, validate: nil, ignore_status: true, ignore_message: true)
     log 'Updating server', level: :info
     command = [
-      "+force_install_dir \"#{@server_root_dir}\"",
+      "+force_install_dir #{@server_root_dir}",
       '+login anonymous',
       "+app_update 581330#{' validate' if validate}",
       '+exit'

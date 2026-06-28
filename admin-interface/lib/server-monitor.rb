@@ -297,6 +297,7 @@ class ServerMonitor
   end
 
   def do_server_query
+    log "Getting A2S_INFO: #{a2s_info}"
     a2s_info = ServerQuery::a2s_info(@ip, @query_port)
     log "Got A2S_INFO: #{a2s_info}"
     a2s_player = ServerQuery::a2s_player(@ip, @query_port)

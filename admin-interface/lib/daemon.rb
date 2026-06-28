@@ -251,7 +251,9 @@ class SandstormServerDaemon
     @active_rcon_port = @frozen_config['server_rcon_port']
     @active_rcon_pass = @frozen_config['server_rcon_password']
     @log_file = $config_handler.get_log_file(@frozen_config['id'])
-    log "Spawning game process: #{[executable, *arguments].inspect}", level: :info
+    
+
+    log "Spawning game process: #{[executable, *arguments].map { |s| "\"#{s}\"" }.join(' ')}", level: :info
     SubprocessRunner.run(
       [executable, *arguments],
       buffer: @buffer,
