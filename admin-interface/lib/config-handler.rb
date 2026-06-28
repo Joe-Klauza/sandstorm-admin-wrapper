@@ -111,7 +111,7 @@ MAPMAP = {
   'Sinjar'     => 'Hillside',
   'Tell'       => 'Tell',
   'Town'       => 'Hideout',
-  'Trainyard'  => 'Trainyard'
+  'Trainyard'  => 'Trainyard',
   'Hold'       => 'Hold'
 }
 MAPMAP_INVERTED = MAPMAP.invert
