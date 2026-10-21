@@ -752,6 +752,7 @@ class SandstormAdminWrapperSite < Sinatra::Base
     @bans_json = File.read ERB.new(CONFIG_FILES[:bans_json][:local_erb]).result(binding)
     @motd_txt = File.read ERB.new(CONFIG_FILES[:motd_txt][:local_erb]).result(binding)
     @notes_txt = File.read ERB.new(CONFIG_FILES[:notes_txt][:local_erb]).result(binding)
+    @log_filters_txt = File.read ERB.new(CONFIG_FILES[:log_filters_txt][:local_erb]).result(binding)
     erb(:'server-config', layout: :'layout-main')
   end
 

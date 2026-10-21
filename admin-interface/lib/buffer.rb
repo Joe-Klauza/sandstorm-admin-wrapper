@@ -11,6 +11,7 @@ class Buffer < Hash
       mutex: Mutex.new,
       limit: 500,
       filters: [],
+      exclusions: [],
       persistent: false
     })
     self.merge!(opts)
@@ -21,6 +22,10 @@ class Buffer < Hash
   end
 
   def <<(string)
+    unless self[:exclusions].empty?
+      downcased = string.downcase
+      return self[:data] if self[:exclusions].any? { |pattern| downcased.include?(pattern.downcase) }
+    end
     self[:data] << string
     truncate
     self[:data]

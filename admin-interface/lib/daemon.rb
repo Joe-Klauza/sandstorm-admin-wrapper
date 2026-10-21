@@ -242,6 +242,10 @@ class SandstormServerDaemon
   def run_game_server
     log "Applying config"
     @frozen_config = @config.dup
+    exclusions = $config_handler.get_log_filters(@frozen_config['id'])
+    [@buffer, @chat_buffer].each do |buffer|
+      buffer.synchronize { buffer[:exclusions] = exclusions }
+    end
     $config_handler.apply_server_config_files @frozen_config
     @admin_ids = $config_handler.get_server_config_file_content(:admins_txt, @frozen_config['id']).split("\n").map { |l| l[/\d{17}/] }.compact
     executable = BINARY
