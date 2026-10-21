@@ -89,6 +89,11 @@ CONFIG_FILES = {
     actual: nil,
     local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'Notes.txt')%>"
   },
+  log_filters_txt: {
+    type: :txt,
+    actual: nil,
+    local_erb: "<%=File.join(CONFIG_FILES_DIR, config_id, 'LogFilters.txt')%>"
+  },
 }
 
 MAPMAP = {
@@ -643,6 +648,15 @@ class ConfigHandler
   def get_server_config_file_content(config_file, config_id)
     local = ERB.new(CONFIG_FILES[config_file][:local_erb]).result(binding)
     File.read(local)
+  end
+
+  def get_log_filters(config_id)
+    get_server_config_file_content(:log_filters_txt, config_id).lines.map { |line| line.strip.downcase }.reject(&:empty?)
+  rescue Errno::ENOENT
+    []
+  rescue => e
+    log "Error reading LogFilters.txt for server config #{config_id}; live log filtering disabled for this run", e
+    []
   end
 
   def unban_master(steam_id)
