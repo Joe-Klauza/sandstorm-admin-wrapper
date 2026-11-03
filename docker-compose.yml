@@ -2,8 +2,11 @@ volumes:
   sandstorm_wrapper_config:
   sandstorm_server:
   sandstorm_config:
+  sandstorm_modio:
 services:
   sandstorm-wrapper:
+    # security_opt:
+    #   - seccomp=unconfined
     build: .
     ports:
       - "27015:27015/tcp"
@@ -17,3 +20,4 @@ services:
       - sandstorm_server:/home/sandstorm/sandstorm-server
       - sandstorm_config:/home/sandstorm/server-config
       - sandstorm_wrapper_config:/home/sandstorm/admin-interface/config
+      - sandstorm_modio:/home/sandstorm/steamcmd/mod.io

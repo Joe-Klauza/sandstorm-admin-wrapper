@@ -23,6 +23,9 @@ RUN apt-get install -y locales && \
 # Sandstorm server won't run under root
 RUN useradd -ms /bin/bash sandstorm
 
+# Prepare persistent mod.io storage with correct ownership
+RUN install -d -o sandstorm -g sandstorm -m 0755 /home/sandstorm/steamcmd/mod.io
+
 USER sandstorm
 WORKDIR /home/sandstorm
 
