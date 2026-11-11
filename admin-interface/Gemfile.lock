@@ -22,7 +22,7 @@ GEM
     rack-protection (3.0.4)
       rack
     ruby2_keywords (0.0.5)
-    rubyzip (2.3.2)
+    rubyzip (3.4.0)
     sinatra (3.0.4)
       mustermann (~> 3.0)
       rack (~> 2.2, >= 2.2.4)
@@ -52,7 +52,7 @@ DEPENDENCIES
   oj
   openssl
   pry
-  rubyzip (~> 2.3.0)
+  rubyzip (~> 3.4.0)
   sinatra
   sys-proctable
   sysrandom
