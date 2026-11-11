@@ -16,4 +16,4 @@ gem 'unicode-display_width'
 gem 'rubyzip', '~> 2.3.0'
 
 
-gem "webrick", "~> 1.7"
+gem "webrick", "~> 1.8"
